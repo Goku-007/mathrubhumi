@@ -1,0 +1,119 @@
+from django.urls import path
+from .views import protected_view
+from .views import register_user
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from . import views
+
+urlpatterns = [
+    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('protected/', protected_view, name='protected'),
+    path('register/', register_user, name='register'),
+    # Suggestions
+    path('pp-books-title-search/', views.pp_books_title_search, name='pp_books_title_search'),
+    path('pp-customers-name-search/', views.pp_customers_name_search, name='pp_customers_name_search'),
+    path('agents-name-search/', views.agents_name_search, name='agents_name_search'),
+    path('remittance-customer-search/', views.remittance_customer_search, name='remittance_customer_search'),
+    path('branches-name-search/', views.branches_name_search, name='branches_name_search'),
+    # Sale Bill
+    path('sales/', views.create_sale, name='create_sale'),
+    path('sales/<int:sale_id>/', views.get_sale_by_id, name='get_sale_by_id'),
+    path('product-search/', views.product_search),
+    path('customer-search/', views.customer_search, name='customer_search'),
+    path('batch-select/', views.batch_select),
+    path('currencies/', views.get_currencies, name='get_currencies'),
+    path('supplier-search/', views.supplier_search, name='supplier_search'),
+    path('user-search/', views.user_search, name='user_search'),
+    path('branches-search/', views.branches_search, name='branches_search'),
+    path('goods_inward/', views.create_goods_inward, name='create_goods_inward'),
+    path('goods_inward/<int:goods_inward_purchase_no>/', views.get_goods_inward_by_id, name='get_goods_inward'),
+    path('breakup-search/', views.breakup_search, name='breakup_search'),
+    path('author-search/', views.author_search, name='author_search'),
+    path('publisher-search/', views.publisher_search, name='publisher_search'),
+    path('category-search/', views.category_search, name='category_search'),
+    path('sub-category-search/', views.sub_category_search, name='sub_category_search'),
+    path('title-create/', views.title_create, name='title_create'),
+    path('title-search/', views.title_search, name='title_search'),
+    path('title-update/<int:id>/', views.title_update, name='title_update'),
+    path('author-create/', views.author_create, name='author_create'),
+    path('author-master-search/', views.author_master_search, name='author_master_search'),
+    path('author-update/<int:id>/', views.author_update, name='author_update'),
+    path('publisher-create/', views.publisher_create, name='publisher_create'),
+    path('publisher-master-search/', views.publisher_master_search, name='publisher_master_search'),
+    path('publisher-update/<int:id>/', views.publisher_update, name='publisher_update'),
+    path('supplier-create/', views.supplier_create, name='supplier_create'),
+    path('supplier-master-search/', views.supplier_master_search, name='supplier_master_search'),
+    path('supplier-update/<int:id>/', views.supplier_update, name='supplier_update'),
+    path('credit-customer-create/', views.credit_customer_create, name='credit_customer_create'),
+    path('credit-customer-master-search/', views.credit_customer_master_search, name='credit_customer_master_search'),
+    path('credit-customer-update/<int:id>/', views.credit_customer_update, name='credit_customer_update'),
+    # Category routes
+    path('category-create/', views.category_create, name='category_create'),
+    path('categories-master-search/', views.categories_master_search, name='categories_master_search'),
+    path('category-update/<int:id>/', views.category_update, name='category_update'),
+    path('category-delete/<int:id>/', views.category_delete, name='category_delete'),
+    # Sub Category routes
+    path('sub-category-create/', views.sub_category_create, name='sub_category_create'),
+    path('sub-categories-master-search/', views.sub_categories_master_search, name='sub_categories_master_search'),
+    path('sub-category-update/<int:id>/', views.sub_category_update, name='sub_category_update'),
+    path('sub-category-delete/<int:id>/', views.sub_category_delete, name='sub_category_delete'),
+    # PP Customer routes
+    path('pp-customer-create/', views.pp_customer_create, name='pp_customer_create'),
+    path('pp-customers-master-search/', views.pp_customers_master_search, name='pp_customers_master_search'),
+    path('pp-customer-update/<int:id>/', views.pp_customer_update, name='pp_customer_update'),
+    path('pp-customer-delete/<int:id>/', views.pp_customer_delete, name='pp_customer_delete'),
+    # Privileger routes
+    path('privileger-create/', views.privileger_create, name='privileger_create'),
+    path('privilegers-master-search/', views.privilegers_master_search, name='privilegers_master_search'),
+    path('privileger-update/<int:id>/', views.privileger_update, name='privileger_update'),
+    path('privileger-delete/<int:id>/', views.privileger_delete, name='privileger_delete'),
+    # Agent routes
+    path('agent-create/', views.agent_create, name='agent_create'),
+    path('agents-master-search/', views.agents_master_search, name='agents_master_search'),
+    path('agent-update/<int:id>/', views.agent_update, name='agent_update'),
+    path('agent-delete/<int:id>/', views.agent_delete, name='agent_delete'),
+    # Royalty Recipient routes
+    path('royalty-recipient-create/', views.royalty_recipient_create, name='royalty_recipient_create'),
+    path('royalty-recipients-master-search/', views.royalty_recipients_master_search, name='royalty_recipients_master_search'),
+    path('royalty-recipient-update/<int:id>/', views.royalty_recipient_update, name='royalty_recipient_update'),
+    path('royalty-recipient-delete/<int:id>/', views.royalty_recipient_delete, name='royalty_recipient_delete'),
+    # PP Book routes
+    path('pp-book-create/', views.pp_book_create, name='pp_book_create'),
+    path('pp-books-master-search/', views.pp_books_master_search, name='pp_books_master_search'),
+    path('pp-book-update/<int:id>/', views.pp_book_update, name='pp_book_update'),
+    path('pp-book-delete/<int:id>/', views.pp_book_delete, name='pp_book_delete'),
+    # Purchase Breakup routes
+    path('purchase-breakup-create/', views.purchase_breakup_create, name='purchase_breakup_create'),
+    path('purchase-breakups-master-search/', views.purchase_breakups_master_search, name='purchase_breakups_master_search'),
+    path('purchase-breakup-update/<int:id>/', views.purchase_breakup_update, name='purchase_breakup_update'),
+    path('purchase-breakup-delete/<int:id>/', views.purchase_breakup_delete, name='purchase_breakup_delete'),
+    # Place routes
+    path('place-create/', views.place_create, name='place_create'),
+    path('places-master-search/', views.places_master_search, name='places_master_search'),
+    path('place-update/<int:id>/', views.place_update, name='place_update'),
+    path('place-delete/<int:id>/', views.place_delete, name='place_delete'),
+    # Goods Inward Return routes
+    path('suppliers/search/', views.supplier_search, name='supplier_search'),
+    path('purchase/search/', views.purchase_search, name='purchase_search'),
+    path('purchase/<int:purchase_id>/items/', views.get_purchase_items_by_id, name='get_purchase_items_by_id'),
+    path('goods-inward/', views.goods_inward, name='goods_inward'),
+    path('goods-inward/<int:id>/', views.goods_inward_detail, name='goods_inward_detail'),
+    # Sale Bill Return routes
+    path('sales-rt/customers/', views.sales_rt_customers, name='sales_rt_customers'),
+    path('sales-rt/bills/', views.sales_rt_bills, name='sales_rt_bills'),
+    path('sales-rt/bill/<int:sale_id>/items/', views.sales_rt_bill_items, name='sales_rt_bill_items'),
+    path('sales-rt/', views.sales_rt_create, name='sales_rt_create'),
+    path('sales-rt/<int:id>/', views.sales_rt_detail, name='sales_rt_detail'),
+    # P P Receipt Entry routes
+    path('pp-receipts-iud/', views.pp_receipts_iud, name='pp_receipts_iud'),
+    path('pp-receipt-by-no/', views.pp_receipt_by_no, name='pp_receipt_by_no'),
+    path('pp-installment-prefill/', views.pp_installment_prefill, name='pp_installment_prefill'),
+    path('pp-receipt-by-customer-id/', views.pp_receipt_by_customer_id, name='pp_receipt_by_customer_id'),
+    # Remittance Entry routes
+    path("remittance-by-no/", views.remittance_by_no, name='remittance_by_no'),
+    path("remittance-save/", views.remittance_save, name='remittance_save'),
+    # Credi Realisation Entry routes
+    path('cr-realisation-by-customer-id/', views.cr_realisation_by_customer_id, name='cr_realisation_by_customer_id'),
+    path('cr-realisation-save/', views.cr_realisation_save, name='cr_realisation_save'),
+    path('cr-realisation-by-no/', views.cr_realisation_by_no, name='cr_realisation_by_no'),
+]

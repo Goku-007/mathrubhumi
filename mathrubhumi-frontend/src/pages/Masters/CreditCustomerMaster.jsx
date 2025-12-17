@@ -229,8 +229,43 @@ export default function CreditCustomerMaster() {
   };
 
   const handleDeleteCreditCustomer = (id) => {
-    console.log(`Deleting credit customer: id=${id}`);
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    const row = items.find((x) => x.id === id);
+    setModal({
+      isOpen: true,
+      message: `Are you sure you want to delete this credit customer${row?.name ? `: ${row.name}` : ''}?`,
+      type: 'warning',
+      buttons: [
+        {
+          label: 'Confirm',
+          onClick: async () => {
+            try {
+              await api.delete(`/auth/credit-customer-delete/${id}/`);
+              setItems((prev) => prev.filter((item) => item.id !== id));
+              setModal({
+                isOpen: true,
+                message: 'Credit customer deleted successfully!',
+                type: 'success',
+                buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }],
+              });
+            } catch (error) {
+              console.error('Error deleting credit customer:', error);
+              setModal({
+                isOpen: true,
+                message: `Failed to delete credit customer: ${error.response?.data?.error || error.message}`,
+                type: 'error',
+                buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }],
+              });
+            }
+          },
+          className: 'bg-red-500 hover:bg-red-600',
+        },
+        {
+          label: 'Cancel',
+          onClick: () => setModal((prev) => ({ ...prev, isOpen: false })),
+          className: 'bg-gray-500 hover:bg-gray-600',
+        },
+      ],
+    });
   };
 
   const creditCustomerIcon = (

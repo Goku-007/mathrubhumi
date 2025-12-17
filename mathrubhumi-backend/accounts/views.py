@@ -2225,6 +2225,29 @@ def credit_customer_update(request, id):
     except Exception as e:
         logger.error(f"Error in credit_customer_update: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def credit_customer_delete(request, id):
+    try:
+        logger.info(f"Deleting credit customer id={id}")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM cr_customers
+                WHERE id = %s
+                RETURNING id
+                """,
+                [id],
+            )
+            row = cursor.fetchone()
+            if not row:
+                return JsonResponse({'error': f'Credit customer with id {id} not found'}, status=404)
+        return JsonResponse({'message': 'Credit customer deleted successfully'}, status=200)
+    except Exception as e:
+        logger.error(f"Error in credit_customer_delete: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
     
 ################### CATEGORY MASTER ###################
 

@@ -47,6 +47,7 @@ urlpatterns = [
     path('credit-customer-create/', views.credit_customer_create, name='credit_customer_create'),
     path('credit-customer-master-search/', views.credit_customer_master_search, name='credit_customer_master_search'),
     path('credit-customer-update/<int:id>/', views.credit_customer_update, name='credit_customer_update'),
+    path('credit-customer-delete/<int:id>/', views.credit_customer_delete, name='credit_customer_delete'),
     # Category routes
     path('category-create/', views.category_create, name='category_create'),
     path('categories-master-search/', views.categories_master_search, name='categories_master_search'),

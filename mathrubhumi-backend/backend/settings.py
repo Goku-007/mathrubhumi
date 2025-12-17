@@ -10,23 +10,71 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import unquote, urlparse
+
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
+
+
+def env(name: str, default=None):
+    return os.getenv(name, default)
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def env_int(name: str, default: int = 0) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def env_list(name: str, default=None):
+    raw = os.getenv(name)
+    if raw is None:
+        return default if default is not None else []
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+def require_env(name: str) -> str:
+    val = os.getenv(name)
+    if not val:
+        raise ImproperlyConfigured(f"Missing required environment variable: {name}")
+    return val
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8t0mhv!f98jg*8@dt9vaeutv2mx)8-d0!42dr39o!=6a^4h9c)'
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("DJANGO_SECRET_KEY is required (set it in environment or .env).")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env_bool("DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = []
+if DEBUG:
+    ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+else:
+    ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", default=[])
+    if not ALLOWED_HOSTS:
+        raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS is required when DJANGO_DEBUG is False.")
 
 
 SIMPLE_JWT = {
@@ -63,19 +111,36 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = env_bool("DJANGO_CORS_ALLOW_ALL_ORIGINS", False)
+CORS_ALLOW_CREDENTIALS = env_bool("DJANGO_CORS_ALLOW_CREDENTIALS", False)
+CORS_ALLOWED_ORIGINS = env_list(
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    default=["http://localhost:3000"] if DEBUG else [],
+)
 
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-]
+if not DEBUG:
+    # Never allow credentialed requests from any origin in production.
+    if CORS_ALLOW_ALL_ORIGINS and CORS_ALLOW_CREDENTIALS:
+        raise ImproperlyConfigured("Invalid CORS config: CORS_ALLOW_ALL_ORIGINS cannot be used with CORS_ALLOW_CREDENTIALS in production.")
+    if CORS_ALLOW_CREDENTIALS and not CORS_ALLOWED_ORIGINS:
+        raise ImproperlyConfigured("CORS_ALLOW_CREDENTIALS is enabled but DJANGO_CORS_ALLOWED_ORIGINS is empty.")
 
 # CSRF settings
-CSRF_COOKIE_HTTPONLY = False
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-]
+CSRF_COOKIE_HTTPONLY = env_bool("DJANGO_CSRF_COOKIE_HTTPONLY", True)
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost:3000"] if DEBUG else [],
+)
+
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = env_int("DJANGO_SECURE_HSTS_SECONDS", 0 if DEBUG else 31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
+SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", not DEBUG)
+
+if env_bool("DJANGO_SECURE_PROXY_SSL_HEADER", False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -103,16 +168,38 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mathrubhumi',
-        'USER': 'postgres',
-        'PASSWORD': 'mbooks',
-        'HOST': 'localhost',
-        'PORT': '5432',
+DATABASE_URL = env("DATABASE_URL")
+if DATABASE_URL:
+    parsed = urlparse(DATABASE_URL)
+    scheme = (parsed.scheme or "").lower()
+    if scheme in {"postgres", "postgresql"}:
+        engine = "django.db.backends.postgresql"
+    elif scheme in {"sqlite", "sqlite3"}:
+        engine = "django.db.backends.sqlite3"
+    else:
+        raise ImproperlyConfigured(f"Unsupported DATABASE_URL scheme: {scheme}")
+
+    DATABASES = {
+        "default": {
+            "ENGINE": engine,
+            "NAME": parsed.path.lstrip("/") if engine != "django.db.backends.sqlite3" else (parsed.path or ""),
+            "USER": unquote(parsed.username or "") if parsed.username else "",
+            "PASSWORD": unquote(parsed.password or "") if parsed.password else "",
+            "HOST": parsed.hostname or "",
+            "PORT": str(parsed.port or "") if parsed.port else "",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": require_env("DB_NAME"),
+            "USER": require_env("DB_USER"),
+            "PASSWORD": require_env("DB_PASSWORD"),
+            "HOST": env("DB_HOST", "localhost"),
+            "PORT": env("DB_PORT", "5432"),
+        }
+    }
 
 
 # Password validation

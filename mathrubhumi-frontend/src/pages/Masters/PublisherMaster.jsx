@@ -229,7 +229,6 @@ export default function PublisherMaster() {
                 buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
               });
             }
-            setDeletePublisherId(null);
           },
           className: 'bg-red-500 hover:bg-red-600'
         },
@@ -237,7 +236,6 @@ export default function PublisherMaster() {
           label: 'Cancel',
           onClick: () => {
             setModal((prev) => ({ ...prev, isOpen: false }));
-            setDeletePublisherId(null);
           },
           className: 'bg-gray-500 hover:bg-gray-600'
         }

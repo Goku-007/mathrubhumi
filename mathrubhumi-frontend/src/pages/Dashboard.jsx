@@ -1,6 +1,7 @@
 import React from "react";
 import Sidebar from "../components/Sidebar";
 import { Routes, Route } from "react-router-dom";
+import DashboardHome from "./DashboardHome";
 import SaleBill from "./Transactions/SaleBill";
 import GoodsInward from "./Transactions/GoodsInward";
 import SaleBillReturn from "./Transactions/SaleBillReturn";
@@ -25,11 +26,11 @@ import RoyaltyRecipientsMaster from "./Masters/RoyaltyRecipientsMaster";
 
 const Dashboard = () => {
   return (
-    <div className="flex h-screen bg-gray-200">
+    <div className="flex h-screen bg-gray-100">
       <Sidebar />
       <main className="flex-1 overflow-auto">
         <Routes>
-          <Route path="/" element={<p>Welcome to Dashboard</p>} />
+          <Route path="/" element={<DashboardHome />} />
           <Route path="goods-inward" element={<GoodsInward />} />
           <Route path="sale-bill" element={<SaleBill />} />
           <Route path="goods-inward-return" element={<GoodsInwardReturn />} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/axiosInstance';
+import PageHeader from '../../components/PageHeader';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
 /* ---------- numeric helpers ---------- */
@@ -709,6 +710,18 @@ export default function GoodsInwardReturnPage() {
 
   const totalValue = items.reduce((sum, item) => sum + num(item.value), 0);
 
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
+  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
+  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18M7 7l1-3h8l1 3M8 17l1 3h6l1-3" />
+    </svg>
+  );
+
   /* ---------- inline modal renderers ---------- */
   const renderToast = () => {
     if (!toast.isOpen) return null;
@@ -843,7 +856,7 @@ export default function GoodsInwardReturnPage() {
 
   /* ---------- render ---------- */
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
       {renderToast()}
       {renderPurchaseItemsModal()}
 
@@ -853,408 +866,462 @@ export default function GoodsInwardReturnPage() {
         </div>
       )}
 
-      {/* Master form */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
-          <input
-            type="text"
-            name="srl_no"
-            value={inwardMaster.srl_no}
-            onChange={handleInwardMasterChange}
-            placeholder="Srl No"
-            className="border p-2 rounded-lg w-[90px] max-w-full text-sm"
-            disabled={loading}
-          />
-          <input
-            type="date"
-            name="entry_date"
-            value={inwardMaster.entry_date}
-            onChange={handleInwardMasterChange}
-            placeholder="Date"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
-            disabled={loading}
-          />
-          <div className="relative">
-            <input
-              type="text"
-              name="supplier_nm"
-              value={inwardMaster.supplier_nm}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
-              placeholder="Supplier"
-              className="border p-2 rounded-lg w-[400px] max-w-full text-sm"
-              autoComplete="off"
-              disabled={loading}
-            />
-            {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {supplierSuggestions.map((supplier, index) => (
-                  <li
-                    key={supplier.id}
-                    id={`supplier-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSupplierSuggestionClick(supplier)}
-                  >
-                    {supplier.supplier_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
+      <PageHeader
+        icon={pageIcon}
+        title="Goods Inward Return"
+        subtitle="Manage purchase return entries"
+      />
+
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Return details</span>
+            <p className="text-xs text-gray-500">Supplier, bill and value summary</p>
           </div>
-          <div className="relative">
-            <input
-              type="text"
-              name="bill_no"
-              value={inwardMaster.bill_no}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'bill_no')}
-              placeholder="Bill No"
-              className="border p-2 rounded-lg w-[150px] max-w-full text-sm"
-              autoComplete="off"
-              disabled={loading}
-            />
-            {showBillSuggestions && billSuggestions.length > 0 && inwardMaster.bill_no.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {billSuggestions.map((bill, index) => (
-                  <li
-                    key={bill.id}
-                    id={`bill-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${billHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBillSuggestionClick(bill)}
-                  >
-                    {bill.invoice_no} - {bill.invoice_date}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <input
-            type="number"
-            name="gross"
-            value={inwardMaster.gross}
-            onChange={handleInwardMasterChange}
-            placeholder="Gross"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
-            readOnly
-            step="0.01"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="nett"
-            value={inwardMaster.nett}
-            onChange={handleInwardMasterChange}
-            placeholder="Nett"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
-            readOnly
-            step="0.01"
-            disabled={loading}
-          />
-          <input
-            type="text"
-            name="notes"
-            value={inwardMaster.notes}
-            onChange={handleInwardMasterChange}
-            placeholder="Notes"
-            className="border p-2 rounded-lg w-[380px] max-w-full text-sm"
-            disabled={loading}
-          />
-          <select
-            name="type"
-            value={inwardMaster.type}
-            onChange={handleInwardMasterChange}
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
-            disabled={loading}
-          >
-            <option value="Return">Return</option>
-            <option value="Purchase">Purchase</option>
-            <option value="Owner">Owner</option>
-          </select>
-          <select
-            name="is_local"
-            value={inwardMaster.is_local}
-            onChange={handleInwardMasterChange}
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
-            disabled={loading}
-          >
-            <option value="Local">Local</option>
-            <option value="Int. State">Int. State</option>
-            <option value="Imported">Imported</option>
-          </select>
+          <p className="text-xs text-gray-500">Gross / Nett update automatically</p>
         </div>
-      </div>
 
-      {/* Items table */}
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-y-auto">
-        <table className="w-full table-auto border border-gray-300 border-collapse">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              <th className="w-[430px] text-left p-2 text-sm font-semibold border border-gray-300">Product</th>
-              <th className="w-[150px] text-left p-2 text-sm font-semibold border border-gray-300">I S B N</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">Qty</th>
-              <th className="w-[100px] text-right p-2 text-sm font-semibold border border-gray-300">F Val</th>
-              <th className="w-[90px] text-left p-2 text-sm font-semibold border border-gray-300">Curr</th>
-              <th className="w-[80px] text-right p-2 text-sm font-semibold border border-gray-300">ExRt</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">Dis%</th>
-              <th className="w-[90px] text-right p-2 text-sm font-semibold border border-gray-300">-/+Adj</th>
-              <th className="w-[100px] text-right p-2 text-sm font-semibold border border-gray-300">Value</th>
-              <th className="w-[10px] text-left p-2 text-sm font-semibold border border-gray-300"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index} className="border-t">
-                <td className="p-1 text-sm">
-                  <input
-                    type="text"
-                    value={item.itemName}
-                    onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                    className={`border p-1 rounded w-full ${item.isMalayalam ? 'font-malayalam' : ''}`}
-                    style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="text"
-                    value={item.isbn}
-                    onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
-                    className="border p-1 rounded w-full"
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.purchaseRate}
-                    onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <select
-                    value={item.currency}
-                    onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
-                    className="border p-1 rounded w-full text-sm"
-                    disabled={loading}
-                  >
-                    <option value="" disabled>Currency</option>
-                    {currencies.map(cur => (
-                      <option key={cur.id} value={cur.name}>{cur.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.exchangeRate}
-                    onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.discount}
-                    onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.discountAmount}
-                    onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                    disabled={loading}
-                  />
-                </td>
-                <td className="p-1 text-sm text-right">
-                  {tf(item.value)}
-                </td>
-                <td className="p-2 text-sm text-center">
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete item"
-                    onClick={() => setItems(items.filter((_, i) => i !== index))}
-                    disabled={loading}
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+            <input
+              type="text"
+              name="srl_no"
+              value={inwardMaster.srl_no}
+              onChange={handleInwardMasterChange}
+              placeholder="Srl No"
+              className={`${inputClasses} bg-gray-50 font-semibold`}
+              disabled={loading}
+            />
+            <input
+              type="date"
+              name="entry_date"
+              value={inwardMaster.entry_date}
+              onChange={handleInwardMasterChange}
+              placeholder="Date"
+              className={inputClasses}
+              disabled={loading}
+            />
 
-        {items.length > 0 && (
-          <div className="mt-3 border-t bg-gray-50 p-2 rounded">
-            <div className="text-right font-semibold text-sm">
-              Total: {tf(totalValue)}
+            <div className="relative">
+              <input
+                type="text"
+                name="supplier_nm"
+                value={inwardMaster.supplier_nm}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
+                placeholder="Supplier"
+                className={inputClasses}
+                autoComplete="off"
+                disabled={loading}
+              />
+              {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
+                <ul className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {supplierSuggestions.map((supplier, index) => (
+                    <li
+                      key={supplier.id}
+                      id={`supplier-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleSupplierSuggestionClick(supplier)}
+                    >
+                      {supplier.supplier_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* add row */}
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="grid grid-cols-[440px_160px_70px_100px_90px_80px_70px_90px_1fr] gap-0.5 w-full">
-          <div className="relative">
+            <div className="relative">
+              <input
+                type="text"
+                name="bill_no"
+                value={inwardMaster.bill_no}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'bill_no')}
+                placeholder="Bill No"
+                className={inputClasses}
+                autoComplete="off"
+                disabled={loading}
+              />
+              {showBillSuggestions && billSuggestions.length > 0 && inwardMaster.bill_no.trim() && (
+                <ul className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {billSuggestions.map((bill, index) => (
+                    <li
+                      key={bill.id}
+                      id={`bill-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${billHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleBillSuggestionClick(bill)}
+                    >
+                      {bill.invoice_no} - {bill.invoice_date}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <input
-              type="text"
-              name="itemName"
-              value={formData.itemName}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-              placeholder="Product"
-              className={`border p-2 rounded-lg w-full text-sm ${isMalayalam ? 'font-malayalam' : ''}`}
-              style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-              autoComplete="off"
+              type="number"
+              name="gross"
+              value={inwardMaster.gross}
+              onChange={handleInwardMasterChange}
+              placeholder="Gross"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+              step="0.01"
               disabled={loading}
             />
-            {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
-              <ul
-                className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam"
-                style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}
-              >
-                {suggestions.map((product, index) => (
-                  <li
-                    key={product.id}
-                    id={`suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleItemSuggestionClick(product)}
-                  >
-                    {isDotPrefixed ? product.title_m : product.title}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <input
+              type="number"
+              name="nett"
+              value={inwardMaster.nett}
+              onChange={handleInwardMasterChange}
+              placeholder="Nett"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+              step="0.01"
+              disabled={loading}
+            />
+            <input
+              type="text"
+              name="notes"
+              value={inwardMaster.notes}
+              onChange={handleInwardMasterChange}
+              placeholder="Notes"
+              className={inputClasses}
+              disabled={loading}
+            />
+            <select
+              name="type"
+              value={inwardMaster.type}
+              onChange={handleInwardMasterChange}
+              className={inputClasses}
+              disabled={loading}
+            >
+              <option value="Return">Return</option>
+              <option value="Purchase">Purchase</option>
+              <option value="Owner">Owner</option>
+            </select>
+            <select
+              name="is_local"
+              value={inwardMaster.is_local}
+              onChange={handleInwardMasterChange}
+              className={inputClasses}
+              disabled={loading}
+            >
+              <option value="Local">Local</option>
+              <option value="Int. State">Int. State</option>
+              <option value="Imported">Imported</option>
+            </select>
           </div>
-          <input
-            type="text"
-            name="isbn"
-            value={formData.isbn}
-            onChange={handleInputChange}
-            placeholder="I S B N"
-            className="border p-2 rounded-lg text-sm w-full"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            placeholder="Qty"
-            className="border p-2 rounded-lg text-sm w-full"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="purchaseRate"
-            value={formData.purchaseRate}
-            onChange={handleInputChange}
-            placeholder="F Val"
-            className="border p-2 rounded-lg text-sm w-full"
-            step="0.01"
-            disabled={loading}
-          />
-          <select
-            name="currency"
-            value={formData.currency}
-            onChange={handleInputChange}
-            className="border p-2 rounded-lg text-sm w-full"
-            disabled={loading}
-          >
-            <option value="" disabled>Currency</option>
-            {currencies.map(cur => (
-              <option key={cur.id} value={cur.name}>{cur.name}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="exchangeRate"
-            value={formData.exchangeRate}
-            onChange={handleInputChange}
-            placeholder="ExRt"
-            className="border p-2 rounded-lg text-sm w-full"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleInputChange}
-            placeholder="Dis%"
-            className="border p-2 rounded-lg text-sm w-full"
-            step="0.01"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="discountAmount"
-            value={formData.discountAmount}
-            onChange={handleInputChange}
-            placeholder="-/+Adj"
-            className="border p-2 rounded-lg text-sm w-full"
-            step="0.01"
-            disabled={loading}
-          />
-          <button
-            onClick={handleAddItem}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full"
-            disabled={loading}
-          >
-            ADD ITEM
-          </button>
         </div>
       </div>
 
-      {/* actions */}
-      <div className="flex justify-start mt-4 gap-x-3">
-        <input
-          type="text"
-          value={goodsInwardIdToLoad}
-          onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
-          placeholder="Enter Goods Inward ID"
-          className="border p-2 rounded-lg w-[200px] text-sm"
-          disabled={loading}
-        />
-        <button
-          onClick={handleLoadGoodsInward}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-          disabled={loading}
-        >
-          LOAD INWARD RETURN
-        </button>
-        <button
-          onClick={handleSubmitGoodsInward}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-          disabled={loading}
-        >
-          {isEditMode ? 'UPDATE INWARD RETURN' : 'SUBMIT INWARD RETURN'}
-        </button>
-        <button
-          onClick={resetForm}
-          className="bg-gray-600 text-white rounded-lg px-8 py-3 hover:bg-gray-700 text-sm font-medium min-w-[200px]"
-          disabled={loading}
-        >
-          RESET FORM
-        </button>
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Line items</span>
+            <p className="text-xs text-gray-500">Products included in this return</p>
+          </div>
+          <div className="text-sm font-semibold text-gray-700">
+            Total: {tf(totalValue)}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1120px]">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs uppercase tracking-wide">
+                <th className="px-3 py-2 text-left font-semibold w-[360px]">Product</th>
+                <th className="px-3 py-2 text-left font-semibold w-[150px]">I S B N</th>
+                <th className="px-3 py-2 text-right font-semibold w-[80px]">Qty</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">F Val</th>
+                <th className="px-3 py-2 text-left font-semibold w-[100px]">Curr</th>
+                <th className="px-3 py-2 text-right font-semibold w-[90px]">ExRt</th>
+                <th className="px-3 py-2 text-right font-semibold w-[90px]">Dis%</th>
+                <th className="px-3 py-2 text-right font-semibold w-[100px]">-/+Adj</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">Value</th>
+                <th className="px-3 py-2 text-center font-semibold w-[48px]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="px-4 py-10 text-center text-gray-400 text-sm">
+                    No items added yet. Use the form below to add lines.
+                  </td>
+                </tr>
+              ) : (
+                items.map((item, index) => (
+                  <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.itemName}
+                        onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                        className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                        style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.isbn}
+                        onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
+                        className={tableInputClasses}
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.purchaseRate}
+                        onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={item.currency}
+                        onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                        className={tableInputClasses}
+                        disabled={loading}
+                      >
+                        <option value="" disabled>Currency</option>
+                        {currencies.map(cur => (
+                          <option key={cur.id} value={cur.name}>{cur.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.exchangeRate}
+                        onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.discount}
+                        onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.discountAmount}
+                        onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                        disabled={loading}
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                      {tf(item.value)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Delete item"
+                        onClick={() => setItems(items.filter((_, i) => i !== index))}
+                        disabled={loading}
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Add item</span>
+            <p className="text-xs text-gray-500">Search products and set return values</p>
+          </div>
+          <p className="hidden md:block text-xs text-gray-500">Tip: prefix with "." for Malayalam titles</p>
+        </div>
+
+        <div className="p-4">
+          <div className="grid grid-cols-[420px_140px_90px_110px_110px_100px_90px_100px_1fr] gap-3 w-full overflow-x-auto">
+            <div className="relative">
+              <input
+                type="text"
+                name="itemName"
+                value={formData.itemName}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'itemName')}
+                placeholder="Product"
+                className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
+                style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                autoComplete="off"
+                disabled={loading}
+              />
+              {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
+                <ul
+                  className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam"
+                  style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}
+                >
+                  {suggestions.map((product, index) => (
+                    <li
+                      key={product.id}
+                      id={`suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleItemSuggestionClick(product)}
+                    >
+                      {isDotPrefixed ? product.title_m : product.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <input
+              type="text"
+              name="isbn"
+              value={formData.isbn}
+              onChange={handleInputChange}
+              placeholder="I S B N"
+              className={tableInputClasses}
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              placeholder="Qty"
+              className={tableInputClasses}
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="purchaseRate"
+              value={formData.purchaseRate}
+              onChange={handleInputChange}
+              placeholder="F Val"
+              className={tableInputClasses}
+              step="0.01"
+              disabled={loading}
+            />
+            <select
+              name="currency"
+              value={formData.currency}
+              onChange={handleInputChange}
+              className={tableInputClasses}
+              disabled={loading}
+            >
+              <option value="" disabled>Currency</option>
+              {currencies.map(cur => (
+                <option key={cur.id} value={cur.name}>{cur.name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              name="exchangeRate"
+              value={formData.exchangeRate}
+              onChange={handleInputChange}
+              placeholder="ExRt"
+              className={tableInputClasses}
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleInputChange}
+              placeholder="Dis%"
+              className={tableInputClasses}
+              step="0.01"
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="discountAmount"
+              value={formData.discountAmount}
+              onChange={handleInputChange}
+              placeholder="-/+Adj"
+              className={tableInputClasses}
+              step="0.01"
+              disabled={loading}
+            />
+            <button
+              onClick={handleAddItem}
+              className={`${actionButtonClasses} w-full justify-center`}
+              disabled={loading}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Item
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Actions</span>
+            <p className="text-xs text-gray-500">Load or submit a goods inward return</p>
+          </div>
+        </div>
+
+        <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={goodsInwardIdToLoad}
+              onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
+              placeholder="Enter Goods Inward ID"
+              className={`${inputClasses} w-full sm:w-64`}
+              disabled={loading}
+            />
+            <button
+              onClick={handleLoadGoodsInward}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+              disabled={loading}
+            >
+              Load Inward Return
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleSubmitGoodsInward}
+              className={`${actionButtonClasses} min-w-[180px]`}
+              disabled={loading}
+            >
+              {isEditMode ? 'Update Inward Return' : 'Submit Inward Return'}
+            </button>
+            <button
+              onClick={resetForm}
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+              disabled={loading}
+            >
+              Reset Form
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

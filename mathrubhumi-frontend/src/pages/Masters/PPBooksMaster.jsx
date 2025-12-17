@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import api from '../../utils/axiosInstance';
 
 export default function PPBooksMaster() {
@@ -414,7 +415,7 @@ export default function PPBooksMaster() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-[97%] mx-auto p-4 space-y-4">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -422,34 +423,50 @@ export default function PPBooksMaster() {
         buttons={modal.buttons}
       />
 
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-x-auto">
+      {/* Page Header */}
+      <PageHeader
+        icon={
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        }
+        title="Pre-Publication Books Master"
+        subtitle="Manage pre-publication book batches"
+      />
+
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-4 space-y-4">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
         <div className="w-[1700px]">
-          <table className="w-full table-auto border border-gray-300 border-collapse">
-            <thead className="sticky top-0 bg-gray-100 z-10">
+          <table className="w-full table-fixed border-collapse">
+            <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
               <tr>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[350px]">PP Book Name</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[100px]">Code</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[50px]">Nos</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[150px]">Face Value</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[150px]">Reg St Date</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[150px]">Reg Ed Date</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[150px]">Release Dt</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[250px]">Notes</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[80px]">Closed</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[200px]">PP Book Firm</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[80px]">Nos Ex</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[100px]">Title</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[150px]">Inserted</th>
-                <th className="text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100 w-[150px]">Modified</th>
-                <th className="text-center p-2 text-sm font-semibold border border-gray-300 bg-red-100 w-[50px]"></th>
+                <th className="w-[350px] px-4 py-3 text-left text-sm font-semibold tracking-wide">PP Book Name</th>
+                <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Code</th>
+                <th className="w-[50px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Nos</th>
+                <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Face Value</th>
+                <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Reg St Date</th>
+                <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Reg Ed Date</th>
+                <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Release Dt</th>
+                <th className="w-[250px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Notes</th>
+                <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Closed</th>
+                <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">PP Book Firm</th>
+                <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Nos Ex</th>
+                <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Title</th>
+                <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Inserted</th>
+                <th className="w-[150px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Modified</th>
+                <th className="w-[50px] px-4 py-3 text-center text-sm font-semibold">Action</th>
               </tr>
             </thead>
-            <tbody className="max-h-[calc(100vh-300px)] overflow-y-auto">
+            <tbody className="divide-y divide-gray-100">
               {items.map((item, index) => {
-                console.log(`Rendering item ${index}:`, item);
                 return (
-                  <tr key={item.id} className="border-t border-gray-300 hover:bg-gray-50">
-                    <td className="p-1 text-sm border border-gray-300 bg-gray-50">
+                  <tr
+                    key={item.id}
+                    className="hover:bg-blue-50/50 transition-colors animate-fade-in"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                  >
+                    <td className="px-4 py-2">
                       <input
                         type="text"
                         value={item.ppBookName || ''}
@@ -458,7 +475,7 @@ export default function PPBooksMaster() {
                         className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
                       />
                     </td>
-                    <td className="p-1 text-sm border border-gray-300 bg-gray-50">
+                    <td className="px-4 py-2">
                       <input
                         type="text"
                         value={item.code || ''}
@@ -572,10 +589,10 @@ export default function PPBooksMaster() {
                     <td className="p-1 text-sm border border-gray-300 bg-gray-50">
                       <span>{item.modified ? new Date(item.modified).toLocaleString() : ''}</span>
                     </td>
-                    <td className="p-1 text-sm text-center border border-gray-300 bg-red-50">
+                    <td className="px-4 py-2 text-center">
                       <button
                         onClick={() => handleDeletePPBook(item.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Delete PP book"
                       >
                         <TrashIcon className="w-5 h-5" />
@@ -698,8 +715,8 @@ export default function PPBooksMaster() {
           <div className="relative">
             <select
               name="closed"
-              value={formData.closed}          // "0" for No, "1" for Yes
-              onChange={handleInputChange}     // your existing handler is fine
+              value={formData.closed}
+              onChange={handleInputChange}
               className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
             >
               <option value="0">No</option>
@@ -763,5 +780,20 @@ export default function PPBooksMaster() {
         </div>
       </div>
     </div>
+  </div>
+
+  {/* Info card */}
+  <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
+    <div className="flex items-start gap-3">
+      <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
+        <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing a field to save changes instantly.</p>
+      </div>
+    </div>
+  </div>
+</div>
   );
 }

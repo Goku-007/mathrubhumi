@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/axiosInstance';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
 /* ---------- helpers ---------- */
@@ -102,6 +103,18 @@ export default function SaleBillReturn() {
   useEffect(() => {
     setHeader(prev => ({ ...prev, nett: money(total) }));
   }, [total]);
+
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
+  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
+  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
 
   /* ---------- suggestions: customer + bill ---------- */
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
@@ -394,7 +407,7 @@ export default function SaleBillReturn() {
 
   /* ---------- render ---------- */
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -408,286 +421,311 @@ export default function SaleBillReturn() {
         </div>
       )}
 
-      {/* Upper form */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
-          <input
-            name="no"
-            value={header.no}
-            onChange={handleHeaderChange}
-            placeholder="No."
-            className="border p-2 rounded-lg w-[100px] text-sm"
-          />
-          <input
-            type="date"
-            name="date"
-            value={header.date}
-            onChange={handleHeaderChange}
-            className="border p-2 rounded-lg w-[150px] text-sm"
-          />
-          <select
-            name="type"
-            value={header.type}
-            onChange={handleHeaderChange}
-            className="border p-2 rounded-lg w-[160px] text-sm"
-          >
-            {[
-              'Credit Sale',
-              'Cash Sale',
-              'P P Sale',
-              'Stock Transfer',
-              'Approval',
-              'Gift Voucher',
-              'Gift Bill',
-              'Cash Memo',
-            ].map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-          <select
-            name="pay"
-            value={header.pay}
-            onChange={handleHeaderChange}
-            className="border p-2 rounded-lg w-[180px] text-sm"
-          >
-            {[
-              'Cash',
-              'Card',
-              'UPI Payment',
-              'N.A.',
-            ].map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+      <PageHeader
+        icon={pageIcon}
+        title="Sale Bill Return"
+        subtitle="Process and manage sales returns"
+      />
 
-          {/* Customer with suggestions */}
-          <div className="relative">
-            <input
-              name="customer"
-              value={header.customer}
-              onChange={handleHeaderChange}
-              placeholder="Customer"
-              className="border p-2 rounded-lg w-[420px] text-sm"
-              autoComplete="off"
-            />
-            {showCustomerSuggestions && header.customer.trim() && (
-              <ul className="absolute z-50 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {customerSuggestions.map((c, i) => (
-                  <li
-                    key={`${c.id || c.customer_nm}-${i}`}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleCustomerPick(c)}
-                  >
-                    {c.customer_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Return details</span>
+            <p className="text-xs text-gray-500">Customer, bill, and summary</p>
           </div>
+          <p className="text-xs text-gray-500">Nett updates automatically</p>
+        </div>
 
-          <input
-            name="notes"
-            value={header.notes}
-            onChange={handleHeaderChange}
-            placeholder="Notes"
-            className="border p-2 rounded-lg w-[320px] text-sm"
-          />
-          <input
-            type="number"
-            step="0.01"
-            name="disP"
-            value={header.disP}
-            onChange={handleHeaderChange}
-            placeholder="Dis%"
-            className="border p-2 rounded-lg w-[90px] text-right"
-          />
-          <input
-            type="number"
-            step="0.01"
-            name="amt"
-            value={header.amt}
-            onChange={handleHeaderChange}
-            placeholder="Amt"
-            className="border p-2 rounded-lg w-[120px] text-right"
-          />
-          <input
-            type="number"
-            step="0.01"
-            name="nett"
-            value={header.nett}
-            onChange={handleHeaderChange}
-            placeholder="Nett"
-            className="border p-2 rounded-lg w-[140px] text-right bg-gray-100"
-            readOnly
-          />
-          <input
-            type="text"
-            name="rpv"
-            value={header.rpv}
-            onChange={handleHeaderChange}
-            placeholder="R/P V"
-            className="border p-2 rounded-lg w-[110px] text-sm"
-          />
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+            <input
+              name="no"
+              value={header.no}
+              onChange={handleHeaderChange}
+              placeholder="No."
+              className={`${inputClasses} bg-gray-50 font-semibold`}
+            />
+            <input
+              type="date"
+              name="date"
+              value={header.date}
+              onChange={handleHeaderChange}
+              className={inputClasses}
+            />
+            <select
+              name="type"
+              value={header.type}
+              onChange={handleHeaderChange}
+              className={inputClasses}
+            >
+              {['Credit Sale','Cash Sale','P P Sale','Stock Transfer','Approval','Gift Voucher','Gift Bill','Cash Memo'].map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <select
+              name="pay"
+              value={header.pay}
+              onChange={handleHeaderChange}
+              className={inputClasses}
+            >
+              {['Cash','Card','UPI Payment','N.A.'].map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
 
-          {/* Bill No with suggestions */}
-          <div className="relative">
+            <div className="relative">
+              <input
+                name="customer"
+                value={header.customer}
+                onChange={handleHeaderChange}
+                placeholder="Customer"
+                className={inputClasses}
+                autoComplete="off"
+              />
+              {showCustomerSuggestions && header.customer.trim() && (
+                <ul className="absolute z-50 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {customerSuggestions.map((c, i) => (
+                    <li
+                      key={`${c.id || c.customer_nm}-${i}`}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleCustomerPick(c)}
+                    >
+                      {c.customer_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <input
+              name="notes"
+              value={header.notes}
+              onChange={handleHeaderChange}
+              placeholder="Notes"
+              className={inputClasses}
+            />
+            <input
+              type="number"
+              step="0.01"
+              name="disP"
+              value={header.disP}
+              onChange={handleHeaderChange}
+              placeholder="Dis%"
+              className={`${inputClasses} text-right`}
+            />
+            <input
+              type="number"
+              step="0.01"
+              name="amt"
+              value={header.amt}
+              onChange={handleHeaderChange}
+              placeholder="Amt"
+              className={`${inputClasses} text-right`}
+            />
+            <input
+              type="number"
+              step="0.01"
+              name="nett"
+              value={header.nett}
+              onChange={handleHeaderChange}
+              placeholder="Nett"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+            />
             <input
               type="text"
-              name="billNo"
-              value={header.billNo}
+              name="rpv"
+              value={header.rpv}
               onChange={handleHeaderChange}
-              placeholder="Bill No"
-              className="border p-2 rounded-lg w-[180px] text-sm"
-              autoComplete="off"
-              disabled={!selectedCustomer}
-              title={!selectedCustomer ? 'Select Customer first' : ''}
+              placeholder="R/P V"
+              className={inputClasses}
             />
-            {showBillSuggestions && header.billNo.trim() && selectedCustomer && (
-              <ul className="absolute z-50 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {billSuggestions.map((b) => (
-                  <li
-                    key={`bill-${b.id}`}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleBillPick(b)}
-                  >
-                    <div className="font-medium">
-                      {b.bill_no} - {b.sale_date}
-                    </div>
-                    <div className="text-xs text-gray-500">{selectedCustomer}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
+
+            <div className="relative">
+              <input
+                type="text"
+                name="billNo"
+                value={header.billNo}
+                onChange={handleHeaderChange}
+                placeholder="Bill No"
+                className={inputClasses}
+                autoComplete="off"
+                disabled={!selectedCustomer}
+                title={!selectedCustomer ? 'Select Customer first' : ''}
+              />
+              {showBillSuggestions && header.billNo.trim() && selectedCustomer && (
+                <ul className="absolute z-50 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {billSuggestions.map((b) => (
+                    <li
+                      key={`bill-${b.id}`}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleBillPick(b)}
+                    >
+                      <div className="font-medium">
+                        {b.bill_no} - {b.sale_date}
+                      </div>
+                      <div className="text-xs text-gray-500">{selectedCustomer}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Items table */}
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-y-auto">
-        <table className="w-full table-auto border border-gray-300 border-collapse">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              <th className="w-[300px] text-left p-2 text-sm font-semibold border">Product</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border">Qty</th>
-              <th className="w-[100px] text-right p-2 text-sm font-semibold border">Rate</th>
-              <th className="w-[90px] text-left p-2 text-sm font-semibold border">Curr</th>
-              <th className="w-[90px] text-right p-2 text-sm font-semibold border">ExRt</th>
-              <th className="w-[90px] text-right p-2 text-sm font-semibold border">Tax</th>
-              <th className="w-[100px] text-right p-2 text-sm font-semibold border">Dis A</th>
-              <th className="w-[110px] text-right p-2 text-sm font-semibold border">Value</th>
-              <th className="w-[40px] p-2 text-sm font-semibold border"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it, idx) => (
-              <tr key={idx} className="border-t">
-                <td className="p-1 text-sm">
-                  <input
-                    value={it.product}
-                    onChange={(e) => handleItemChange(idx, 'product', e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={it.qty}
-                    onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={it.rate}
-                    onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    value={it.curr}
-                    onChange={(e) => handleItemChange(idx, 'curr', e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={it.exrt}
-                    onChange={(e) => handleItemChange(idx, 'exrt', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={it.tax}
-                    onChange={(e) => handleItemChange(idx, 'tax', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={it.disA}
-                    onChange={(e) => handleItemChange(idx, 'disA', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm text-right">{money(it.value)}</td>
-                <td className="p-2 text-sm text-center">
-                  <button
-                    onClick={() => removeItem(idx)}
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete item"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {items.length > 0 && (
-          <div className="mt-3 border-t bg-gray-50 p-2 rounded">
-            <div className="text-right font-semibold text-sm">Total: {money(total)}</div>
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Line items</span>
+            <p className="text-xs text-gray-500">Products included in this return</p>
           </div>
-        )}
+          <div className="text-sm font-semibold text-gray-700">
+            Total: {money(total)}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px]">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs uppercase tracking-wide">
+                <th className="px-3 py-2 text-left font-semibold w-[300px]">Product</th>
+                <th className="px-3 py-2 text-right font-semibold w-[90px]">Qty</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">Rate</th>
+                <th className="px-3 py-2 text-left font-semibold w-[100px]">Curr</th>
+                <th className="px-3 py-2 text-right font-semibold w-[100px]">ExRt</th>
+                <th className="px-3 py-2 text-right font-semibold w-[100px]">Tax</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">Dis A</th>
+                <th className="px-3 py-2 text-right font-semibold w-[120px]">Value</th>
+                <th className="px-3 py-2 text-center font-semibold w-[48px]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-sm">
+                    No items added yet. Load a bill and pick items.
+                  </td>
+                </tr>
+              ) : (
+                items.map((it, idx) => (
+                  <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-3 py-2">
+                      <input
+                        value={it.product}
+                        onChange={(e) => handleItemChange(idx, 'product', e.target.value)}
+                        className={tableInputClasses}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={it.qty}
+                        onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={it.rate}
+                        onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={it.curr}
+                        onChange={(e) => handleItemChange(idx, 'curr', e.target.value)}
+                        className={tableInputClasses}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={it.exrt}
+                        onChange={(e) => handleItemChange(idx, 'exrt', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={it.tax}
+                        onChange={(e) => handleItemChange(idx, 'tax', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={it.disA}
+                        onChange={(e) => handleItemChange(idx, 'disA', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                      {money(it.value)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        onClick={() => removeItem(idx)}
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Delete item"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Bottom actions */}
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={saleRtIdToLoad}
-            onChange={(e) => setSaleRtIdToLoad(e.target.value)}
-            placeholder="Sale Return ID"
-            className="border p-2 rounded-lg w-[180px] text-sm"
-          />
-          <button
-            onClick={handleLoadClick}
-            className="bg-green-600 text-white rounded-lg px-6 py-2 hover:bg-green-700 text-sm font-medium"
-          >
-            LOAD SALE
-          </button>
-          <button
-            onClick={submitSaleReturn}
-            className="bg-blue-600 text-white rounded-lg px-6 py-2 hover:bg-blue-700 text-sm font-medium"
-          >
-            SUBMIT SALE
-          </button>
-          <button
-            onClick={resetForm}
-            className="bg-gray-600 text-white rounded-lg px-6 py-2 hover:bg-gray-700 text-sm font-medium"
-          >
-            RESET FORM
-          </button>
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Actions</span>
+            <p className="text-xs text-gray-500">Load an existing return or submit a new one</p>
+          </div>
+        </div>
+
+        <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={saleRtIdToLoad}
+              onChange={(e) => setSaleRtIdToLoad(e.target.value)}
+              placeholder="Sale Return ID"
+              className={`${inputClasses} w-full sm:w-64`}
+            />
+            <button
+              onClick={handleLoadClick}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+            >
+              Load Sale Return
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={submitSaleReturn}
+              className={`${actionButtonClasses} min-w-[180px]`}
+            >
+              Submit Sale Return
+            </button>
+            <button
+              onClick={resetForm}
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+            >
+              Reset Form
+            </button>
+          </div>
         </div>
       </div>
 

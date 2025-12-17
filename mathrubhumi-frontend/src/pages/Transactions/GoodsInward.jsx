@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../utils/axiosInstance';
 import { TrashIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 
 export default function GoodsInwardPage() {
   const [items, setItems] = useState([]);
@@ -1088,9 +1089,26 @@ export default function GoodsInwardPage() {
 
   const totalValue = items.reduce((sum, item) => sum + (parseFloat(item.value) || 0), 0);
 
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18M7 7l1-3h8l1 3M8 17l1 3h6l1-3" />
+    </svg>
+  );
+
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
+  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
+  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
       <Modal isOpen={modal.isOpen} message={modal.message} type={modal.type} buttons={modal.buttons} />
+      <PageHeader
+        icon={pageIcon}
+        title="Goods Inward"
+        subtitle="Capture purchase entries, adjustments, and returns"
+      />
       {isMasterEntryOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-[600px] max-w-[90%]">
@@ -1295,573 +1313,692 @@ export default function GoodsInwardPage() {
         </div>
       )}
 
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
-          <input
-            type="text"
-            name="srl_no"
-            value={inwardMaster.srl_no}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, purchase_no: e.target.value }))}
-            placeholder="Srl No"
-            className="border p-2 rounded-lg w-[100px] max-w-full bg-gray-100"
-            readOnly
-            step="0.01"
-          />
-          <input
-            type="date"
-            name="entry_date"
-            value={inwardMaster.entry_date}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, entry_date: e.target.value }))}
-            placeholder="Entry Date"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
-          />
-          <input
-            type="text"
-            name="bill_no"
-            value={inwardMaster.bill_no}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, bill_no: e.target.value }))}
-            placeholder="Bill No"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-sm"
-          />
-          <input
-            type="date"
-            name="bill_date"
-            value={inwardMaster.bill_date}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, bill_date: e.target.value }))}
-            placeholder="Bill Date"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
-          />
-          <div className="relative">
-            <input
-              type="text"
-              name="user_nm"
-              value={inwardMaster.user_nm}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'user_nm')}
-              placeholder="User"
-              className="border p-2 rounded-lg w-[210px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showUserSuggestions && userSuggestions.length > 0 && inwardMaster.user_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {userSuggestions.map((user, index) => (
-                  <li
-                    key={user.id}
-                    id={`user-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${userHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleUserSuggestionClick(user)}
-                  >
-                    {user.user_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Purchase details</span>
+            <p className="text-xs text-gray-500">Supplier, billing, and branch information</p>
           </div>
-          <input
-            type="number"
-            name="gross"
-            value={inwardMaster.gross}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, gross: e.target.value }))}
-            placeholder="Gross"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
-            readOnly
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="nett"
-            value={inwardMaster.nett}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, nett: e.target.value }))}
-            placeholder="Nett"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
-            readOnly
-            step="0.01"
-          />
-          <select
-            name="is_cash"
-            value={inwardMaster.is_cash}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, is_cash: e.target.value }))}
-            className="border p-2 rounded-lg w-[100px] max-w-full text-sm"
-          >
-            <option value="No">No</option>
-            <option value="Yes">Yes</option>
-          </select>
-          <select
-            name="type"
-            value={inwardMaster.type}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, type: e.target.value }))}
-            className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-          >
-            <option value="" disabled>Type</option>
-            {["Purchase", "Return", "Consignment"].map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-          <div className="relative">
-            <input
-              type="text"
-              name="supplier_nm"
-              value={inwardMaster.supplier_nm}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
-              placeholder="Supplier"
-              className="border p-2 rounded-lg w-[400px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {supplierSuggestions.map((supplier, index) => (
-                  <li
-                    key={supplier.id}
-                    id={`supplier-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSupplierSuggestionClick(supplier)}
-                  >
-                    {supplier.supplier_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <input
-            type="text"
-            name="notes"
-            value={inwardMaster.notes}
-            onChange={(e) => setInwardMaster(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Notes"
-            className="border p-2 rounded-lg w-[360px] max-w-full text-sm"
-          />
-          <div className="relative">
-            <input
-              type="text"
-              name="branches_nm"
-              value={inwardMaster.branches_nm}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'branches_nm')}
-              placeholder="Branch"
-              className="border p-2 rounded-lg w-[250px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showBranchesSuggestions && branchesSuggestions.length > 0 && inwardMaster.branches_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {branchesSuggestions.map((branches, index) => (
-                  <li
-                    key={branches.id}
-                    id={`branches-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${branchesHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBranchesSuggestionClick(branches)}
-                  >
-                    {branches.branches_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="relative">
-            <input
-              type="text"
-              name="breakup_nm1"
-              value={inwardMaster.breakup_nm1}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'breakup_nm1')}
-              placeholder="Breakup 1"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showBreakupSuggestions && activeBreakupNo === 1 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm1.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {breakupSuggestions.map((breakup, index) => (
-                  <li
-                    key={breakup.id}
-                    id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBreakupSuggestionClick(breakup, 1)}
-                  >
-                    {breakup.breakup_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <input
-            type="number"
-            name="breakup_amt1"
-            value={inwardMaster.breakup_amt1}
-            onChange={handleInwardMasterChange}
-            placeholder="Amount 1"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
-            step="0.01"
-          />
-          <div className="relative">
-            <input
-              type="text"
-              name="breakup_nm2"
-              value={inwardMaster.breakup_nm2}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'breakup_nm2')}
-              placeholder="Breakup 2"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showBreakupSuggestions && activeBreakupNo === 2 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm2.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {breakupSuggestions.map((breakup, index) => (
-                  <li
-                    key={breakup.id}
-                    id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBreakupSuggestionClick(breakup, 2)}
-                  >
-                    {breakup.breakup_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <input
-            type="number"
-            name="breakup_amt2"
-            value={inwardMaster.breakup_amt2}
-            onChange={handleInwardMasterChange}
-            placeholder="Amount 2"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
-            step="0.01"
-          />
-          <div className="relative">
-            <input
-              type="text"
-              name="breakup_nm3"
-              value={inwardMaster.breakup_nm3}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'breakup_nm3')}
-              placeholder="Breakup 3"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showBreakupSuggestions && activeBreakupNo === 3 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm3.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {breakupSuggestions.map((breakup, index) => (
-                  <li
-                    key={breakup.id}
-                    id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBreakupSuggestionClick(breakup, 3)}
-                  >
-                    {breakup.breakup_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <input
-            type="number"
-            name="breakup_amt3"
-            value={inwardMaster.breakup_amt3}
-            onChange={handleInwardMasterChange}
-            placeholder="Amount 3"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
-            step="0.01"
-          />
-          <div className="relative">
-            <input
-              type="text"
-              name="breakup_nm4"
-              value={inwardMaster.breakup_nm4}
-              onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'breakup_nm4')}
-              placeholder="Breakup 4"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-              autoComplete="off"
-            />
-            {showBreakupSuggestions && activeBreakupNo === 4 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm4.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {breakupSuggestions.map((breakup, index) => (
-                  <li
-                    key={breakup.id}
-                    id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBreakupSuggestionClick(breakup, 4)}
-                  >
-                    {breakup.breakup_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <input
-            type="number"
-            name="breakup_amt4"
-            value={inwardMaster.breakup_amt4}
-            onChange={handleInwardMasterChange}
-            placeholder="Amount 4"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
-            step="0.01"
-          />
+          <p className="text-xs text-gray-500">Gross / Nett update automatically</p>
         </div>
-      </div>
 
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-y-auto">
-        <table className="w-full table-auto border border-gray-300 border-collapse">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              <th className="w-[330px] text-left p-2 text-sm font-semibold border border-gray-300">Product</th>
-              <th className="w-[110px] text-left p-2 text-sm font-semibold border border-gray-300">I S B N</th>
-              <th className="w-[60px] text-right p-2 text-sm font-semibold border border-gray-300">Qty</th>
-              <th className="w-[60px] text-left p-2 text-sm font-semibold border border-gray-300">Curr</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">ExRt</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">F. Value</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">Tax%</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">Dis%</th>
-              <th className="w-[80px] text-right p-2 text-sm font-semibold border border-gray-300">-/+Adj</th>
-              <th className="w-[100px] text-right p-2 text-sm font-semibold border border-gray-300">Nett</th>
-              <th className="w-[10px] text-left p-2 text-sm font-semibold border border-gray-300"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index} className="border-t">
-                <td className="p-1 text-sm">
-                  <input
-                    type="text"
-                    value={item.itemName}
-                    onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                    className={`border p-1 rounded w-full ${item.isMalayalam ? 'font-malayalam' : ''}`}
-                    style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="text"
-                    value={item.isbn}
-                    onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <select
-                    value={item.currency}
-                    onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
-                    className="border p-1 rounded w-full text-sm"
-                  >
-                    <option value="" disabled>Currency</option>
-                    {currencies.map(cur => (
-                      <option key={cur.id} value={cur.name}>{cur.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.exchangeRate}
-                    onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.purchaseRate}
-                    onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.tax}
-                    onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.discount}
-                    onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.discountAmount}
-                    onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm text-right">
-                  {(item.value || 0).toFixed(2)}
-                </td>
-                <td className="p-2 text-sm text-center">
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete item"
-                    onClick={() => setItems(items.filter((_, i) => i !== index))}
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Srl No</span>
+              <input
+                type="text"
+                name="srl_no"
+                value={inwardMaster.srl_no}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, purchase_no: e.target.value }))}
+                placeholder="Srl No"
+                className={`${inputClasses} bg-gray-50 font-semibold`}
+                readOnly
+                step="0.01"
+              />
+            </div>
 
-        {items.length > 0 && (
-          <div className="mt-3 border-t bg-gray-50 p-2 rounded">
-            <div className="text-right font-semibold text-sm">
-              Total: {totalValue.toFixed(2)}
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Entry Date</span>
+              <input
+                type="date"
+                name="entry_date"
+                value={inwardMaster.entry_date}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, entry_date: e.target.value }))}
+                placeholder="Entry Date"
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Bill No</span>
+              <input
+                type="text"
+                name="bill_no"
+                value={inwardMaster.bill_no}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, bill_no: e.target.value }))}
+                placeholder="Bill No"
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Bill Date</span>
+              <input
+                type="date"
+                name="bill_date"
+                value={inwardMaster.bill_date}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, bill_date: e.target.value }))}
+                placeholder="Bill Date"
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="relative flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">User</span>
+              <input
+                type="text"
+                name="user_nm"
+                value={inwardMaster.user_nm}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'user_nm')}
+                placeholder="Search user"
+                className={inputClasses}
+                autoComplete="off"
+              />
+              {showUserSuggestions && userSuggestions.length > 0 && inwardMaster.user_nm.trim() && (
+                <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {userSuggestions.map((user, index) => (
+                    <li
+                      key={user.id}
+                      id={`user-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${userHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleUserSuggestionClick(user)}
+                    >
+                      {user.user_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Gross</span>
+              <input
+                type="number"
+                name="gross"
+                value={inwardMaster.gross}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, gross: e.target.value }))}
+                placeholder="Gross"
+                className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+                readOnly
+                step="0.01"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Nett</span>
+              <input
+                type="number"
+                name="nett"
+                value={inwardMaster.nett}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, nett: e.target.value }))}
+                placeholder="Nett"
+                className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+                readOnly
+                step="0.01"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Cash</span>
+              <select
+                name="is_cash"
+                value={inwardMaster.is_cash}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, is_cash: e.target.value }))}
+                className={inputClasses}
+              >
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Type</span>
+              <select
+                name="type"
+                value={inwardMaster.type}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, type: e.target.value }))}
+                className={inputClasses}
+              >
+                <option value="" disabled>Type</option>
+                {["Purchase", "Return", "Consignment"].map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative flex flex-col gap-1 md:col-span-2">
+              <span className="text-xs font-medium text-gray-500">Supplier</span>
+              <input
+                type="text"
+                name="supplier_nm"
+                value={inwardMaster.supplier_nm}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
+                placeholder="Supplier"
+                className={inputClasses}
+                autoComplete="off"
+              />
+              {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
+                <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {supplierSuggestions.map((supplier, index) => (
+                    <li
+                      key={supplier.id}
+                      id={`supplier-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleSupplierSuggestionClick(supplier)}
+                    >
+                      {supplier.supplier_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="relative flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-500">Branch</span>
+              <input
+                type="text"
+                name="branches_nm"
+                value={inwardMaster.branches_nm}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'branches_nm')}
+                placeholder="Branch"
+                className={inputClasses}
+                autoComplete="off"
+              />
+              {showBranchesSuggestions && branchesSuggestions.length > 0 && inwardMaster.branches_nm.trim() && (
+                <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {branchesSuggestions.map((branches, index) => (
+                    <li
+                      key={branches.id}
+                      id={`branches-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${branchesHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleBranchesSuggestionClick(branches)}
+                    >
+                      {branches.branches_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1 md:col-span-2">
+              <span className="text-xs font-medium text-gray-500">Notes</span>
+              <input
+                type="text"
+                name="notes"
+                value={inwardMaster.notes}
+                onChange={(e) => setInwardMaster(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notes"
+                className={inputClasses}
+              />
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="grid grid-cols-[380px_130px_70px_80px_80px_90px_80px_80px_80px_1fr] gap-0.5 w-full">
-          <div className="relative">
-            <input
-              type="text"
-              name="itemName"
-              value={formData.itemName}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-              placeholder="Item Name"
-              className={`border p-2 rounded-lg w-full text-sm ${isMalayalam ? 'font-malayalam' : ''}`}
-              style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-              autoComplete="off"
-            />
-            {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam" style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}>
-                {suggestions.map((product, index) => (
-                  <li
-                    key={product.id}
-                    id={`suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleItemSuggestionClick(product)}
-                  >
-                    {isDotPrefixed ? product.title_m : product.title}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="border-t border-gray-100 pt-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className={badgeClasses}>Breakup lines</span>
+              <p className="text-xs text-gray-500">Optional adjustments to purchase amount</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3">
+              <div className="relative flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Breakup 1</span>
+                <input
+                  type="text"
+                  name="breakup_nm1"
+                  value={inwardMaster.breakup_nm1}
+                  onChange={handleInwardMasterChange}
+                  onKeyDown={(e) => handleKeyDown(e, 'breakup_nm1')}
+                  placeholder="Breakup 1"
+                  className={inputClasses}
+                  autoComplete="off"
+                />
+                {showBreakupSuggestions && activeBreakupNo === 1 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm1.trim() && (
+                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                    {breakupSuggestions.map((breakup, index) => (
+                      <li
+                        key={breakup.id}
+                        id={`breakup-suggestion-${index}`}
+                        className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                        onClick={() => handleBreakupSuggestionClick(breakup, 1)}
+                      >
+                        {breakup.breakup_nm}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Amount 1</span>
+                <input
+                  type="number"
+                  name="breakup_amt1"
+                  value={inwardMaster.breakup_amt1}
+                  onChange={handleInwardMasterChange}
+                  placeholder="Amount 1"
+                  className={`${inputClasses} text-right`}
+                  step="0.01"
+                />
+              </div>
+
+              <div className="relative flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Breakup 2</span>
+                <input
+                  type="text"
+                  name="breakup_nm2"
+                  value={inwardMaster.breakup_nm2}
+                  onChange={handleInwardMasterChange}
+                  onKeyDown={(e) => handleKeyDown(e, 'breakup_nm2')}
+                  placeholder="Breakup 2"
+                  className={inputClasses}
+                  autoComplete="off"
+                />
+                {showBreakupSuggestions && activeBreakupNo === 2 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm2.trim() && (
+                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                    {breakupSuggestions.map((breakup, index) => (
+                      <li
+                        key={breakup.id}
+                        id={`breakup-suggestion-${index}`}
+                        className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                        onClick={() => handleBreakupSuggestionClick(breakup, 2)}
+                      >
+                        {breakup.breakup_nm}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Amount 2</span>
+                <input
+                  type="number"
+                  name="breakup_amt2"
+                  value={inwardMaster.breakup_amt2}
+                  onChange={handleInwardMasterChange}
+                  placeholder="Amount 2"
+                  className={`${inputClasses} text-right`}
+                  step="0.01"
+                />
+              </div>
+
+              <div className="relative flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Breakup 3</span>
+                <input
+                  type="text"
+                  name="breakup_nm3"
+                  value={inwardMaster.breakup_nm3}
+                  onChange={handleInwardMasterChange}
+                  onKeyDown={(e) => handleKeyDown(e, 'breakup_nm3')}
+                  placeholder="Breakup 3"
+                  className={inputClasses}
+                  autoComplete="off"
+                />
+                {showBreakupSuggestions && activeBreakupNo === 3 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm3.trim() && (
+                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                    {breakupSuggestions.map((breakup, index) => (
+                      <li
+                        key={breakup.id}
+                        id={`breakup-suggestion-${index}`}
+                        className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                        onClick={() => handleBreakupSuggestionClick(breakup, 3)}
+                      >
+                        {breakup.breakup_nm}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Amount 3</span>
+                <input
+                  type="number"
+                  name="breakup_amt3"
+                  value={inwardMaster.breakup_amt3}
+                  onChange={handleInwardMasterChange}
+                  placeholder="Amount 3"
+                  className={`${inputClasses} text-right`}
+                  step="0.01"
+                />
+              </div>
+
+              <div className="relative flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Breakup 4</span>
+                <input
+                  type="text"
+                  name="breakup_nm4"
+                  value={inwardMaster.breakup_nm4}
+                  onChange={handleInwardMasterChange}
+                  onKeyDown={(e) => handleKeyDown(e, 'breakup_nm4')}
+                  placeholder="Breakup 4"
+                  className={inputClasses}
+                  autoComplete="off"
+                />
+                {showBreakupSuggestions && activeBreakupNo === 4 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm4.trim() && (
+                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                    {breakupSuggestions.map((breakup, index) => (
+                      <li
+                        key={breakup.id}
+                        id={`breakup-suggestion-${index}`}
+                        className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                        onClick={() => handleBreakupSuggestionClick(breakup, 4)}
+                      >
+                        {breakup.breakup_nm}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-gray-500">Amount 4</span>
+                <input
+                  type="number"
+                  name="breakup_amt4"
+                  value={inwardMaster.breakup_amt4}
+                  onChange={handleInwardMasterChange}
+                  placeholder="Amount 4"
+                  className={`${inputClasses} text-right`}
+                  step="0.01"
+                />
+              </div>
+            </div>
           </div>
-          <input
-            type="text"
-            name="isbn"
-            value={formData.isbn}
-            onChange={handleInputChange}
-            placeholder="Isbn"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            placeholder="Qty"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <select
-            name="currency"
-            value={formData.currency}
-            onChange={handleInputChange}
-            className="border p-2 rounded-lg text-sm w-full"
-          >
-            <option value="" disabled>Currency</option>
-            {currencies.map(cur => (
-              <option key={cur.id} value={cur.name}>{cur.name}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="exchangeRate"
-            value={formData.exchangeRate}
-            onChange={handleInputChange}
-            placeholder="Exchange Rate"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <input
-            type="number"
-            name="purchaseRate"
-            value={formData.purchaseRate}
-            onChange={handleInputChange}
-            placeholder="Purchase Rate"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <input
-            type="number"
-            name="tax"
-            value={formData.tax}
-            onChange={handleInputChange}
-            placeholder="Tax %"
-            className="border p-2 rounded-lg text-sm w-full"
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleInputChange}
-            placeholder="Disc %"
-            className="border p-2 rounded-lg text-sm w-full"
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="discountAmount"
-            value={formData.discountAmount}
-            onChange={handleInputChange}
-            placeholder="Disc Amt"
-            className="border p-2 rounded-lg text-sm w-full"
-            step="0.01"
-          />
-          <button
-            onClick={handleAddItem}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full"
-          >
-            ADD ITEM
-          </button>
         </div>
       </div>
 
-      <div className="flex justify-start mt-4 gap-x-3">
-        <input
-          type="text"
-          value={goodsInwardIdToLoad}
-          onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
-          placeholder="Enter Goods Inward ID"
-          className="border p-2 rounded-lg w-[200px] text-sm"
-        />
-        <button
-          onClick={handleLoadGoodsInward}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          LOAD INWARD
-        </button>
-        <button
-          onClick={handleSubmitGoodsInward}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          {isEditMode ? 'UPDATE INWARD' : 'SUBMIT INWARD'}
-        </button>
-        <button
-          onClick={handleOpenMasterEntry}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          MASTER ENTRY
-        </button>
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Line items</span>
+            <p className="text-xs text-gray-500">Products added to this inward</p>
+          </div>
+          <div className="text-sm font-semibold text-gray-700">
+            Total: {totalValue.toFixed(2)}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1100px]">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs uppercase tracking-wide">
+                <th className="px-3 py-2 text-left font-semibold w-[330px]">Product</th>
+                <th className="px-3 py-2 text-left font-semibold w-[110px]">I S B N</th>
+                <th className="px-3 py-2 text-right font-semibold w-[70px]">Qty</th>
+                <th className="px-3 py-2 text-left font-semibold w-[80px]">Curr</th>
+                <th className="px-3 py-2 text-right font-semibold w-[80px]">ExRt</th>
+                <th className="px-3 py-2 text-right font-semibold w-[80px]">F. Value</th>
+                <th className="px-3 py-2 text-right font-semibold w-[80px]">Tax%</th>
+                <th className="px-3 py-2 text-right font-semibold w-[80px]">Dis%</th>
+                <th className="px-3 py-2 text-right font-semibold w-[90px]">-/+Adj</th>
+                <th className="px-3 py-2 text-right font-semibold w-[100px]">Nett</th>
+                <th className="px-3 py-2 text-center font-semibold w-[48px]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan="11" className="px-4 py-10 text-center text-gray-400 text-sm">
+                    No items added yet. Use the form below to add lines.
+                  </td>
+                </tr>
+              ) : (
+                items.map((item, index) => (
+                  <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.itemName}
+                        onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                        className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                        style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.isbn}
+                        onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
+                        className={tableInputClasses}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={item.currency}
+                        onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                        className={tableInputClasses}
+                      >
+                        <option value="" disabled>Currency</option>
+                        {currencies.map(cur => (
+                          <option key={cur.id} value={cur.name}>{cur.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.exchangeRate}
+                        onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.purchaseRate}
+                        onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.tax}
+                        onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.discount}
+                        onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.discountAmount}
+                        onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                      {(item.value || 0).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Delete item"
+                        onClick={() => setItems(items.filter((_, i) => i !== index))}
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Add item</span>
+            <p className="text-xs text-gray-500">Search products and set purchase values</p>
+          </div>
+          <p className="hidden md:block text-xs text-gray-500">Tip: prefix with "." to search Malayalam titles</p>
+        </div>
+
+        <div className="p-4">
+          <div className="grid grid-cols-[380px_130px_70px_90px_90px_90px_80px_80px_90px_1fr] gap-3 w-full overflow-x-auto">
+            <div className="relative">
+              <input
+                type="text"
+                name="itemName"
+                value={formData.itemName}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'itemName')}
+                placeholder="Item Name"
+                className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
+                style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                autoComplete="off"
+              />
+              {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
+                <ul className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-lg rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam" style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}>
+                  {suggestions.map((product, index) => (
+                    <li
+                      key={product.id}
+                      id={`suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleItemSuggestionClick(product)}
+                    >
+                      {isDotPrefixed ? product.title_m : product.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <input
+              type="text"
+              name="isbn"
+              value={formData.isbn}
+              onChange={handleInputChange}
+              placeholder="Isbn"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              placeholder="Qty"
+              className={tableInputClasses}
+            />
+            <select
+              name="currency"
+              value={formData.currency}
+              onChange={handleInputChange}
+              className={tableInputClasses}
+            >
+              <option value="" disabled>Currency</option>
+              {currencies.map(cur => (
+                <option key={cur.id} value={cur.name}>{cur.name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              name="exchangeRate"
+              value={formData.exchangeRate}
+              onChange={handleInputChange}
+              placeholder="Exchange Rate"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="purchaseRate"
+              value={formData.purchaseRate}
+              onChange={handleInputChange}
+              placeholder="Purchase Rate"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="tax"
+              value={formData.tax}
+              onChange={handleInputChange}
+              placeholder="Tax %"
+              className={tableInputClasses}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleInputChange}
+              placeholder="Disc %"
+              className={tableInputClasses}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="discountAmount"
+              value={formData.discountAmount}
+              onChange={handleInputChange}
+              placeholder="Disc Amt"
+              className={tableInputClasses}
+              step="0.01"
+            />
+            <button
+              onClick={handleAddItem}
+              className={`${actionButtonClasses} w-full justify-center`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Item
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Actions</span>
+            <p className="text-xs text-gray-500">Load an inward or submit/update</p>
+          </div>
+        </div>
+
+        <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={goodsInwardIdToLoad}
+              onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
+              placeholder="Enter Goods Inward ID"
+              className={`${inputClasses} w-full sm:w-64`}
+            />
+            <button
+              onClick={handleLoadGoodsInward}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+            >
+              Load Inward
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleSubmitGoodsInward}
+              className={`${actionButtonClasses} min-w-[180px]`}
+            >
+              {isEditMode ? 'Update Inward' : 'Submit Inward'}
+            </button>
+            <button
+              onClick={handleOpenMasterEntry}
+              className={`${actionButtonClasses} from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700`}
+            >
+              Master Entry
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

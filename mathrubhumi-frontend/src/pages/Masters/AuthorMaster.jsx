@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import api from '../../utils/axiosInstance';
 
 export default function AuthorMaster() {
@@ -22,6 +23,11 @@ export default function AuthorMaster() {
     type: 'info',
     buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
   });
+  const [deleteAuthorId, setDeleteAuthorId] = useState(null);
+
+  useEffect(() => {
+    fetchAllAuthors();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -153,19 +159,32 @@ export default function AuthorMaster() {
   };
 
   const handleLoadAuthor = async () => {
-    if (loadAuthor.length < 2) {
-      console.log('Validation failed: loadAuthor less than 2 characters');
+    if (loadAuthor.length < 3) {
+      console.log('Validation failed: loadAuthor less than 3 characters');
       setModal({
         isOpen: true,
-        message: 'Please enter at least 2 characters to search',
+        message: 'Please enter at least 3 characters to search',
         type: 'error',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
       return;
     }
 
+    const fetchCandidates = async () => {
+      // Primary endpoint; uses q param only when user typed >=2 chars
+      try {
+        return await api.get(`/auth/author-master-search/?q=${encodeURIComponent(loadAuthor)}`);
+      } catch (err) {
+        // Fallback to legacy/plural route if available
+        if (err?.response?.status === 404 || err?.response?.status === 400) {
+          return await api.get(`/auth/authors-master-search/?q=${encodeURIComponent(loadAuthor)}`);
+        }
+        throw err;
+      }
+    };
+
     try {
-      const response = await api.get(`/auth/author-master-search/?q=${encodeURIComponent(loadAuthor)}`);
+      const response = await fetchCandidates();
       console.log('Authors fetched:', response.data);
       const fetchedItems = response.data.map((item) => ({
         id: item.id,
@@ -198,12 +217,99 @@ export default function AuthorMaster() {
   };
 
   const handleDeleteAuthor = (id) => {
-    console.log(`Deleting author: id=${id}`);
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setDeleteAuthorId(id);
+    setModal({
+      isOpen: true,
+      message: 'Are you sure you want to delete this author?',
+      type: 'warning',
+      buttons: [
+        {
+          label: 'Delete',
+          onClick: async () => {
+            try {
+              await api.delete(`/auth/author-delete/${id}/`);
+              setItems((prev) => prev.filter((item) => item.id !== id));
+              setModal({
+                isOpen: true,
+                message: 'Author deleted successfully!',
+                type: 'success',
+                buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+              });
+            } catch (error) {
+              setModal({
+                isOpen: true,
+                message: `Failed to delete author: ${error.response?.data?.error || error.message}`,
+                type: 'error',
+                buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+              });
+            }
+            setDeleteAuthorId(null);
+          },
+          className: 'bg-red-500 hover:bg-red-600'
+        },
+        {
+          label: 'Cancel',
+          onClick: () => {
+            setModal((prev) => ({ ...prev, isOpen: false }));
+            setDeleteAuthorId(null);
+          },
+          className: 'bg-gray-500 hover:bg-gray-600'
+        }
+      ]
+    });
   };
 
+  const fetchAllAuthors = async () => {
+    try {
+      let response;
+      try {
+        // Some backends enforce a minimum search length; use a 3-char seed
+        response = await api.get(`/auth/author-master-search/?q=aaa`);
+      } catch (err) {
+        if (err?.response?.status === 404 || err?.response?.status === 400) {
+          // Fallback to legacy/plural route
+          response = await api.get(`/auth/authors-master-search/?q=aaa`);
+        } else {
+          throw err;
+        }
+      }
+      const fetchedItems = response.data.map((item) => ({
+        id: item.id,
+        code: item.id.toString(),
+        name: item.author_nm || '',
+        contact: item.contact || '',
+        email: item.mail_id || '',
+        address1: item.address1 || '',
+        address2: item.address2 || '',
+        phone: item.telephone || '',
+        city: item.city || ''
+      }));
+      setItems(fetchedItems);
+      setModal({
+        isOpen: true,
+        message: `Loaded ${fetchedItems.length} author(s)`,
+        type: 'success',
+        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+      });
+    } catch (error) {
+      setModal({
+        isOpen: true,
+        message: `Failed to load authors: ${error.response?.data?.error || error.message}`,
+        type: 'error',
+        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+      });
+    }
+  };
+
+  // Author icon for header
+  const authorIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col h-screen w-[97%] mx-auto p-4 space-y-4">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -211,228 +317,341 @@ export default function AuthorMaster() {
         buttons={modal.buttons}
       />
 
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-x-auto">
-        <div className="w-[1050px]">
-          <table className="w-full table-fixed border border-gray-300 border-collapse">
-            <thead className="sticky top-0 bg-gray-100 z-10">
-              <tr>
-                <th className="w-[100px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Code</th>
-                <th className="w-[300px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Name</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Contact</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">E-Mail</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Address 1</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Address 2</th>
-                <th className="w-[150px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Phone</th>
-                <th className="w-[100px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">City</th>
-                <th className="w-[50px] text-center p-2 text-sm font-semibold border border-gray-300 bg-red-100"></th>
-              </tr>
-            </thead>
-            <tbody className="max-h-[calc(100vh-300px)] overflow-y-auto">
-              {items.map((item, index) => {
-                console.log(`Rendering item ${index}:`, item);
-                return (
-                  <tr key={item.id} className="border-t border-gray-300 hover:bg-gray-50">
-                    <td className="p-1 text-sm border border-gray-300 w-[100px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.code || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'code', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, code: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[200px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.name || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'name', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, name: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.contact || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'contact', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, contact: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[200px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.email || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'email', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, email: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.address1 || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'address1', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address1: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.address2 || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'address2', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address2: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.phone || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'phone', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, phone: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[100px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.city || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'city', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, city: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm text-center border border-gray-300 w-[50px] bg-red-50">
-                      <button
-                        onClick={() => handleDeleteAuthor(item.id)}
-                        className="text-red-600 hover:text-red-800"
-                        title="Delete author"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+      {/* Page Header */}
+      <PageHeader
+        icon={authorIcon}
+        title="Authors Master"
+        subtitle="Manage author information and contact details"
+      />
+
+      {/* Main Content Card */}
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+        {/* Table Section */}
+        <div className="p-4">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full min-w-[1000px]">
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[80px]">
+                    Code
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[200px]">
+                    Author Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
+                    Contact
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[200px]">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
+                    Address 1
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
+                    Address 2
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[120px]">
+                    Phone
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[100px]">
+                    City
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold w-16">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="px-4 py-8 text-center text-gray-400">
+                      No authors found. Add one below.
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  items.map((item, index) => (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-blue-50/50 transition-colors animate-fade-in"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.code || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'code', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, code: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Code"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.name || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'name', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, name: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Author name"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.contact || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'contact', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, contact: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Contact"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.email || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'email', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, email: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Email"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.address1 || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'address1', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address1: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Address 1"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.address2 || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'address2', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address2: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Address 2"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.phone || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'phone', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, phone: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Phone"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.city || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'city', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, city: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="City"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => handleDeleteAuthor(item.id)}
+                          className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500
+                                     hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Delete author"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Add Author Form */}
+        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <input
+                type="text"
+                name="code"
+                value={formData.code}
+                onChange={handleInputChange}
+                placeholder="Author code"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Author name"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddAuthor()}
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                name="contact"
+                value={formData.contact}
+                onChange={handleInputChange}
+                placeholder="Contact number"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <input
+                type="text"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Email address"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <input
+                type="text"
+                name="address1"
+                value={formData.address1}
+                onChange={handleInputChange}
+                placeholder="Address line 1"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <input
+                type="text"
+                name="address2"
+                value={formData.address2}
+                onChange={handleInputChange}
+                placeholder="Address line 2"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="Phone"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                placeholder="City"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={handleAddAuthor}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+                           text-white text-sm font-medium shadow-lg shadow-blue-500/25
+                           hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Author
+              </button>
+            </div>
+          </div>
+
+          {/* Load Author Section */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={loadAuthor}
+                onChange={handleLoadAuthorChange}
+                placeholder="Search authors..."
+                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+                onKeyDown={(e) => e.key === 'Enter' && handleLoadAuthor()}
+              />
+              <button
+                onClick={handleLoadAuthor}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600
+                           text-white text-sm font-medium shadow-lg shadow-green-500/25
+                           hover:from-green-600 hover:to-emerald-700 active:scale-[0.98] transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Load Authors
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
-          <div className="relative">
-            <input
-              type="text"
-              name="code"
-              value={formData.code}
-              onChange={handleInputChange}
-              placeholder="Code"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
+      {/* Info card */}
+      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-3">
+          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
+            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing author details to save changes instantly. Use the search to load specific authors.</p>
           </div>
-          <div className="relative col-span-2">
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Name"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <div className="relative col-span-2">
-            <input
-              type="text"
-              name="contact"
-              value={formData.contact}
-              onChange={handleInputChange}
-              placeholder="Contact"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <div className="relative col-span-2">
-            <input
-              type="text"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="E-Mail"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <div className="relative col-span-2">
-            <input
-              type="text"
-              name="address1"
-              value={formData.address1}
-              onChange={handleInputChange}
-              placeholder="Address 1"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <div className="relative col-span-2">
-            <input
-              type="text"
-              name="address2"
-              value={formData.address2}
-              onChange={handleInputChange}
-              placeholder="Address 2"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <div className="relative col-span-2">
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleInputChange}
-              placeholder="City"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <div className="relative">
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Phone"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <button
-            onClick={handleAddAuthor}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full max-w-[150px]"
-          >
-            ADD AUTHOR
-          </button>
-          <div className="relative">
-            <input
-              type="text"
-              value={loadAuthor}
-              onChange={handleLoadAuthorChange}
-              placeholder="LOAD AUTHOR"
-              className="border p-2 rounded-lg text-sm w-full max-w-[200px] focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
-          </div>
-          <button
-            onClick={handleLoadAuthor}
-            className="bg-green-600 text-white rounded-lg p-2 hover:bg-green-700 text-sm font-medium w-full max-w-[150px]"
-          >
-            LOAD AUTHOR
-          </button>
         </div>
       </div>
     </div>

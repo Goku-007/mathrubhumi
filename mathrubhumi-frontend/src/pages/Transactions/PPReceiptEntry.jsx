@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import api from "../../utils/axiosInstance";
 import Modal from "../../components/Modal";
+import PageHeader from "../../components/PageHeader";
 
 /* ---------- tiny helpers ---------- */
 const today = () => new Date().toISOString().split("T")[0];
@@ -104,16 +105,10 @@ export default function PPReceiptEntry() {
     debounceRef.current = setTimeout(fn, delay);
   };
 
-	const isCheque = useMemo(() => {
-    const chequeTypes = [
-      "Cheque",
-      "Demand Draft",
-    ];
+  const isCheque = useMemo(() => {
+    const chequeTypes = ["Cheque", "Demand Draft"];
     return chequeTypes.includes(form.modeOfPay);
-    }, [form.modeOfPay]);
-  const baseInputClass = "border p-2 rounded-lg w-full text-sm";
-  const inactiveClass = " bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none";
-  const commonInactiveProps = isCheque ? {} : { readOnly: true, tabIndex: -1, "aria-readonly": "true" };
+  }, [form.modeOfPay]);
 
   /* ---------- API fetchers ---------- */
   const fetchBooks = (q) =>
@@ -173,14 +168,19 @@ export default function PPReceiptEntry() {
   const isCancelled = useMemo(() => form.cancelled === "1", [form.cancelled]);
 
   /* ---------- computed: disable Receipt No + disable many fields for Installment ---------- */
-  const isReceiptNoDisabled = useMemo(
-    () =>
-      form.receiptType === "Registration" ||
-      form.receiptType === "Registration for existing PP Members",
-    [form.receiptType]
-  );
-
   const isInstallment = form.receiptType === "Installment";
+
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
+  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
+  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const subduedInputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
+
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
 
   /* ---------- SAVE (calls the PL/pgSQL procedure) ---------- */
   const [saving, setSaving] = useState(false);
@@ -364,7 +364,7 @@ export default function PPReceiptEntry() {
 
   /* ---------- render ---------- */
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
       {/* Modal (notification popup) */}
       <Modal
         isOpen={modal.isOpen}
@@ -373,119 +373,131 @@ export default function PPReceiptEntry() {
         buttons={modal.buttons}
       />
 
-      {/* Header card */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Receipt Type</label>
-            <select
-              name="receiptType"
-              value={form.receiptType}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              {Object.keys(R_TYPE).map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
+      <PageHeader
+        icon={pageIcon}
+        title="P P Receipt Entry"
+        subtitle="Capture and manage PP receipts"
+      />
 
-          <div className="flex flex-col cursor-not-allowed">
-            <label className="text-xs text-gray-600 mb-1">Receipt No</label>
-            <input
-              name="receiptNo"
-              value={form.receiptNo}
-              readOnly
-              tabIndex={-1}                 // not focusable via keyboard
-              aria-readonly="true"
-              className="border p-2 rounded-lg w-full text-sm bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none  // blocks clicks & caret"
-            />
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Receipt details</span>
+            <p className="text-xs text-gray-500">Type, number, status, and date</p>
           </div>
+        </div>
 
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
-            <select
-              name="cancelled"
-              value={form.cancelled}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              <option value="0">No</option>
-              <option value="1">Yes</option>
-            </select>
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Receipt Type</label>
+              <select
+                name="receiptType"
+                value={form.receiptType}
+                onChange={handleChange}
+                className={inputClasses}
+              >
+                {Object.keys(R_TYPE).map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Receipt No</label>
+              <input
+                name="receiptNo"
+                value={form.receiptNo}
+                readOnly
+                tabIndex={-1}
+                aria-readonly="true"
+                className={`${subduedInputClasses} select-none pointer-events-none font-semibold`}
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
+              <select
+                name="cancelled"
+                value={form.cancelled}
+                onChange={handleChange}
+                className={inputClasses}
+              >
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Date</label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="flex flex-col lg:col-span-1">
+              <label className="text-xs text-gray-600 mb-1">PP Reg. No</label>
+              <input
+                name="ppRegNo"
+                value={form.ppRegNo}
+                onChange={handleChange}
+                onKeyDown={handleRegNoKey}
+                readOnly={!isInstallment}
+                aria-readonly={!isInstallment}
+                className={`${inputClasses} ${!isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+                placeholder=""
+              />
+            </div>
           </div>
-
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Date</label>
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col lg:col-span-1">
-            <label className="text-xs text-gray-600 mb-1">PP Reg. No</label>
-            <input
-          name="ppRegNo"
-              value={form.ppRegNo}
-              onChange={handleChange}
-              onKeyDown={handleRegNoKey}         // Enter will only act when isInstallment is true (see your handler)
-              readOnly={!isInstallment}          // <- key line: read-only when NOT Installment
-              aria-readonly={!isInstallment}
-              className={`
-                border p-2 rounded-lg w-full text-sm
-                read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200
-              `}
-              placeholder=""
-            />
-          </div>
-
-          <div className="invisible lg:col-span-3 pointer-events-none select-none" aria-hidden="true" />
         </div>
       </div>
 
-      {/* Main form */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-          {/* PP Book Name + suggestions */}
-          <div className="relative lg:col-span-2">
-            <label className="text-xs text-gray-600 mb-1 block">PP Book Name</label>
-            <input
-              name="bookName"
-              value={form.bookName}
-              onChange={handleBookChange}
-              onBlur={closeAfterBlur(() => setShowBookSuggestions(false))}
-              placeholder="Start typing to search…"
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isInstallment ? "bg-gray-100 cursor-not-allowed" : ""
-              }`}
-              autoComplete="off"
-              disabled={isInstallment}
-            />
-            {showBookSuggestions && !isInstallment && bookSuggestions.length > 0 && (
-              <ul className="absolute z-50 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {bookSuggestions.map((row, i) => (
-                  <li
-                    key={`${row.id ?? i}`}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                    onMouseDown={() => {
-                      setForm((p) => ({ ...p, bookName: row.title || "" }));
-                      setPpBookId(row.id ?? null);
-                      setShowBookSuggestions(false);
-                    }}
-                  >
-                    {row.title}
-                  </li>
-                ))}
-              </ul>
-            )}
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Customer & payment</span>
+            <p className="text-xs text-gray-500">Book selection, customer info, payment</p>
           </div>
+        </div>
 
-          {/* Copies / Installments */}
-          <div className="grid grid-cols-2 gap-3 lg:col-span-2">
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            {/* PP Book Name + suggestions */}
+            <div className="relative lg:col-span-2">
+              <label className="text-xs text-gray-600 mb-1 block">PP Book Name</label>
+              <input
+                name="bookName"
+                value={form.bookName}
+                onChange={handleBookChange}
+                onBlur={closeAfterBlur(() => setShowBookSuggestions(false))}
+                placeholder="Start typing to search…"
+                className={`${inputClasses} ${isInstallment ? 'bg-gray-50 cursor-not-allowed text-gray-600' : ''}`}
+                autoComplete="off"
+                disabled={isInstallment}
+              />
+              {showBookSuggestions && !isInstallment && bookSuggestions.length > 0 && (
+                <ul className="absolute z-50 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {bookSuggestions.map((row, i) => (
+                    <li
+                      key={`${row.id ?? i}`}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                      onMouseDown={() => {
+                        setForm((p) => ({ ...p, bookName: row.title || "" }));
+                        setPpBookId(row.id ?? null);
+                        setShowBookSuggestions(false);
+                      }}
+                    >
+                      {row.title}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div>
               <label className="text-xs text-gray-600 mb-1 block">Copies</label>
               <input
@@ -493,9 +505,7 @@ export default function PPReceiptEntry() {
                 name="copies"
                 value={form.copies}
                 onChange={handleChange}
-                className={`border p-2 rounded-lg w-full text-sm text-right ${
-                  isInstallment ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
+                className={`${inputClasses} text-right ${isInstallment ? 'bg-gray-50 cursor-not-allowed text-gray-600' : ''}`}
                 onWheel={(e) => e.currentTarget.blur()}
                 disabled={isInstallment}
               />
@@ -507,88 +517,125 @@ export default function PPReceiptEntry() {
                 value={form.installments}
                 onChange={handleChange}
                 placeholder=""
-                className="border p-2 rounded-lg w-full text-sm"
+                className={inputClasses}
               />
             </div>
           </div>
 
-          {/* PP Customer Name + suggestions */}
-          <div className="relative lg:col-span-2">
-            <label className="text-xs text-gray-600 mb-1 block">PP Customer Name</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handlePPCustomerChange}
-              onBlur={closeAfterBlur(() => setShowPPCustomerSuggestions(false))}
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isCancelled ? "bg-gray-100" : "bg-white"
-              } ${isInstallment ? "read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200" : ""}`}
-              placeholder="Type customer name…"
-              autoComplete="off"
-              disabled={isInstallment}
-            />
-            {showPPCustomerSuggestions && !isInstallment && ppCustomerSuggestions.length > 0 && (
-              <ul className="absolute z-40 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {ppCustomerSuggestions.map((m, i) => (
-                  <li
-                    key={`${m.id ?? i}`}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                    onMouseDown={() => {
-                      setForm((p) => ({ ...p, name: m.pp_customer_nm || "" }));
-                      setPpCustomerId(m.id ?? null);
-                      setShowPPCustomerSuggestions(false);
-                    }}
-                  >
-                    {m.pp_customer_nm}
-                  </li>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            {/* PP Customer Name + suggestions */}
+            <div className="relative lg:col-span-2">
+              <label className="text-xs text-gray-600 mb-1 block">PP Customer Name</label>
+              <input
+                name="name"
+                value={form.name}
+                onChange={handlePPCustomerChange}
+                onBlur={closeAfterBlur(() => setShowPPCustomerSuggestions(false))}
+                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+                placeholder="Type customer name…"
+                autoComplete="off"
+                disabled={isInstallment}
+              />
+              {showPPCustomerSuggestions && !isInstallment && ppCustomerSuggestions.length > 0 && (
+                <ul className="absolute z-40 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {ppCustomerSuggestions.map((m, i) => (
+                    <li
+                      key={`${m.id ?? i}`}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                      onMouseDown={() => {
+                        setForm((p) => ({ ...p, name: m.pp_customer_nm || "" }));
+                        setPpCustomerId(m.id ?? null);
+                        setShowPPCustomerSuggestions(false);
+                      }}
+                    >
+                      {m.pp_customer_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="relative">
+              <label className="text-xs text-gray-600 mb-1 block">Agent</label>
+              <input
+                name="agent"
+                value={form.agent}
+                onChange={handleAgentChange}
+                onBlur={closeAfterBlur(() => setShowAgentSuggestions(false))}
+                className={inputClasses}
+                autoComplete="off"
+                placeholder=""
+              />
+              {showAgentSuggestions && agentSuggestions.length > 0 && (
+                <ul className="absolute z-40 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {agentSuggestions.map((a, i) => (
+                    <li
+                      key={`${a.id ?? i}`}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                      onMouseDown={() => {
+                        setForm((p) => ({ ...p, agent: a.agent_nm || "" }));
+                        setAgentId(a.id ?? null);
+                        setShowAgentSuggestions(false);
+                      }}
+                    >
+                      {a.agent_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Mode of Pay</label>
+              <select
+                name="modeOfPay"
+                value={form.modeOfPay}
+                onChange={handleChange}
+                className={inputClasses}
+              >
+                {Object.keys(A_TYPE).map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
-              </ul>
-            )}
+              </select>
+            </div>
           </div>
 
-          <div className="invisible lg:col-span-2 pointer-events-none select-none" aria-hidden="true" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Address 1 */}
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Address 1</label>
+              <input
+                name="address1"
+                value={form.address1}
+                onChange={handleChange}
+                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+                onWheel={(e) => e.currentTarget.blur()}
+                disabled={isInstallment}
+              />
+            </div>
 
-          {/* Address 1 */}
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Address 1</label>
-            <input
-              name="address1"
-              value={form.address1}
-              onChange={handleChange}
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isCancelled ? "bg-gray-100" : "bg-white"
-              } ${isInstallment ? "read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200" : ""}`}
-              onWheel={(e) => e.currentTarget.blur()}
-              disabled={isInstallment}
-            />
+            {/* Address 2 */}
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Address 2</label>
+              <input
+                name="address2"
+                value={form.address2}
+                onChange={handleChange}
+                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+                placeholder=""
+                disabled={isInstallment}
+              />
+            </div>
           </div>
 
-          {/* Address 2 */}
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Address 2</label>
-            <input
-              name="address2"
-              value={form.address2}
-              onChange={handleChange}
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isCancelled ? "bg-gray-100" : "bg-white"
-              } ${isInstallment ? "read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200" : ""}`}
-              placeholder=""
-              disabled={isInstallment}
-            />
-          </div>
-
-          {/* City + Pin */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
             <div>
               <label className="text-xs text-gray-600 mb-1 block">City</label>
               <input
                 name="city"
                 value={form.city}
                 onChange={handleChange}
-                className={`border p-2 rounded-lg w-full text-sm ${
-                  isCancelled ? "bg-gray-100" : "bg-white"
-                } ${isInstallment ? "read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200" : ""}`}
+                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
                 placeholder=""
                 disabled={isInstallment}
               />
@@ -599,202 +646,153 @@ export default function PPReceiptEntry() {
                 name="pin"
                 value={form.pin}
                 onChange={handleChange}
-                className={`border p-2 rounded-lg w-full text-sm ${
-                  isCancelled ? "bg-gray-100" : "bg-white"
-                } ${isInstallment ? "read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200" : ""}`}
+                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
                 placeholder=""
                 disabled={isInstallment}
               />
             </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Phone</label>
+              <input
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+                placeholder=""
+                disabled={isInstallment}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Amount</label>
+              <input
+                type="number"
+                step="0.01"
+                name="amount"
+                value={form.amount}
+                onChange={handleChange}
+                placeholder=""
+                className={`${inputClasses} text-right`}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </div>
           </div>
 
-          {/* Phone */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Bank</label>
+              <input
+                name="bank"
+                value={form.bank}
+                onChange={handleChange}
+                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+                readOnly={!isCheque}
+                tabIndex={isCheque ? 0 : -1}
+                aria-readonly={!isCheque}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-1 block">Chq/DD No</label>
+              <input
+                name="chqdd"
+                value={form.chqdd}
+                onChange={handleChange}
+                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+                readOnly={!isCheque}
+                tabIndex={isCheque ? 0 : -1}
+                aria-readonly={!isCheque}
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="text-xs text-gray-600 mb-1 block">Phone</label>
-            <input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isCancelled ? "bg-gray-100" : "bg-white"
-              } ${isInstallment ? "read-only:bg-gray-100 read-only:text-gray-600 read-only:border-gray-200" : ""}`}
-              placeholder=""
-              disabled={isInstallment}
-            />
-          </div>
-
-          {/* Mode of Pay */}
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Mode of Pay</label>
-            <select
-              name="modeOfPay"
-              value={form.modeOfPay}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              {Object.keys(A_TYPE).map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Amount</label>
-            <input
-              type="number"
-              step="0.01"
-              name="amount"
-              value={form.amount}
-              onChange={handleChange}
-              placeholder=""
-              className="border p-2 rounded-lg w-full text-sm text-right"
-              onWheel={(e) => e.currentTarget.blur()}
-            />
-          </div>
-
-          {/* Bank */}
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Bank</label>
-            <input
-              name="bank"
-              value={form.bank}
-              onChange={handleChange}
-              className={baseInputClass + (isCheque ? "" : inactiveClass)}
-              {...commonInactiveProps}
-            />
-          </div>
-
-          {/* Chq/DD No */}
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Chq/DD No</label>
-            <input
-              name="chqdd"
-              value={form.chqdd}
-              onChange={handleChange}
-              className={baseInputClass + (isCheque ? "" : inactiveClass)}
-              {...commonInactiveProps}
-            />
-          </div>
-
-          {/* Agent + suggestions */}
-          <div className="relative">
-            <label className="text-xs text-gray-600 mb-1 block">Agent</label>
-            <input
-              name="agent"
-              value={form.agent}
-              onChange={handleAgentChange}
-              onBlur={closeAfterBlur(() => setShowAgentSuggestions(false))}
-              className="border p-2 rounded-lg w-full text-sm"
-              autoComplete="off"
-              placeholder=""
-            />
-            {showAgentSuggestions && agentSuggestions.length > 0 && (
-              <ul className="absolute z-40 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {agentSuggestions.map((a, i) => (
-                  <li
-                    key={`${a.id ?? i}`}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                    onMouseDown={() => {
-                      setForm((p) => ({ ...p, agent: a.agent_nm || "" }));
-                      setAgentId(a.id ?? null);
-                      setShowAgentSuggestions(false);
-                    }}
-                  >
-                    {a.agent_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div className="lg:col-span-4">
             <label className="text-xs text-gray-600 mb-1 block">Notes</label>
             <textarea
               name="notes"
               value={form.notes}
               onChange={handleChange}
               rows={2}
-              className="border p-2 rounded-lg w-full text-sm"
+              className={`${inputClasses} min-h-[60px]`}
             />
           </div>
         </div>
       </div>
 
-      {/* Bottom actions */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap gap-3 items-center w-full">
-          <button
-            type="button"
-            disabled={saving}
-            className={`rounded-lg px-6 py-2 text-sm font-medium text-white ${
-              saving ? "bg-green-400" : "bg-green-600 hover:bg-green-700"
-            }`}
-            onClick={saveReceipt}
-            title="Calls the stored procedure to insert the receipt"
-          >
-            {saving ? "SAVING…" : "SAVE RECEIPT"}
-          </button>
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Actions</span>
+            <p className="text-xs text-gray-500">Save, new, reset, or load a receipt</p>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-2 text-sm font-medium"
-            onClick={() =>
-              setForm({
-                receiptType: "Installment",
-                receiptNo: "",
-                cancelled: "0",
-                date: today(),
-                ppRegNo: "",
-                bookName: "",
-                copies: "",
-                installments: "",
-                name: "",
-                address1: "",
-                address2: "",
-                city: "",
-                pin: "",
-                phone: "",
-                modeOfPay: "Cash",
-                amount: "",
-                bank: "",
-                chqdd: "",
-                agent: "",
-                notes: "",
-              })
-            }
-          >
-            NEW
-          </button>
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={saving}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[150px]`}
+              onClick={saveReceipt}
+              title="Calls the stored procedure to insert the receipt"
+            >
+              {saving ? "Saving…" : "Save Receipt"}
+            </button>
 
-          <button
-            type="button"
-            className="bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-6 py-2 text-sm font-medium"
-            onClick={() => window.location.reload()}
-          >
-            RESET
-          </button>
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 min-w-[120px]`}
+              onClick={() =>
+                setForm({
+                  receiptType: "Installment",
+                  receiptNo: "",
+                  cancelled: "0",
+                  date: today(),
+                  ppRegNo: "",
+                  bookName: "",
+                  copies: "",
+                  installments: "",
+                  name: "",
+                  address1: "",
+                  address2: "",
+                  city: "",
+                  pin: "",
+                  phone: "",
+                  modeOfPay: "Cash",
+                  amount: "",
+                  bank: "",
+                  chqdd: "",
+                  agent: "",
+                  notes: "",
+                })
+              }
+            >
+              New
+            </button>
 
-          {/* RIGHT-SIDE: Load by Receipt No */}
-          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[120px]`}
+              onClick={() => window.location.reload()}
+            >
+              Reset
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
             <input
               type="number"
               value={loadReceiptNo}
               onChange={(e) => setLoadReceiptNo(e.target.value)}
               placeholder="Receipt No"
-              className="border p-2 rounded-lg w-[160px] text-sm text-right"
+              className={`${inputClasses} w-full sm:w-64 text-right`}
             />
             <button
               type="button"
-              className={`text-white rounded-lg px-5 py-2 text-sm font-medium ${
-                loadingReceipt ? "bg-emerald-400" : "bg-emerald-600 hover:bg-emerald-700"
-              }`}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[140px]`}
               onClick={loadReceipt}
               title="Load an existing receipt by receipt number"
               disabled={loadingReceipt}
             >
-              {loadingReceipt ? "LOADING…" : "LOAD RECEIPT"}
+              {loadingReceipt ? "Loading…" : "Load Receipt"}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/axiosInstance';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
 export default function SaleBillPage() {
@@ -888,8 +889,20 @@ export default function SaleBillPage() {
     saleMaster.type,
   );
 
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
+  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
+  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -897,108 +910,102 @@ export default function SaleBillPage() {
         buttons={modal.buttons}
       />
 
-      {/* Master section */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
-          <input
-            type="text"
-            name="bill_no"
-            value={saleMaster.bill_no}
-            placeholder="Bill No"
-            className="border p-2 rounded-lg w-[130px] max-w-full text-left bg-gray-100"
-            readOnly
-          />
-          <input
-            type="date"
-            name="sale_date"
-            value={saleMaster.sale_date}
-            onChange={handleSaleMasterChange}
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
-          />
+      <PageHeader
+        icon={pageIcon}
+        title="Sale Bill"
+        subtitle="Create and manage sale bills"
+      />
 
-          <div className="relative">
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Sale details</span>
+            <p className="text-xs text-gray-500">Customer, billing, and totals</p>
+          </div>
+          <p className="text-xs text-gray-500">Gross / Bill amount auto update</p>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
             <input
               type="text"
-              name="customer_nm"
-              value={saleMaster.customer_nm}
-              onChange={handleSaleMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'customer_nm')}
-              placeholder={
-                saleMaster.type === 'Stock Transfer'
-                  ? 'Branch (Customer)'
-                  : 'Customer Name'
-              }
-              className="border p-2 rounded-lg w-[250px] max-w-full text-sm"
-              autoComplete="off"
+              name="bill_no"
+              value={saleMaster.bill_no}
+              placeholder="Bill No"
+              className={`${inputClasses} bg-gray-50 font-semibold`}
+              readOnly
             />
-            {showCustomerSuggestions &&
-              customerSuggestions.length > 0 &&
-              saleMaster.customer_nm.trim() && (
-                <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+            <input
+              type="date"
+              name="sale_date"
+              value={saleMaster.sale_date}
+              onChange={handleSaleMasterChange}
+              className={inputClasses}
+            />
+
+            <div className="relative">
+              <input
+                type="text"
+                name="customer_nm"
+                value={saleMaster.customer_nm}
+                onChange={handleSaleMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'customer_nm')}
+                placeholder={saleMaster.type === 'Stock Transfer' ? 'Branch (Customer)' : 'Customer Name'}
+                className={inputClasses}
+                autoComplete="off"
+              />
+              {showCustomerSuggestions && customerSuggestions.length > 0 && saleMaster.customer_nm.trim() && (
+                <ul className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                   {customerSuggestions.map((item, index) => (
                     <li
                       key={item.id}
                       id={`customer-suggestion-${index}`}
-                      className={`px-3 py-1 cursor-pointer ${
-                        customerHighlightedIndex === index
-                          ? 'bg-gray-200'
-                          : 'hover:bg-gray-100'
-                      }`}
+                      className={`px-3 py-2 cursor-pointer ${customerHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                       onClick={() => handleCustomerSuggestionClick(item)}
                     >
-                      {saleMaster.type === 'Stock Transfer'
-                        ? item.branches_nm
-                        : item.customer_nm}
+                      {saleMaster.type === 'Stock Transfer' ? item.branches_nm : item.customer_nm}
                     </li>
                   ))}
                 </ul>
               )}
-          </div>
+            </div>
 
-          <input
-            type="text"
-            name="billing_address"
-            value={saleMaster.billing_address}
-            onChange={handleSaleMasterChange}
-            placeholder="Billing Address"
-            className="border p-2 rounded-lg w-[300px] max-w-full text-sm"
-          />
-          <input
-            type="text"
-            name="mobile_number"
-            value={saleMaster.mobile_number}
-            onChange={handleSaleMasterChange}
-            placeholder="Mobile Number"
-            className="border p-2 rounded-lg w-[140px] max-w-full text-sm"
-          />
-
-          {/* Agents */}
-          <div className="relative">
             <input
               type="text"
-              name="agent_nm"
-              value={saleMaster.agent_nm}
+              name="billing_address"
+              value={saleMaster.billing_address}
               onChange={handleSaleMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'agent_nm')}
-              placeholder="Agents"
-              className="border p-2 rounded-lg w-[200px] max-w-full text-sm"
-              autoComplete="off"
-              disabled={!isAgentTypeAllowed}
+              placeholder="Billing Address"
+              className={inputClasses}
             />
-            {showAgentSuggestions &&
-              agentSuggestions.length > 0 &&
-              saleMaster.agent_nm.trim() &&
-              isAgentTypeAllowed && (
-                <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+            <input
+              type="text"
+              name="mobile_number"
+              value={saleMaster.mobile_number}
+              onChange={handleSaleMasterChange}
+              placeholder="Mobile Number"
+              className={inputClasses}
+            />
+
+            <div className="relative">
+              <input
+                type="text"
+                name="agent_nm"
+                value={saleMaster.agent_nm}
+                onChange={handleSaleMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'agent_nm')}
+                placeholder="Agents"
+                className={inputClasses}
+                autoComplete="off"
+                disabled={!isAgentTypeAllowed}
+              />
+              {showAgentSuggestions && agentSuggestions.length > 0 && saleMaster.agent_nm.trim() && isAgentTypeAllowed && (
+                <ul className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                   {agentSuggestions.map((agent, index) => (
                     <li
                       key={agent.id}
                       id={`agent-suggestion-${index}`}
-                      className={`px-3 py-1 cursor-pointer ${
-                        agentHighlightedIndex === index
-                          ? 'bg-gray-200'
-                          : 'hover:bg-gray-100'
-                      }`}
+                      className={`px-3 py-2 cursor-pointer ${agentHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                       onClick={() => handleAgentSuggestionClick(agent)}
                     >
                       {agent.agent_nm}
@@ -1006,370 +1013,305 @@ export default function SaleBillPage() {
                   ))}
                 </ul>
               )}
-          </div>
+            </div>
 
-          <select
-            name="type"
-            value={saleMaster.type}
-            onChange={handleSaleMasterChange}
-            className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-          >
-            <option value="" disabled>
-              Type
-            </option>
-            {[
-              'Credit Sale',
-              'Cash Sale',
-              'P P Sale',
-              'Stock Transfer',
-              'Approval',
-              'Gift Voucher',
-              'Gift Bill',
-              'Cash Memo',
-            ].map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <select
-            name="mode"
-            value={saleMaster.mode}
-            onChange={handleSaleMasterChange}
-            className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
-          >
-            <option value="" disabled>
-              Mode
-            </option>
-            {['Cash', 'Card', 'UPI Payment', 'N.A.'].map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <select
-            name="class"
-            value={saleMaster.class}
-            onChange={handleSaleMasterChange}
-            className="border p-2 rounded-lg w-[200px] max-w-full text-sm"
-          >
-            <option value="" disabled>
-              Class
-            </option>
-            {[
-              'Individual',
-              'Educational Instt - School',
-              'Educational Instt - College',
-              'Local Library',
-              'Local Bodies',
-              'Commission Agents',
-              'Agents',
-              'Other Book Shops',
-              'Corporate Firms',
-              'Not Applicable',
-              'Staff',
-              'Freelancers',
-              'Authors',
-              'Section',
-            ].map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <select
-            name="cancel"
-            value={saleMaster.cancel}
-            onChange={handleSaleMasterChange}
-            className="border p-2 rounded-lg w-[100px] max-w-full text-sm"
-            disabled={saleMaster.type === 'Stock Transfer'}
-          >
-            <option value="" disabled>
-              Cancel
-            </option>
-            {cancelOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="bill_discount"
-            value={saleMaster.bill_discount}
-            onChange={handleSaleMasterChange}
-            placeholder="Bill Ds%"
-            className="border p-2 rounded-lg w-[100px] max-w-full text-right"
-            disabled={!!activeDiscountField && activeDiscountField !== 'bill_discount'}
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="bill_discount_amount"
-            value={saleMaster.bill_discount_amount}
-            onChange={handleSaleMasterChange}
-            placeholder="Bill Discount Amount"
-            className="border p-2 rounded-lg w-[140px] max-w-full text-right"
-            disabled={
-              !!activeDiscountField && activeDiscountField !== 'bill_discount_amount'
-            }
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="gross"
-            value={saleMaster.gross}
-            placeholder="Gross"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
-            readOnly
-          />
-          <input
-            type="number"
-            name="round_off"
-            value={saleMaster.round_off}
-            onChange={handleSaleMasterChange}
-            placeholder="Round Off"
-            className="border p-2 rounded-lg w-[100px] max-w-full text-right"
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="bill_amount"
-            value={saleMaster.bill_amount}
-            placeholder="Bill Amount"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
-            readOnly
-          />
-          <input
-            type="text"
-            name="note_1"
-            value={saleMaster.note_1}
-            onChange={handleSaleMasterChange}
-            placeholder="Note 1"
-            className="border p-2 rounded-lg w-[400px] max-w-full text-sm"
-          />
-          <input
-            type="text"
-            name="note_2"
-            value={saleMaster.note_2}
-            onChange={handleSaleMasterChange}
-            placeholder="Note 2"
-            className="border p-2 rounded-lg w-[400px] max-w-full text-sm"
-          />
-          <input
-            type="number"
-            name="freight_postage"
-            value={saleMaster.freight_postage}
-            onChange={handleSaleMasterChange}
-            placeholder="Freight/Postage"
-            className="border p-2 rounded-lg w-[140px] max-w-full text-right"
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="processing_charge"
-            value={saleMaster.processing_charge}
-            onChange={handleSaleMasterChange}
-            placeholder="Processing Charge"
-            className="border p-2 rounded-lg w-[140px] max-w-full text-right"
-            step="0.01"
-          />
+            <select
+              name="type"
+              value={saleMaster.type}
+              onChange={handleSaleMasterChange}
+              className={inputClasses}
+            >
+              <option value="" disabled>Type</option>
+              {['Credit Sale','Cash Sale','P P Sale','Stock Transfer','Approval','Gift Voucher','Gift Bill','Cash Memo'].map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <select
+              name="mode"
+              value={saleMaster.mode}
+              onChange={handleSaleMasterChange}
+              className={inputClasses}
+            >
+              <option value="" disabled>Mode</option>
+              {['Cash', 'Card', 'UPI Payment', 'N.A.'].map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <select
+              name="class"
+              value={saleMaster.class}
+              onChange={handleSaleMasterChange}
+              className={inputClasses}
+            >
+              <option value="" disabled>Class</option>
+              {[
+                'Individual',
+                'Educational Instt - School',
+                'Educational Instt - College',
+                'Local Library',
+                'Local Bodies',
+                'Commission Agents',
+                'Agents',
+                'Other Book Shops',
+                'Corporate Firms',
+                'Not Applicable',
+                'Staff',
+                'Freelancers',
+                'Authors',
+                'Section',
+              ].map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <select
+              name="cancel"
+              value={saleMaster.cancel}
+              onChange={handleSaleMasterChange}
+              className={inputClasses}
+              disabled={saleMaster.type === 'Stock Transfer'}
+            >
+              <option value="" disabled>Cancel</option>
+              {cancelOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              name="bill_discount"
+              value={saleMaster.bill_discount}
+              onChange={handleSaleMasterChange}
+              placeholder="Bill Ds%"
+              className={`${inputClasses} text-right`}
+              disabled={!!activeDiscountField && activeDiscountField !== 'bill_discount'}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="bill_discount_amount"
+              value={saleMaster.bill_discount_amount}
+              onChange={handleSaleMasterChange}
+              placeholder="Bill Discount Amount"
+              className={`${inputClasses} text-right`}
+              disabled={!!activeDiscountField && activeDiscountField !== 'bill_discount_amount'}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="gross"
+              value={saleMaster.gross}
+              placeholder="Gross"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+            />
+            <input
+              type="number"
+              name="round_off"
+              value={saleMaster.round_off}
+              onChange={handleSaleMasterChange}
+              placeholder="Round Off"
+              className={`${inputClasses} text-right`}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="bill_amount"
+              value={saleMaster.bill_amount}
+              placeholder="Bill Amount"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+            />
+            <input
+              type="text"
+              name="note_1"
+              value={saleMaster.note_1}
+              onChange={handleSaleMasterChange}
+              placeholder="Note 1"
+              className={inputClasses}
+            />
+            <input
+              type="text"
+              name="note_2"
+              value={saleMaster.note_2}
+              onChange={handleSaleMasterChange}
+              placeholder="Note 2"
+              className={inputClasses}
+            />
+            <input
+              type="number"
+              name="freight_postage"
+              value={saleMaster.freight_postage}
+              onChange={handleSaleMasterChange}
+              placeholder="Freight/Postage"
+              className={`${inputClasses} text-right`}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="processing_charge"
+              value={saleMaster.processing_charge}
+              onChange={handleSaleMasterChange}
+              placeholder="Processing Charge"
+              className={`${inputClasses} text-right`}
+              step="0.01"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Items table */}
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-y-auto">
-        <table className="w-full table-auto border border-gray-300 border-collapse">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              <th className="w-[422px] text-left p-2 text-sm font-semibold border border-gray-300">
-                Item Name
-              </th>
-              <th className="w-[122px] text-left p-2 text-right font-semibold border border-gray-300">
-                Qty
-              </th>
-              <th className="w-[148px] text-left p-2 text-right font-semibold border border-gray-300">
-                Rate
-              </th>
-              <th className="w-[90px] text-left p-2 text-right font-semibold border border-gray-300">
-                Ex Rt
-              </th>
-              <th className="w-[80px] text-left p-2 text-sm font-semibold border border-gray-300">
-                Currency
-              </th>
-              <th className="w-[140px] text-left p-2 text-right font-semibold border border-gray-300">
-                Tax
-              </th>
-              <th className="w-[100px] text-left p-2 text-right font-semibold border border-gray-300">
-                Disc %
-              </th>
-              <th className="w-[100px] text-left p-2 text-right font-semibold border border-gray-300">
-                Value
-              </th>
-              <th className="w-[10px] text-left p-2 text-sm font-semibold border border-gray-300" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index} className="border-t">
-                <td className="p-2 text-sm">
-                  <input
-                    type="text"
-                    value={item.itemName}
-                    onChange={(e) =>
-                      handleItemChange(index, 'itemName', e.target.value)
-                    }
-                    className={`border p-1 rounded w-full ${
-                      item.isMalayalam ? 'font-malayalam' : ''
-                    }`}
-                    style={
-                      item.isMalayalam
-                        ? { fontFamily: 'Noto Sans Malayalam, sans-serif' }
-                        : {}
-                    }
-                  />
-                </td>
-                <td className="p-2 text-sm">
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      handleItemChange(index, 'quantity', e.target.value)
-                    }
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-2 text-sm">
-                  <input
-                    type="number"
-                    value={item.rate}
-                    onChange={(e) =>
-                      handleItemChange(index, 'rate', e.target.value)
-                    }
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-2 text-sm">
-                  <input
-                    type="number"
-                    value={item.exchangeRate}
-                    onChange={(e) =>
-                      handleItemChange(index, 'exchangeRate', e.target.value)
-                    }
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-2 text-sm">
-                  <select
-                    value={item.currency}
-                    onChange={(e) =>
-                      handleItemChange(index, 'currency', e.target.value)
-                    }
-                    className="border p-1 rounded w-full text-sm"
-                  >
-                    <option value="" disabled>
-                      Currency
-                    </option>
-                    {currencies.map((cur) => (
-                      <option key={cur.id} value={cur.name}>
-                        {cur.name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-2 text-sm">
-                  <input
-                    type="number"
-                    value={item.tax}
-                    onChange={(e) =>
-                      handleItemChange(index, 'tax', e.target.value)
-                    }
-                    className="border p-1 rounded w-full text-right"
-                    disabled={isEditMode}
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-2 text-sm">
-                  <input
-                    type="number"
-                    value={item.discount || 0}
-                    onChange={(e) =>
-                      handleItemChange(index, 'discount', e.target.value)
-                    }
-                    className="border p-1 rounded w-full text-right"
-                    disabled={
-                      !!activeDiscountField && activeDiscountField !== 'item_discount'
-                    }
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-2 text-sm text-right">
-                  {Number(item.value).toFixed(2)}
-                </td>
-                <td className="p-2 text-sm text-center">
-                  <button
-                    onClick={() => handleDeleteItem(index)}
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete item"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {items.length > 0 && (
-          <div className="mt-3 border-t bg-gray-50 p-2 rounded">
-            <div className="text-right font-semibold text-sm">
-              Total: {totalValue.toFixed(2)}
-            </div>
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Line items</span>
+            <p className="text-xs text-gray-500">Products added to this sale</p>
           </div>
-        )}
+          <div className="text-sm font-semibold text-gray-700">
+            Total: {totalValue.toFixed(2)}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1050px]">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs uppercase tracking-wide">
+                <th className="px-3 py-2 text-left font-semibold w-[360px]">Item Name</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">Qty</th>
+                <th className="px-3 py-2 text-right font-semibold w-[130px]">Rate</th>
+                <th className="px-3 py-2 text-right font-semibold w-[90px]">Ex Rt</th>
+                <th className="px-3 py-2 text-left font-semibold w-[100px]">Currency</th>
+                <th className="px-3 py-2 text-right font-semibold w-[120px]">Tax %</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">Disc %</th>
+                <th className="px-3 py-2 text-right font-semibold w-[110px]">Value</th>
+                <th className="px-3 py-2 text-center font-semibold w-[48px]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-sm">
+                    No items added yet. Use the form below to add lines.
+                  </td>
+                </tr>
+              ) : (
+                items.map((item, index) => (
+                  <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.itemName}
+                        onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                        className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                        style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.rate}
+                        onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.exchangeRate}
+                        onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={item.currency}
+                        onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                        className={tableInputClasses}
+                      >
+                        <option value="" disabled>Currency</option>
+                        {currencies.map((cur) => (
+                          <option key={cur.id} value={cur.name}>{cur.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.tax}
+                        onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        disabled={isEditMode}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={item.discount || 0}
+                        onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                        className={`${tableInputClasses} text-right`}
+                        disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
+                      {Number(item.value).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        onClick={() => handleDeleteItem(index)}
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Delete item"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Add row */}
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="grid grid-cols-[420px_120px_150px_100px_80px_140px_100px_1fr] gap-0.5 w-full">
-          <div className="relative">
-            <input
-              type="text"
-              name="itemName"
-              value={formData.itemName}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-              placeholder="Item Name"
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isMalayalam ? 'font-malayalam' : ''
-              }`}
-              style={
-                isMalayalam
-                  ? { fontFamily: 'Noto Sans Malayalam, sans-serif' }
-                  : {}
-              }
-              autoComplete="off"
-            />
-            {showSuggestions &&
-              suggestions.length > 0 &&
-              formData.itemName.trim() && (
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Add item</span>
+            <p className="text-xs text-gray-500">Pick a product and set rates</p>
+          </div>
+          <p className="hidden md:block text-xs text-gray-500">Tip: prefix with "." for Malayalam titles</p>
+        </div>
+
+        <div className="p-4">
+          <div className="grid grid-cols-[420px_120px_140px_110px_110px_120px_110px_1fr] gap-3 w-full overflow-x-auto">
+            <div className="relative">
+              <input
+                type="text"
+                name="itemName"
+                value={formData.itemName}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'itemName')}
+                placeholder="Item Name"
+                className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
+                style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                autoComplete="off"
+              />
+              {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
                 <ul
-                  className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam"
-                  style={{
-                    fontFamily: isDotPrefixed
-                      ? 'Noto Sans Malayalam, sans-serif'
-                      : 'inherit',
-                  }}
+                  className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam"
+                  style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}
                 >
                   {suggestions.map((product, index) => (
                     <li
                       key={product.id}
                       id={`suggestion-${index}`}
-                      className={`px-3 py-1 cursor-pointer ${
-                        highlightedIndex === index
-                          ? 'bg-gray-200'
-                          : 'hover:bg-gray-100'
-                      }`}
+                      className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                       onClick={() => handleItemSuggestionClick(product)}
                     >
                       {isDotPrefixed ? product.title_m : product.title}
@@ -1377,74 +1319,72 @@ export default function SaleBillPage() {
                   ))}
                 </ul>
               )}
+            </div>
+            <input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              placeholder="Qty"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="rate"
+              value={formData.rate}
+              onChange={handleInputChange}
+              placeholder="Rate"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="exchangeRate"
+              value={formData.exchangeRate}
+              onChange={handleInputChange}
+              placeholder="Exchange Rate"
+              className={tableInputClasses}
+            />
+            <select
+              name="currency"
+              value={formData.currency}
+              onChange={handleInputChange}
+              className={tableInputClasses}
+            >
+              <option value="" disabled>Currency</option>
+              {currencies.map((cur) => (
+                <option key={cur.id} value={cur.name}>{cur.name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              name="tax"
+              value={formData.tax}
+              onChange={handleInputChange}
+              placeholder="Tax %"
+              className={tableInputClasses}
+              disabled={isEditMode || isItemSelected}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleInputChange}
+              placeholder="Disc %"
+              className={tableInputClasses}
+              disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
+              step="0.01"
+            />
+            <button
+              onClick={handleAddItem}
+              className={`${actionButtonClasses} w-full justify-center`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Item
+            </button>
           </div>
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            placeholder="Qty"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <input
-            type="number"
-            name="rate"
-            value={formData.rate}
-            onChange={handleInputChange}
-            placeholder="Rate"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <input
-            type="number"
-            name="exchangeRate"
-            value={formData.exchangeRate}
-            onChange={handleInputChange}
-            placeholder="Exchange Rate"
-            className="border p-2 rounded-lg text-sm w-full"
-          />
-          <select
-            name="currency"
-            value={formData.currency}
-            onChange={handleInputChange}
-            className="border p-2 rounded-lg text-sm w-full"
-          >
-            <option value="" disabled>
-              Currency
-            </option>
-            {currencies.map((cur) => (
-              <option key={cur.id} value={cur.name}>
-                {cur.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="tax"
-            value={formData.tax}
-            onChange={handleInputChange}
-            placeholder="Tax %"
-            className="border p-2 rounded-lg text-sm w-full"
-            disabled={isEditMode || isItemSelected}
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleInputChange}
-            placeholder="Disc %"
-            className="border p-2 rounded-lg text-sm w-full"
-            disabled={
-              !!activeDiscountField && activeDiscountField !== 'item_discount'
-            }
-            step="0.01"
-          />
-          <button
-            onClick={handleAddItem}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full"
-          >
-            ADD ITEM
-          </button>
         </div>
       </div>
 
@@ -1534,27 +1474,40 @@ export default function SaleBillPage() {
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-start mt-4 gap-x-3">
-        <input
-          type="text"
-          value={saleIdToLoad}
-          onChange={(e) => setSaleIdToLoad(e.target.value)}
-          placeholder="Sale ID"
-          className="border p-2 rounded-lg w-[200px] text-sm"
-        />
-        <button
-          onClick={handleLoadSale}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          LOAD SALE
-        </button>
-        <button
-          onClick={handleSubmitSale}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          {isEditMode ? 'UPDATE SALE' : 'SUBMIT SALE'}
-        </button>
+      <div className={`${cardClasses} overflow-hidden`}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Actions</span>
+            <p className="text-xs text-gray-500">Load a sale or submit/update</p>
+          </div>
+        </div>
+
+        <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={saleIdToLoad}
+              onChange={(e) => setSaleIdToLoad(e.target.value)}
+              placeholder="Sale ID"
+              className={`${inputClasses} w-full sm:w-64`}
+            />
+            <button
+              onClick={handleLoadSale}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+            >
+              Load Sale
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleSubmitSale}
+              className={`${actionButtonClasses} min-w-[180px]`}
+            >
+              {isEditMode ? 'Update Sale' : 'Submit Sale'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

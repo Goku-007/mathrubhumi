@@ -1,5 +1,6 @@
 import React, { useRef, useState, useMemo } from "react";
 import Modal from "../../components/Modal";
+import PageHeader from "../../components/PageHeader";
 import api from "../../utils/axiosInstance";
 
 /* ---------- tiny helpers ---------- */
@@ -108,7 +109,15 @@ export default function RemittanceEntry() {
       "P P Chq/DD",
     ];
     return chequeTypes.includes(form.type);
-    }, [form.type]);
+  }, [form.type]);
+
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
+  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
+  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+  const subduedInputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
+
   const baseInputClass = "border p-2 rounded-lg w-full text-sm";
   const inactiveClass = " bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none";
   const commonInactiveProps = isCheque ? {} : { readOnly: true, tabIndex: -1, "aria-readonly": "true" };
@@ -342,7 +351,7 @@ export default function RemittanceEntry() {
 
   /* ---------- render ---------- */
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
       {/* Modal */}
       <Modal
         isOpen={modal.isOpen}
@@ -351,218 +360,233 @@ export default function RemittanceEntry() {
         buttons={modal.buttons}
       />
 
-      {/* Header / Master card */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <h2 className="text-sm font-semibold text-gray-800 mb-3">Remittance Entry</h2>
+      <PageHeader
+        icon={
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10l1.5 1.5a9 9 0 0012.728 0L18 10M5 10V6h4M19 10V6h-4" />
+          </svg>
+        }
+        title="Remittance Entry"
+        subtitle="Record cash, cheque, and digital remittances"
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-          {/* Remittance No */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Remittance No</label>
-            <input
-              name="remittanceNo"
-              value={form.remittanceNo}
-              readOnly
-              tabIndex={-1}                 // not focusable via keyboard
-              aria-readonly="true"
-              className="border p-2 rounded-lg w-full text-sm bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none"
-            />
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Remittance details</span>
+            <p className="text-xs text-gray-500">Type, status, customer, and branch</p>
           </div>
+          <p className="text-xs text-gray-500">Amounts update as you pick receipts</p>
+        </div>
 
-          {/* Cancelled */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
-            <select
-              name="cancelled"
-              value={form.cancelled}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              <option value="0">No</option>
-              <option value="1">Yes</option>
-            </select>
-          </div>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Remittance No</label>
+              <input
+                name="remittanceNo"
+                value={form.remittanceNo}
+                readOnly
+                tabIndex={-1}
+                aria-readonly="true"
+                className={`${subduedInputClasses} select-none pointer-events-none font-semibold`}
+              />
+            </div>
 
-          {/* Date */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Date</label>
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            />
-          </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
+              <select
+                name="cancelled"
+                value={form.cancelled}
+                onChange={handleChange}
+                className={inputClasses}
+              >
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
 
-          {/* Type */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Type</label>
-            <select
-              name="type"
-              value={form.type}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              {A_TYPE_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Date</label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                className={inputClasses}
+              />
+            </div>
 
-          {/* Customer + suggestions (for Cheque/DD types) */}
-          <div className="flex flex-col lg:col-span-2 relative">
-            <label className="text-xs text-gray-600 mb-1">Customer</label>
-            <input
-              name="customer"
-              value={isChqType ? form.customer : "CASH/CARD/DIGITAL"}
-              onChange={handleCustomerChange}
-              onBlur={closeAfterBlur(() => setShowCustomerSug(false))}
-              onKeyDown={async (e) => {
-                if (e.key === "Enter" && isChqType) {
-                  if (!customerId) {
-                    showModal("Please pick a Customer from the list first.", "error");
-                    return;
-                  }
-                  setLoadingReceipts(true);
-                  const data = await fetchReceiptsByCustomer(customerId);
-                  setReceipts(data);
-                  setLoadingReceipts(false);
-                  if (data.length === 0) {
-                    showModal("No eligible receipts found for this customer.", "info");
-                  } else {
-                    setShowReceiptPicker(true);
-                  }
-                }
-              }}
-              placeholder={isChqType ? "Start typing customer…" : "CASH/CARD/DIGITAL"}
-              className={`border p-2 rounded-lg w-full text-sm ${
-                isChqType ? "" : "bg-gray-100 text-gray-600 border-gray-200 cursor-not-allowed"
-              }`}
-              autoComplete="off"
-              readOnly={!isChqType}
-              aria-readonly={!isChqType}
-            />
-            {isChqType && showCustomerSug && customerSug.length > 0 && (
-              <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {customerSug.map((c) => {
-                  const name =
-                    form.type === "P P Chq/DD"
-                      ? c.pp_customer_nm
-                      : c.customer_nm;
-
-                  return (
-                    <li
-                      key={c.id}
-                      className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                      onMouseDown={() => {
-                        setForm((p) => ({ ...p, customer: name || "" }));
-                        setCustomerId(c.id || 0);
-                        setShowCustomerSug(false);
-                      }}
-                    >
-                      {name}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {/* Bank (text only) */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Bank</label>
-            <input
-              name="bank"
-              value={form.bank}
-              onChange={handleChange}
-              className={baseInputClass + (isCheque ? "" : inactiveClass)}
-              {...commonInactiveProps}
-            />
-          </div>
-
-          {/* Receipt No (optional, not used in insert mapping) */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Receipt No</label>
-            <input
-              name="receiptNo"
-              value={form.receiptNo}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            />
-          </div>
-
-          {/* Chq/DD No (free text) */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Chq/DD No</label>
-            <input
-              name="chqdd"
-              value={form.chqdd}
-              onChange={handleChange}
-              className={baseInputClass + (isCheque ? "" : inactiveClass)}
-              {...commonInactiveProps}
-            />
-          </div>
-
-          {/* Remitted at + suggestions */}
-          <div className="flex flex-col lg:col-span-3 relative">
-            <label className="text-xs text-gray-600 mb-1">Remitted at</label>
-            <input
-              name="remittedAt"
-              value={form.remittedAt}
-              onChange={handleBranchChange}
-              onBlur={closeAfterBlur(() => setShowBranchSug(false))}
-              placeholder="Start typing branch…"
-              className="border p-2 rounded-lg w-full text-sm"
-              autoComplete="off"
-            />
-            {showBranchSug && branchSug.length > 0 && (
-              <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {branchSug.map((b) => (
-                  <li
-                    key={b.id}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
-                    onMouseDown={() => {
-                      setForm((p) => ({ ...p, remittedAt: b.branches_nm || "" }));
-                      setBranchId(b.id || 0);
-                      setShowBranchSug(false);
-                    }}
-                  >
-                    {b.branches_nm}
-                  </li>
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Type</label>
+              <select
+                name="type"
+                value={form.type}
+                onChange={handleChange}
+                className={inputClasses}
+              >
+                {A_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
                 ))}
-              </ul>
-            )}
+              </select>
+            </div>
           </div>
 
-          {/* Amount */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Amount</label>
-            <input
-              type="number"
-              step="0.01"
-              name="amount"
-              value={form.amount}
-              onChange={handleChange}
-              placeholder="0.00"
-              className="border p-2 rounded-lg w-full text-sm text-right"
-              onWheel={(e) => e.currentTarget.blur()}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="relative">
+              <label className="text-xs text-gray-600 mb-1">Customer</label>
+              <input
+                name="customer"
+                value={isChqType ? form.customer : "CASH/CARD/DIGITAL"}
+                onChange={handleCustomerChange}
+                onBlur={closeAfterBlur(() => setShowCustomerSug(false))}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter" && isChqType) {
+                    if (!customerId) {
+                      showModal("Please pick a Customer from the list first.", "error");
+                      return;
+                    }
+                    setLoadingReceipts(true);
+                    const data = await fetchReceiptsByCustomer(customerId);
+                    setReceipts(data);
+                    setLoadingReceipts(false);
+                    if (data.length === 0) {
+                      showModal("No eligible receipts found for this customer.", "info");
+                    } else {
+                      setShowReceiptPicker(true);
+                    }
+                  }
+                }}
+                placeholder={isChqType ? "Start typing customer…" : "CASH/CARD/DIGITAL"}
+                className={`${inputClasses} ${
+                  isChqType ? "" : "bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed"
+                }`}
+                autoComplete="off"
+                readOnly={!isChqType}
+                aria-readonly={!isChqType}
+              />
+              {isChqType && showCustomerSug && customerSug.length > 0 && (
+                <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {customerSug.map((c) => {
+                    const name =
+                      form.type === "P P Chq/DD"
+                        ? c.pp_customer_nm
+                        : c.customer_nm;
+
+                    return (
+                      <li
+                        key={c.id}
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                        onMouseDown={() => {
+                          setForm((p) => ({ ...p, customer: name || "" }));
+                          setCustomerId(c.id || 0);
+                          setShowCustomerSug(false);
+                        }}
+                      >
+                        {name}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-600 mb-1">Remitted at</label>
+              <div className="relative">
+                <input
+                  name="remittedAt"
+                  value={form.remittedAt}
+                  onChange={handleBranchChange}
+                  onBlur={closeAfterBlur(() => setShowBranchSug(false))}
+                  placeholder="Start typing branch…"
+                  className={inputClasses}
+                  autoComplete="off"
+                />
+                {showBranchSug && branchSug.length > 0 && (
+                  <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                    {branchSug.map((b) => (
+                      <li
+                        key={b.id}
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                        onMouseDown={() => {
+                          setForm((p) => ({ ...p, remittedAt: b.branches_nm || "" }));
+                          setBranchId(b.id || 0);
+                          setShowBranchSug(false);
+                        }}
+                      >
+                        {b.branches_nm}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Notes */}
-          <div className="lg:col-span-4">
-            <label className="text-xs text-gray-600 mb-1">Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={2}
-              placeholder="Key in narration"
-              className="border p-2 rounded-lg w-full text-sm"
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-gray-600 mb-1">Bank</label>
+              <input
+                name="bank"
+                value={form.bank}
+                onChange={handleChange}
+                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+                readOnly={!isCheque}
+                tabIndex={isCheque ? 0 : -1}
+                aria-readonly={!isCheque}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-1">Receipt No</label>
+              <input
+                name="receiptNo"
+                value={form.receiptNo}
+                onChange={handleChange}
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 mb-1">Chq/DD No</label>
+              <input
+                name="chqdd"
+                value={form.chqdd}
+                onChange={handleChange}
+                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+                readOnly={!isCheque}
+                tabIndex={isCheque ? 0 : -1}
+                aria-readonly={!isCheque}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-gray-600 mb-1">Amount</label>
+              <input
+                type="number"
+                step="0.01"
+                name="amount"
+                value={form.amount}
+                onChange={handleChange}
+                placeholder="0.00"
+                className={`${inputClasses} text-right`}
+                onWheel={(e) => e.currentTarget.blur()}
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <label className="text-xs text-gray-600 mb-1">Notes</label>
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Key in narration"
+                className={`${inputClasses} min-h-[60px]`}
+              />
+            </div>
           </div>
         </div>
 
@@ -644,56 +668,58 @@ export default function RemittanceEntry() {
         )}
       </div>
 
-      {/* Bottom actions — match PPReceiptEntry layout */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap items-center gap-2 w-full">
-          {/* LEFT: Save / New / Reset */}
-          <button
-            type="button"
-            disabled={saving}
-            className={`rounded-lg px-6 py-2 text-sm font-medium text-white ${
-              saving ? "bg-green-400" : "bg-green-600 hover:bg-green-700"
-            }`}
-            onClick={handleSave}
-          >
-            {saving ? "SAVING…" : "SAVE REMITTANCE"}
-          </button>
+      <div className={cardClasses}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className={badgeClasses}>Actions</span>
+            <p className="text-xs text-gray-500">Save, reset, or load a remittance</p>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-2 text-sm font-medium"
-            onClick={resetForm}
-          >
-            NEW
-          </button>
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={saving}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[180px]`}
+              onClick={handleSave}
+            >
+              {saving ? "Saving…" : "Save Remittance"}
+            </button>
 
-          <button
-            type="button"
-            className="bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-6 py-2 text-sm font-medium"
-            onClick={() => window.location.reload()}
-          >
-            RESET
-          </button>
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 min-w-[120px]`}
+              onClick={resetForm}
+            >
+              New
+            </button>
 
-          {/* RIGHT: Load by Remittance No */}
-          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[120px]`}
+              onClick={() => window.location.reload()}
+            >
+              Reset
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
             <input
               type="number"
               value={loadRemitNo}
               onChange={(e) => setLoadRemitNo(e.target.value)}
               placeholder="Remittance No"
-              className="border p-2 rounded-lg w-[160px] text-sm text-right"
+              className={`${inputClasses} w-full sm:w-64 text-right`}
             />
             <button
               type="button"
-              className={`text-white rounded-lg px-5 py-2 text-sm font-medium ${
-                loadingRemit ? "bg-emerald-400" : "bg-emerald-600 hover:bg-emerald-700"
-              }`}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[160px]`}
               onClick={loadRemittance}
               disabled={loadingRemit}
               title="Load remittance by number"
             >
-              {loadingRemit ? "LOADING…" : "LOAD REMITTANCE"}
+              {loadingRemit ? "Loading…" : "Load Remittance"}
             </button>
           </div>
         </div>

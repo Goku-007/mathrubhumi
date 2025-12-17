@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import api from '../../utils/axiosInstance';
 
 export default function SubCategoriesMaster() {
@@ -188,8 +189,15 @@ export default function SubCategoriesMaster() {
     }
   };
 
+  // Sub-category icon for header
+  const subCategoryIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col h-screen w-[97%] mx-auto p-4 space-y-4">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -197,65 +205,115 @@ export default function SubCategoriesMaster() {
         buttons={modal.buttons}
       />
 
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-x-auto">
-        <div className="w-[300px]">
-          <table className="w-full table-fixed border border-gray-300 border-collapse">
-            <thead className="sticky top-0 bg-gray-100 z-10">
-              <tr>
-                <th className="w-[250px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Sub Category Name</th>
-                <th className="w-[50px] text-center p-2 text-sm font-semibold border border-gray-300 bg-red-100"></th>
-              </tr>
-            </thead>
-            <tbody className="max-h-[calc(100vh-300px)] overflow-y-auto">
-              {items.map((item, index) => {
-                console.log(`Rendering item ${index}:`, item);
-                return (
-                  <tr key={item.id} className="border-t border-gray-300 hover:bg-gray-50">
-                    <td className="p-1 text-sm border border-gray-300 w-[250px] bg-gray-50">
-                      <input
-                        type="text"
-                        value={item.subCategoryName || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'subCategoryName', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, subCategoryName: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
-                      />
-                    </td>
-                    <td className="p-1 text-sm text-center border border-gray-300 w-[50px] bg-red-50">
-                      <button
-                        onClick={() => handleDeleteSubCategory(item.id)}
-                        className="text-red-600 hover:text-red-800"
-                        title="Delete sub-category"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+      {/* Page Header */}
+      <PageHeader
+        icon={subCategoryIcon}
+        title="Sub Categories Master"
+        subtitle="Manage product sub-categories"
+      />
+
+      {/* Main Content Card */}
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+        {/* Table Section */}
+        <div className="p-4">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full max-w-md">
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide">
+                    Sub Category Name
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold w-16">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan="2" className="px-4 py-8 text-center text-gray-400">
+                      No sub-categories found. Add one below.
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  items.map((item, index) => (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-blue-50/50 transition-colors animate-fade-in"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          value={item.subCategoryName || ''}
+                          onChange={(e) => handleTableInputChange(item.id, 'subCategoryName', e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, subCategoryName: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                     transition-all duration-200"
+                          placeholder="Enter sub-category name"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => handleDeleteSubCategory(item.id)}
+                          className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500
+                                     hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Delete sub-category"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Add Sub Category Form */}
+        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
+          <div className="flex items-center gap-3 max-w-md">
+            <div className="flex-1">
+              <input
+                type="text"
+                name="subCategoryName"
+                value={formData.subCategoryName}
+                onChange={handleInputChange}
+                placeholder="Enter new sub-category name"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                           transition-all duration-200 input-premium"
+                autoComplete="off"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddSubCategory()}
+              />
+            </div>
+            <button
+              onClick={handleAddSubCategory}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+                         text-white text-sm font-medium shadow-lg shadow-blue-500/25
+                         hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Sub Category
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <input
-              type="text"
-              name="subCategoryName"
-              value={formData.subCategoryName}
-              onChange={handleInputChange}
-              placeholder="Sub Category Name"
-              className="border p-2 rounded-lg text-sm w-[250px] focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
+      {/* Info card */}
+      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-3">
+          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
+            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing a sub-category name to save changes instantly.</p>
           </div>
-          <button
-            onClick={handleAddSubCategory}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full max-w-[150px]"
-          >
-            ADD SUB CATEGORY
-          </button>
         </div>
       </div>
     </div>

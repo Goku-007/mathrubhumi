@@ -1,12 +1,42 @@
 // src/utils/axiosInstance.js
 import axios from "axios";
 
+const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+const LAST_ACTIVITY_KEY = "lastActivityTs";
+
 const api = axios.create({
   baseURL: "http://localhost:8000/api/",
 });
 
-// Add access token to each request
+// Track user activity to enforce idle timeout
+if (typeof window !== "undefined" && !window.__idleActivityHooksSetup) {
+  const bumpActivity = () => {
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  };
+  ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach((evt) =>
+    window.addEventListener(evt, bumpActivity, { passive: true })
+  );
+  bumpActivity();
+  window.__idleActivityHooksSetup = true;
+}
+
+// Add access token to each request and enforce idle timeout
 api.interceptors.request.use((config) => {
+  const now = Date.now();
+  const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+
+  if (lastActivity && now - lastActivity > IDLE_LIMIT_MS) {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    return Promise.reject(new axios.Cancel("Session expired due to inactivity"));
+  }
+
+  localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+
   const token = localStorage.getItem("access");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -52,7 +82,20 @@ api.interceptors.response.use(
         // Refresh token failed — clear tokens and redirect to login
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
-        window.location.href = "/login";  // or '/'
+        localStorage.removeItem(LAST_ACTIVITY_KEY);
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";  // or '/'
+        }
+      }
+    }
+
+    // Any other 401 (including no refresh token) → clear and redirect
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
       }
     }
 

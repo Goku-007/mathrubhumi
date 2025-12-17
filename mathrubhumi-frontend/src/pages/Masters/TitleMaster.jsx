@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import api from '../../utils/axiosInstance';
 
 export default function TitleMaster() {
@@ -549,8 +550,14 @@ export default function TitleMaster() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const titleIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v14l-5-3-5 3V5z" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col h-screen w-[97%] mx-auto p-4 space-y-4">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -558,31 +565,41 @@ export default function TitleMaster() {
         buttons={modal.buttons}
       />
 
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-x-auto">
-        <div className="w-[1610px]">
-          <table className="w-full table-fixed border border-gray-300 border-collapse">
-            <thead className="sticky top-0 bg-gray-100 z-10">
-              <tr>
-                <th className="w-[100px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Code</th>
-                <th className="w-[350px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Title</th>
-                <th className="w-[120px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Language</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Author</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Publisher</th>
-                <th className="w-[200px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Translator</th>
-                <th className="w-[120px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Category</th>
-                <th className="w-[175px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Sub-Category</th>
-                <th className="w-[120px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">ISBN No.</th>
-                <th className="w-[80px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">R O Level</th>
-                <th className="w-[80px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Dn Level</th>
-                <th className="w-[300px] text-left p-2 text-sm font-semibold border border-gray-300 bg-gray-100">Title (Mal)</th>
-                <th className="w-[40px] text-center p-2 text-sm font-semibold border border-gray-300 bg-red-100"></th>
-              </tr>
-            </thead>
-            <tbody className="max-h-[calc(100vh-300px)] overflow-y-auto">
-              {items.map((item, index) => {
+      {/* Page Header */}
+      <PageHeader
+        icon={titleIcon}
+        title="Title Master"
+        subtitle="Manage titles and metadata"
+      />
+
+      {/* Main Content Card */}
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-4 space-y-4">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <div className="w-[1610px]">
+              <table className="w-full table-fixed border-collapse">
+                <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                  <tr>
+                    <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Code</th>
+                    <th className="w-[350px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Title</th>
+                    <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Language</th>
+                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Author</th>
+                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Publisher</th>
+                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Translator</th>
+                    <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Category</th>
+                    <th className="w-[175px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Sub-Category</th>
+                    <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold tracking-wide">ISBN No.</th>
+                    <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold tracking-wide">R O Level</th>
+                    <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Dn Level</th>
+                    <th className="w-[300px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Title (Mal)</th>
+                    <th className="w-[40px] px-4 py-3 text-center text-sm font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {items.map((item, index) => {
                 const keyFor = (field) => `${item.id}:${field}`;
                 return (
-                  <tr key={item.id} className="border-t border-gray-300 hover:bg-gray-50">
+                  <tr key={item.id} className="hover:bg-blue-50/50 transition-colors animate-fade-in" style={{ animationDelay: `${index * 30}ms` }}>
                     <td className="p-1 text-sm border border-gray-300 w-[100px] bg-gray-50">
                       <input
                         type="text"
@@ -810,7 +827,7 @@ export default function TitleMaster() {
                     <td className="p-2 text-sm text-center border border-gray-300 w-[40px] bg-red-50">
                       <button
                         onClick={() => handleDeleteItem(item.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Delete item"
                       >
                         <TrashIcon className="w-5 h-5" />
@@ -824,8 +841,8 @@ export default function TitleMaster() {
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
+      <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="relative">
             <input
               type="text"
@@ -1115,6 +1132,21 @@ export default function TitleMaster() {
           </button>
         </div>
       </div>
+      </div>
     </div>
+
+    {/* Info card */}
+    <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
+      <div className="flex items-start gap-3">
+        <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
+          <p className="text-xs text-blue-600 mt-0.5">Press Enter to save inline edits instantly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
   );
 }

@@ -188,6 +188,8 @@ export default function SaleBillReturn() {
 
       const modalRows = lines.map((it) => ({
         sale_det_id: it.id,
+        purchase_company_id: it.purchase_company_id,
+        purchase_id: it.purchase_id,
         purchase_det_id: it.purchase_item_id,
         title_id: it.title_id,
         product: it.title || '',
@@ -272,6 +274,8 @@ export default function SaleBillReturn() {
       value: computeValue(asNum(r.tqty), asNum(r.rate), asNum(r.exrt, 1), asNum(r.tax), asNum(r.disA)),
       title_id: r.title_id,
       sale_det_id: r.sale_det_id,
+      purchase_company_id: r.purchase_company_id,
+      purchase_id: r.purchase_id,
       purchase_det_id: r.purchase_det_id,
     }));
     setItems((prev) => [...prev, ...mapped]);
@@ -313,6 +317,8 @@ export default function SaleBillReturn() {
         disA: asNum(r.discount_a),
         value: asNum(r.line_value),
         sale_det_id: asNum(r.sale_det_id),
+        purchase_company_id: asNum(r.purchase_company_id),
+        purchase_id: asNum(r.purchase_id),
         purchase_det_id: asNum(r.purchase_det_id),
       }));
       setItems(loaded);
@@ -360,6 +366,8 @@ export default function SaleBillReturn() {
         discount_a: asNum(it.disA),
         line_value: asNum(it.value),
         sale_det_id: asNum(it.sale_det_id),
+        purchase_company_id: asNum(it.purchase_company_id),
+        purchase_id: asNum(it.purchase_id),        
         purchase_det_id: asNum(it.purchase_det_id),
       })),
     };

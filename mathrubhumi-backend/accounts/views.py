@@ -439,12 +439,10 @@ def create_sale(request):
                         cursor.execute(
                             """
                             INSERT INTO sale_items (
-                                sale_id, exchange_rate, quantity, rate, tax, discount_p,
-                                line_value, currency_id, title_id, allocated_bill_discount,
-                                purchase_item_id
+                                sale_id, exchange_rate, quantity, rate, tax, discount_p, line_value, currency_id, title_id, allocated_bill_discount,
+                                purchase_company_id, purchase_id, purchase_item_id
                             )
-                            VALUES (%s, %s, %s, %s, %s, %s,
-                                    %s, %s, %s, %s, %s)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """,
                             [
                                 sale_id,
@@ -457,6 +455,8 @@ def create_sale(request):
                                 item['currencyIndex'],
                                 item['titleId'],
                                 item['allocatedBillDiscount'],
+                                item['purchaseCompanyId'],
+                                item['purchaseId'],
                                 item['purchaseItemId'],
                             ]
                         )
@@ -578,7 +578,14 @@ def create_goods_inward(request):
                         )
 
             logger.info(f"Purchase created successfully with ID: {purchase_id}")
-            return JsonResponse({'message': 'Purchase saved successfully', 'purchase_no': purchase_no}, status=201)
+            return JsonResponse(
+                {
+                    'message': 'Purchase saved successfully',
+                    'purchase_no': purchase_no,
+                    'purchase_id': purchase_id,
+                },
+                status=201
+            )
 
         except Exception as e:
             logger.error(f"Error in create_purchase: {str(e)}")
@@ -663,11 +670,9 @@ def get_sale_by_id(request, sale_id):
 
                 cursor.execute(
                     """
-                    SELECT CASE WHEN T.language_id = 1 THEN T.title_m ELSE T.title END AS item_name,
-                           SI.exchange_rate, SI.quantity, SI.rate, SI.tax,
-                           SI.discount_p, SI.line_value, SI.currency_id,
-                           SI.title_id, T.language_id, C.currency_name,
-                           SI.allocated_bill_discount, SI.purchase_item_id
+                    SELECT CASE WHEN T.language_id = 1 THEN T.title_m ELSE T.title END AS item_name, SI.exchange_rate, SI.quantity, 
+                           SI.rate, SI.tax, SI.discount_p, SI.line_value, SI.currency_id, SI.title_id, T.language_id, C.currency_name,
+                           SI.allocated_bill_discount, SI.purchase_company_id, SI.purchase_id, SI.purchase_item_id
                       FROM sale_items SI
                       JOIN titles     T ON (SI.title_id   = T.id)
                       JOIN currencies C ON (SI.currency_id = C.id)
@@ -690,7 +695,9 @@ def get_sale_by_id(request, sale_id):
                         'language': int(item[9]),
                         'currency': item[10],
                         'allocatedBillDiscount': float(item[11]) if item[11] is not None else 0.0,
-                        'purchaseItemId': int(item[12]) if item[12] is not None else 0,
+                        'purchaseCompanyId': int(item[12]) if item[12] is not None else 0,
+                        'purchaseId': int(item[13]) if item[13] is not None else 0,
+                        'purchaseItemId': int(item[14]) if item[13] is not None else 0,
                     })
 
             logger.info(f"Sale retrieved successfully: ID {sale_id}")
@@ -867,11 +874,9 @@ def get_sale_by_id(request, sale_id):
                 for item in data['items']:
                     cursor.execute(
                         """
-                        INSERT INTO sale_items
-                            (sale_id, exchange_rate, quantity, rate, tax, discount_p,
-                             line_value, currency_id, title_id, allocated_bill_discount, purchase_item_id)
-                        VALUES (%s, %s, %s, %s, %s, %s,
-                                %s, %s, %s, %s, %s)
+                        INSERT INTO sale_items (sale_id, exchange_rate, quantity, rate, tax, discount_p, line_value, currency_id, title_id, 
+                                                allocated_bill_discount, purchase_company_id, purchase_id, purchase_item_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         [
                             sale_id,
@@ -884,6 +889,8 @@ def get_sale_by_id(request, sale_id):
                             item['currencyIndex'],
                             item['titleId'],
                             item['allocatedBillDiscount'],
+                            item['purchaseCompanyId'],
+                            item['purchaseId'],
                             item['purchaseItemId'],
                         ]
                     )
@@ -930,8 +937,6 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                     logger.warning(f"Goods Inward not found: ID {goods_inward_purchase_no}")
                     return JsonResponse({'error': 'Goods Inward not found'}, status=404)
 
-                print('-----------')
-                print(goods_inward)
                 type_mapping = {0: 'Purchase', 1: 'Return', 2: 'Consignment'}
                 goods_inward_data = {
                     'inward_date': goods_inward[0].isoformat() if goods_inward[0] else '',
@@ -961,6 +966,7 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                     'p_breakup_nm3': goods_inward[24] if goods_inward[24] is not None else '',
                     'p_breakup_nm4': goods_inward[25] if goods_inward[25] is not None else '',
                     'purchase_no': int(goods_inward[26]) if goods_inward[26] is not None else 0,
+                    'purchase_id': int(goods_inward[27]) if goods_inward[27] is not None else 0,
                     'items': []
                 }
                 goods_inward_id = int(goods_inward[27])
@@ -1036,6 +1042,10 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                 return JsonResponse({'error': 'Items must be a non-empty list'}, status=400)
 
             try:
+                print('==========')
+                print(data['entry_date'])
+                print(data['srl_no'])
+                print(data['id'])
                 gross = float(data['gross']) if data['gross'] else 0.0
                 nett = float(data['nett']) if data['nett'] else 0.0
                 p_breakup_id1 = int(data['p_breakup_id1']) if data['p_breakup_id2'] else 0
@@ -1069,6 +1079,17 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
 
             type_mapping = {'Purchase': 0, 'Return': 1, 'Consignment': 2}
             with connection.cursor() as cursor:
+                goods_inward_id = int(data.get('id') or 0)
+                if goods_inward_id <= 0:
+                    cursor.execute(
+                        "SELECT id FROM purchase WHERE purchase_no = %s",
+                        [goods_inward_purchase_no]
+                    )
+                    row = cursor.fetchone()
+                    if not row:
+                        return JsonResponse({'error': 'Goods Inward not found'}, status=404)
+                    goods_inward_id = int(row[0])
+
                 cursor.execute(
                     """
                     UPDATE purchase
@@ -1212,7 +1233,9 @@ def batch_select(request):
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT S.supplier_nm, P.entry_date, PD.rate, PD.exchange_rate, C.currency_name, PD.sgst + PD.cgst AS tax, PD.discount_p, PD.closing, PD.id AS purchase_item_id
+                SELECT S.supplier_nm, P.entry_date, PD.rate, PD.exchange_rate, C.currency_name, PD.sgst + PD.cgst AS tax, PD.discount_p, PD.closing, 
+                       PD.origin_company_id AS purchase_company_id, PD.origin_purchase_id AS purchase_id, 
+                       PD.origin_purchase_items_id AS purchase_item_id
                   FROM titles T JOIN purchase_items PD ON (T.id = PD.title_id)
                                 JOIN purchase P ON (P.id = PD.purchase_id)
                                 JOIN suppliers S ON (S.id = P.supplier_id)
@@ -1232,7 +1255,9 @@ def batch_select(request):
                     'tax': row[5],
                     'inwardDiscount': float(row[6]),
                     'stock': float(row[7]),
-                    'purchaseItemId': int(row[8]),
+                    'purchaseCompanyId': int(row[8]),
+                    'purchaseId': int(row[9]),
+                    'purchaseItemId': int(row[10]),
                 } for row in rows
             ]
             logger.info(f"Product: {titleId}, results: {len(batchList)}, sample: {batchList}")
@@ -3355,10 +3380,9 @@ def purchase_search(request):
         with connection.cursor() as cursor:
             sql_query = """
                 SELECT id, invoice_no, invoice_date
-                FROM purchase
-                WHERE supplier_id = %s
-                  AND invoice_no ILIKE %s
-                LIMIT 10
+                  FROM purchase
+                 WHERE supplier_id = %s AND invoice_no ILIKE %s
+                 LIMIT 10
             """
             cursor.execute(sql_query, [supplier_id, f'%{query}%'])
             results = cursor.fetchall()
@@ -3559,13 +3583,10 @@ def goods_inward(request):
                 # INSERT parent – note: NO bill_no here
                 cur.execute(
                     """
-                    INSERT INTO purchase_rt (
-                        company_id, id, purchase_rt_no, entry_date, nett,
-                        supplier_id, narration, pr_type, gross, inter_state, user_id
-                    )
+                    INSERT INTO purchase_rt (company_id, id, purchase_rt_no, entry_date, nett, supplier_id, narration, pr_type, gross, 
+                        inter_state, user_id)
                     VALUES (
-                        %s, %s, %s, COALESCE(%s, CURRENT_DATE), %s,
-                        %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, COALESCE(%s, CURRENT_DATE), %s, %s, %s, %s, %s, %s, %s
                     )
                     """,
                     [
@@ -3590,10 +3611,8 @@ def goods_inward(request):
                     title_id = resolve_title_id(cur, item)
                     cur.execute(
                         """
-                        INSERT INTO purchase_rt_items (
-                            company_id, parent_id, id, title_id, quantity, rate,
-                            exchange_rate, adjusted_amount, discount, line_value, purchase_det_id
-                        )
+                        INSERT INTO purchase_rt_items (company_id, parent_id, id, title_id, quantity, rate, exchange_rate, adjusted_amount, 
+                            discount, line_value, purchase_det_id)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         [
@@ -3939,6 +3958,8 @@ def sales_rt_bill_items(request, sale_id: int):
                 """
                 SELECT
                     si.id,
+                    si.purchase_company_id,
+                    si.purchase_id,
                     si.purchase_item_id,
                     si.title_id,
                     COALESCE(t.title, '') AS title,
@@ -3965,17 +3986,19 @@ def sales_rt_bill_items(request, sale_id: int):
         data = [
             {
                 'id': r[0],
-                'purchase_item_id': r[1],
-                'title_id': r[2],
-                'title': r[3],
-                'quantity': float(r[4]),
-                'r_qty': float(r[5]),
-                'rate': float(r[6]),
-                'currency_name': r[7],
-                'exchange_rate': float(r[8]),
-                'tax': float(r[9]),
-                'dis_a': float(r[10]),
-                'line_value': float(r[11]),
+                'purchase_company_id': r[1],
+                'purchase_id': r[2],
+                'purchase_item_id': r[3],
+                'title_id': r[4],
+                'title': r[5],
+                'quantity': float(r[6]),
+                'r_qty': float(r[7]),
+                'rate': float(r[8]),
+                'currency_name': r[9],
+                'exchange_rate': float(r[10]),
+                'tax': float(r[11]),
+                'dis_a': float(r[12]),
+                'line_value': float(r[13]),
             }
             for r in rows
         ]
@@ -4029,8 +4052,7 @@ def sales_rt_create(request):
                 cur.execute(
                     """
                     INSERT INTO sales_rt (
-                        company_id, sales_rt_no, entry_date, s_type, cash,
-                        cash_customer, narration, nett, gross, discount_a,
+                        company_id, sales_rt_no, entry_date, s_type, cash, cash_customer, narration, nett, gross, discount_a,
                         discount_p, rounded_off, user_id, cr_customer_id
                     )
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
@@ -4059,12 +4081,9 @@ def sales_rt_create(request):
                 for it in rows:
                     cur.execute(
                         """
-                        INSERT INTO sale_rt_items (
-                            company_id, parent_id, title_id, quantity, rate,
-                            tax, exchange_rate, discount_p, discount_a, discount,
-                            sale_det_id, line_value, purchase_det_id
-                        )
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        INSERT INTO sale_rt_items (company_id, parent_id, title_id, quantity, rate, tax, exchange_rate, discount_p, discount_a, 
+                            discount, sale_det_id, line_value, purchase_company_id, purchase_id, purchase_det_id)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                         """,
                         [
                             0,  # company_id
@@ -4079,6 +4098,8 @@ def sales_rt_create(request):
                             0.0,  # discount (as per requirement)
                             _int(it.get('sale_det_id'), 0),
                             float(_num(it.get('line_value'), 0.0)),
+                            _int(it.get('purchase_company_id'), 0),
+                            _int(it.get('purchase_id'), 0),
                             _int(it.get('purchase_det_id'), 0),
                         ],
                     )
@@ -4096,8 +4117,7 @@ def sales_rt_detail(request, id: int):
         with connection.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, company_id, sales_rt_no, entry_date, s_type, cash,
-                       cash_customer, narration, nett, gross, discount_a, discount_p,
+                SELECT id, company_id, sales_rt_no, entry_date, s_type, cash, cash_customer, narration, nett, gross, discount_a, discount_p,
                        rounded_off, user_id, cr_customer_id
                 FROM sales_rt
                 WHERE id = %s
@@ -4120,6 +4140,8 @@ def sales_rt_detail(request, id: int):
                     sri.discount_a,
                     sri.line_value,
                     sri.sale_det_id,
+                    sri.purchase_company_id,
+                    sri.purchase_id,
                     sri.purchase_det_id,
                     COALESCE(c.currency_name, 'Indian Rupees') AS currency_name
                 FROM sale_rt_items sri
@@ -4165,8 +4187,10 @@ def sales_rt_detail(request, id: int):
                     'discount_a': float(r[6] or 0),
                     'line_value': float(r[7] or 0),
                     'sale_det_id': int(r[8] or 0),
-                    'purchase_det_id': int(r[9] or 0),
-                    'currency_name': r[10] or 'Indian Rupees',
+                    'purchase_company_id': int(r[9] or 0),
+                    'purchase_id': int(r[10] or 0),
+                    'purchase_det_id': int(r[11] or 0),
+                    'currency_name': r[12] or 'Indian Rupees',
                 }
                 for r in rows
             ],

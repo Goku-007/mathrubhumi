@@ -49,6 +49,8 @@ export default function SaleBillPage() {
     discount: '',
     currencyIndex: 0,
     titleId: '',
+    purchaseCompanyId: '',
+    purchaseId: '',
     purchaseItemId: '',
   });
 
@@ -357,6 +359,8 @@ export default function SaleBillPage() {
       quantity: '1',
       currency: batch.currency,
       currencyIndex: selectedCurrency ? selectedCurrency.id : currencies[0]?.id || 0,
+      purchaseCompanyId: batch.purchaseCompanyId,
+      purchaseId: batch.purchaseId,
       purchaseItemId: batch.purchaseItemId,
     }));
     setShowBatchModal(false);
@@ -494,6 +498,8 @@ export default function SaleBillPage() {
       tax,
       discount,
       titleId,
+      purchaseCompanyId,
+      purchaseId,
       purchaseItemId,
     } = formData;
 
@@ -532,6 +538,8 @@ export default function SaleBillPage() {
         isMalayalam,
         currencyIndex,
         titleId: parseInt(titleId),
+        purchaseCompanyId: parseInt(purchaseCompanyId || '0'),
+        purchaseId: parseInt(purchaseId || '0'),
         purchaseItemId: parseInt(purchaseItemId || '0'),
       };
 
@@ -552,6 +560,8 @@ export default function SaleBillPage() {
         discount: '',
         currencyIndex: defaultCur?.id || 0,
         titleId: '',
+        purchaseCompanyId: '',
+        purchaseId: '',
         purchaseItemId: '',
       });
       setIsMalayalam(false);
@@ -696,6 +706,8 @@ export default function SaleBillPage() {
           value: parseFloat(String(item.value)),
           currencyIndex: parseInt(String(item.currencyIndex)),
           titleId: parseInt(String(item.titleId)),
+          purchaseCompanyId: parseInt(String(item.purchaseCompanyId || 0)),
+          purchaseId: parseInt(String(item.purchaseId || 0)),
           purchaseItemId: parseInt(String(item.purchaseItemId || 0)),
         })),
       };
@@ -749,6 +761,8 @@ export default function SaleBillPage() {
         discount: '',
         currencyIndex: defaultCur?.id || 0,
         titleId: '',
+        purchaseCompanyId: '',
+        purchaseId: '',
         purchaseItemId: '',
       });
       setIsEditMode(false);
@@ -829,6 +843,8 @@ export default function SaleBillPage() {
           currencyIndex: item.currencyIndex,
           titleId: item.titleId,
           isMalayalam: !!String(item.itemName).match(/[\u0D00-\u0D7F]/),
+          purchaseCompanyId: item.purchaseCompanyId,
+          purchaseId: item.purchaseId,
           purchaseItemId: item.purchaseItemId,
         })),
       );

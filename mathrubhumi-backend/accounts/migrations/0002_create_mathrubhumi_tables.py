@@ -288,6 +288,10 @@ CREATE TABLE IF NOT EXISTS public.purchase_items (
     cgst numeric(5, 2) DEFAULT 0.00 NOT NULL,
     isbn varchar(15) NULL,
     company_id int2 DEFAULT 1 NOT NULL,
+    origin_company_id int2 DEFAULT 0 NOT NULL,
+	origin_purchase_id int4 DEFAULT 0 NOT NULL,
+	origin_purchase_items_id int4 DEFAULT 0 NOT NULL,
+	purchase_cost numeric(8, 2) DEFAULT 0.00 NOT NULL,
     CONSTRAINT purchase_items_unique UNIQUE (company_id, id)
 );
 
@@ -320,6 +324,9 @@ CREATE TABLE IF NOT EXISTS public.purchase_rt_items (
     discount numeric(5, 2) DEFAULT 0.00 NOT NULL,
     line_value numeric(10, 3) DEFAULT 0.00 NOT NULL,
     purchase_det_id int4 DEFAULT 0 NOT NULL,
+    purchase_company_id int2 DEFAULT 0 NOT NULL,
+	purchase_id int4 DEFAULT 0 NOT NULL,
+	currency_id int2 DEFAULT 0 NOT NULL,
     CONSTRAINT purchase_rt_items_unique UNIQUE (company_id, parent_id, id)
 );
 

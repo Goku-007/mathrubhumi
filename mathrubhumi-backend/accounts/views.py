@@ -2,7 +2,7 @@ import json
 import logging
 import decimal
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -974,7 +974,7 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                 cursor.execute(
                     """
                     SELECT CASE WHEN T.language_id = 1 THEN T.title_m ELSE T.title END AS item_name, PI.isbn, PI.quantity, PI.rate, PI.exchange_rate, 
-                           C.currency_name, PI.cgst + PI.sgst AS tax, PI.discount_p, PI.discount_a, PI.title_id, PI.currency_id, T.language_id
+                           C.currency_name, PI.cgst + PI.sgst AS tax, PI.discount_p, PI.discount_a, PI.title_id, PI.currency_id, T.language_id, PI.id
                       FROM purchase_items PI JOIN titles T ON (PI.title_id = T.id)
                                              JOIN currencies C ON (PI.currency_id = C.id)
                      WHERE PI.purchase_id = %s
@@ -996,7 +996,8 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                         'value': float(item[2] * item[3] * item[4] * (1 - item[7] / 100) * (1 + item[6] / 100)),
                         'titleId': int(item[9]) if item[9] is not None else 0,
                         'currencyIndex': int(item[10]) if item[10] is not None else 0,
-                        'language': int(item[11]) if item[11] is not None else 0
+                        'language': int(item[11]) if item[11] is not None else 0,
+                        'itemId': int(item[12]) if item[12] is not None else 0
                     })
 
             logger.info(f"Goods Inward retrieved successfully: ID {goods_inward_id}")
@@ -1073,6 +1074,10 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                     item['value'] = float(item['value'])
                     item['currencyIndex'] = int(item['currencyIndex'])
                     item['titleId'] = int(item['titleId'])
+                    if 'itemId' in item and item['itemId']:
+                        item['itemId'] = int(item['itemId'])
+                    else:
+                        item['itemId'] = 0
             except (ValueError, TypeError) as e:
                 logger.error(f"Invalid data type: {str(e)}")
                 return JsonResponse({'error': f'Invalid data type: {str(e)}'}, status=400)
@@ -1136,28 +1141,72 @@ def get_goods_inward_by_id(request, goods_inward_purchase_no):
                     ]
                 )
 
-                cursor.execute("DELETE FROM purchase_items WHERE purchase_id = %s", [goods_inward_id])
+                cursor.execute("SELECT id FROM purchase_items WHERE purchase_id = %s", [goods_inward_id])
+                existing_rows = {row[0] for row in cursor.fetchall()}
+                payload_ids = set()
 
                 for item in data['items']:
+                    if item['itemId'] and item['itemId'] in existing_rows:
+                        payload_ids.add(item['itemId'])
+                        cursor.execute(
+                            """
+                            UPDATE purchase_items
+                               SET title_id = %s,
+                                   rate = %s,
+                                   exchange_rate = %s,
+                                   discount_p = %s,
+                                   discount_a = %s,
+                                   quantity = %s,
+                                   closing = %s,
+                                   currency_id = %s,
+                                   sgst = %s,
+                                   cgst = %s,
+                                   isbn = %s
+                             WHERE id = %s
+                            """,
+                            [
+                                item['titleId'],
+                                item['purchaseRate'],
+                                item['exchangeRate'],
+                                item['discount'],
+                                item['discountAmount'],
+                                item['quantity'],
+                                item['quantity'],
+                                item['currencyIndex'],
+                                item['tax'] / 2,
+                                item['tax'] / 2,
+                                item['isbn'],
+                                item['itemId']
+                            ]
+                        )
+                    else:
+                        cursor.execute(
+                            """
+                            INSERT INTO purchase_items (purchase_id, title_id, rate, exchange_rate, discount_p, discount_a, quantity, closing, currency_id, sgst, cgst, isbn)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            [
+                                goods_inward_id,
+                                item['titleId'],
+                                item['purchaseRate'],
+                                item['exchangeRate'],
+                                item['discount'],
+                                item['discountAmount'],
+                                item['quantity'],
+                                item['quantity'],
+                                item['currencyIndex'],
+                                item['tax'] / 2,
+                                item['tax'] / 2,
+                                item['isbn']
+                            ]
+                        )
+
+                # delete only rows not present in payload
+                ids_to_delete = existing_rows - payload_ids
+                if ids_to_delete:
                     cursor.execute(
-                        """
-                        INSERT INTO purchase_items (purchase_id, title_id, rate, exchange_rate, discount_p, discount_a, quantity, closing, currency_id, sgst, cgst, isbn)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        [
-                            goods_inward_id,
-                            item['titleId'],
-                            item['purchaseRate'],
-                            item['exchangeRate'],
-                            item['discount'],
-                            item['discountAmount'],
-                            item['quantity'],
-                            item['quantity'],
-                            item['currencyIndex'],
-                            item['tax'] / 2,
-                            item['tax'] / 2,
-                            item['isbn']
-                        ]
+                        "DELETE FROM purchase_items WHERE purchase_id = %s AND id = ANY(%s)",
+                        [goods_inward_id, list(ids_to_delete)]
                     )
 
             logger.info(f"Goods Inward updated successfully: ID {goods_inward_id}")
@@ -3425,7 +3474,10 @@ def get_purchase_items_by_id(request, purchase_id):
                        PI.discount_a,
                        PI.title_id,
                        PI.currency_id,
-                       T.language_id
+                       T.language_id,
+                       PI.company_id AS origin_company_id,
+                       PI.purchase_id AS origin_purchase_id,
+                       PI.id AS origin_purchase_items_id
                   FROM purchase_items PI
                   JOIN titles T ON (PI.title_id = T.id)
                   JOIN currencies C ON (PI.currency_id = C.id)
@@ -3449,6 +3501,9 @@ def get_purchase_items_by_id(request, purchase_id):
                     'title_id': int(row[8]) if row[8] is not None else 0,
                     'currency_id': int(row[9]) if row[9] is not None else 0,
                     'language_id': int(row[10]) if row[10] is not None else 0,
+                    'origin_company_id': int(row[11]) if row[11] is not None else 0,
+                    'origin_purchase_id': int(row[12]) if row[12] is not None else 0,
+                    'origin_purchase_items_id': int(row[13]) if row[13] is not None else 0,
                 }
                 for row in items
             ]
@@ -3609,11 +3664,15 @@ def goods_inward(request):
                 for item in rows:
                     child_id += 1
                     title_id = resolve_title_id(cur, item)
+                    currency_id = _int(item.get('currency_id', 0), 0)
+                    purchase_company_id = _int(item.get('purchase_company_id', 0), 0)
+                    purchase_id = _int(item.get('purchase_id', 0), 0)
+                    purchase_det_id = _int(item.get('purchase_det_id', 0), 0)
                     cur.execute(
                         """
                         INSERT INTO purchase_rt_items (company_id, parent_id, id, title_id, quantity, rate, exchange_rate, adjusted_amount, 
-                            discount, line_value, purchase_det_id)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            discount, line_value, purchase_det_id, currency_id, purchase_company_id, purchase_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         [
                             company_id,
@@ -3626,7 +3685,10 @@ def goods_inward(request):
                             _num(item.get('adjusted_amount', 0.0)),
                             _num(item.get('discount', 0.0)),
                             _num(item.get('line_value', 0.0)),
-                            _int(item.get('purchase_det_id', 0)),
+                            purchase_det_id,
+                            currency_id,
+                            purchase_company_id,
+                            purchase_id,
                         ],
                     )
 
@@ -3708,9 +3770,14 @@ def goods_inward_detail(request, id):
                            PRI.adjusted_amount,
                            PRI.line_value,
                            COALESCE(T.language_id, 0) AS language_id,
-                           PRI.purchase_det_id
+                           PRI.purchase_det_id,
+                           PRI.currency_id,
+                           COALESCE(C.currency_name, 'Indian Rupees') AS currency_name,
+                           PRI.purchase_company_id,
+                           PRI.purchase_id
                     FROM purchase_rt_items PRI
                     JOIN titles T ON T.id = PRI.title_id
+                    LEFT JOIN currencies C ON C.id = PRI.currency_id
                     WHERE PRI.parent_id = %s
                     ORDER BY PRI.id
                     """,
@@ -3731,10 +3798,12 @@ def goods_inward_detail(request, id):
                         'line_value': float(r[8]),
                         'language_id': int(r[9]),
                         'purchase_det_id': int(r[10]),
+                        'currency_id': int(r[11]) if r[11] is not None else 0,
+                        'currency_name': r[12] or 'Indian Rupees',
+                        'purchase_company_id': int(r[13]) if r[13] is not None else 0,
+                        'purchase_id': int(r[14]) if r[14] is not None else 0,
                         # UI extras (you hard-code these on FE)
                         'isbn': '',
-                        'currency_id': 0,
-                        'currency_name': 'Indian Rupees',
                     }
                     for r in rows
                 ]
@@ -3802,39 +3871,40 @@ def goods_inward_detail(request, id):
                         ],
                     )
 
-                    # remove old items
                     cur.execute(
-                        "DELETE FROM purchase_rt_items WHERE parent_id = %s",
+                        "SELECT id FROM purchase_rt_items WHERE parent_id = %s",
                         [int(id)],
                     )
+                    existing_ids = {row[0] for row in cur.fetchall()}
+                    payload_ids = set()
 
-                    # insert new items (sequential id)
-                    child_id = 0
-                    for item in rows:
-                        child_id += 1
-                        title_id = resolve_title_id(cur, item)
+                for item in rows:
+                    row_id = _int(item.get('id') or item.get('row_id') or 0, 0)
+                    title_id = resolve_title_id(cur, item)
+                    currency_id = _int(item.get('currency_id', 0), 0)
+                    purchase_company_id = _int(item.get('purchase_company_id', 0), 0)
+                    purchase_id = _int(item.get('purchase_id', 0), 0)
+                    purchase_det_id = _int(item.get('purchase_det_id', 0), 0)
 
+                    if row_id in existing_ids:
+                        payload_ids.add(row_id)
                         cur.execute(
                             """
-                            INSERT INTO purchase_rt_items (
-                                company_id,
-                                parent_id,
-                                id,
-                                title_id,
-                                quantity,
-                                rate,
-                                exchange_rate,
-                                adjusted_amount,
-                                discount,
-                                line_value,
-                                purchase_det_id
-                            )
-                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                UPDATE purchase_rt_items
+                                   SET title_id = %s,
+                                       quantity = %s,
+                                       rate = %s,
+                                   exchange_rate = %s,
+                                   adjusted_amount = %s,
+                                   discount = %s,
+                                   line_value = %s,
+                                   purchase_det_id = %s,
+                                   currency_id = %s,
+                                   purchase_company_id = %s,
+                                   purchase_id = %s
+                             WHERE parent_id = %s AND id = %s
                             """,
                             [
-                                company_id,
-                                int(id),
-                                child_id,
                                 title_id,
                                 float(item.get('quantity', 0.0)),
                                 float(item.get('rate', 0.0)),
@@ -3842,8 +3912,57 @@ def goods_inward_detail(request, id):
                                 float(item.get('adjusted_amount', 0.0)),
                                 float(item.get('discount', 0.0)),
                                 float(item.get('line_value', 0.0)),
-                                int(item.get('purchase_det_id', 0)),
+                                purchase_det_id,
+                                currency_id,
+                                purchase_company_id,
+                                purchase_id,
+                                int(id),
+                                row_id,
                             ],
+                        )
+                    else:
+                            cur.execute(
+                                """
+                                INSERT INTO purchase_rt_items (
+                                    company_id,
+                                    parent_id,
+                                    title_id,
+                                    quantity,
+                                    rate,
+                                exchange_rate,
+                                adjusted_amount,
+                                discount,
+                                line_value,
+                                purchase_det_id,
+                                currency_id,
+                                purchase_company_id,
+                                purchase_id
+                            )
+                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                            """,
+                            [
+                                company_id,
+                                int(id),
+                                title_id,
+                                float(item.get('quantity', 0.0)),
+                                float(item.get('rate', 0.0)),
+                                float(item.get('exchange_rate', 0.0)),
+                                float(item.get('adjusted_amount', 0.0)),
+                                float(item.get('discount', 0.0)),
+                                float(item.get('line_value', 0.0)),
+                                purchase_det_id,
+                                currency_id,
+                                purchase_company_id,
+                                purchase_id,
+                            ],
+                        )
+
+                    # delete only rows that were removed
+                    to_delete = existing_ids - payload_ids
+                    if to_delete:
+                        cur.execute(
+                            "DELETE FROM purchase_rt_items WHERE parent_id = %s AND id = ANY(%s)",
+                            [int(id), list(to_delete)],
                         )
 
             return JsonResponse(

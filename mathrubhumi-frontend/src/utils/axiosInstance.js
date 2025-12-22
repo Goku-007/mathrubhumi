@@ -53,6 +53,21 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // If refresh itself failed, do not retry refresh -> just logout
+    const isRefreshCall =
+      originalRequest?.url?.includes("auth/refresh") ||
+      originalRequest?.url?.includes("/api/auth/refresh");
+
+    if (error.response && error.response.status === 401 && isRefreshCall) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
+
     if (
       error.response &&
       error.response.status === 401 &&
@@ -68,9 +83,14 @@ api.interceptors.response.use(
         });
 
         const newAccess = response.data.access;
+        const newRefresh = response.data.refresh || refreshToken;
 
         // Save new access token
         localStorage.setItem("access", newAccess);
+        // Save rotated refresh token when provided (SIMPLE_JWT rotation)
+        if (newRefresh) {
+          localStorage.setItem("refresh", newRefresh);
+        }
 
         // Update the Authorization header in the default Axios instance
         api.defaults.headers["Authorization"] = `Bearer ${newAccess}`;

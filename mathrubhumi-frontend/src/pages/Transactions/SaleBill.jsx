@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../utils/axiosInstance';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
@@ -15,6 +15,8 @@ export default function SaleBillPage() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isDotPrefixed, setIsDotPrefixed] = useState(false);
   const [isMalayalam, setIsMalayalam] = useState(false);
+  const [suggestionPosition, setSuggestionPosition] = useState(null);
+  const productInputRef = useRef(null);
 
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -149,6 +151,34 @@ export default function SaleBillPage() {
     fetchCurrencies();
   }, []);
 
+  useEffect(() => {
+    const updatePosition = () => {
+      if (
+        !showSuggestions ||
+        suggestions.length === 0 ||
+        !productInputRef.current ||
+        !formData.itemName.trim()
+      ) {
+        setSuggestionPosition(null);
+        return;
+      }
+      const rect = productInputRef.current.getBoundingClientRect();
+      setSuggestionPosition({
+        top: rect.bottom + window.scrollY + 6,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [showSuggestions, suggestions.length, formData.itemName]);
+
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -226,6 +256,10 @@ export default function SaleBillPage() {
         } else {
           updated.branch_id = '';
         }
+
+        if (value === 'Credit Sale') {
+          updated.mode = 'N.A.';
+        }
       }
 
       if (name === 'cancel' && prev.type === 'Stock Transfer') {
@@ -248,7 +282,7 @@ export default function SaleBillPage() {
       try {
         if (saleMaster.type === 'Credit Sale') {
           const res = await api.get(
-            `/auth/remittance-customer-search/?q=${encodeURIComponent(trimmed)}`,
+            `/auth/customer-search/?q=${encodeURIComponent(trimmed)}`,
           );
           if (res.data && res.data.length > 0) {
             setCustomerSuggestions(res.data);
@@ -369,10 +403,15 @@ export default function SaleBillPage() {
 
   const handleCustomerSuggestionClick = (suggestion) => {
     if (saleMaster.type === 'Credit Sale') {
+      const addressParts = [suggestion.address_1, suggestion.address_2, suggestion.city]
+        .map((part) => (part ? String(part).trim() : ''))
+        .filter(Boolean);
       setSaleMaster((prev) => ({
         ...prev,
         customer_nm: suggestion.customer_nm,
         customer_id: suggestion.id,
+        billing_address: addressParts.join(', '),
+        mobile_number: suggestion.telephone ? String(suggestion.telephone) : '',
       }));
     } else if (saleMaster.type === 'Stock Transfer') {
       setSaleMaster((prev) => ({
@@ -648,6 +687,60 @@ export default function SaleBillPage() {
     }));
   }, [gross, billDiscountPercent, billDiscountAmount, roundOff, hasItemDiscount]);
 
+  const resetSaleForm = () => {
+    const defaultCur = currencies.find((cur) => cur.name === 'Indian Rupees');
+    setSaleMaster({
+      customer_nm: '',
+      customer_id: '',
+      billing_address: '',
+      sale_date: new Date().toISOString().split('T')[0],
+      mobile_number: '',
+      type: 'Cash Memo',
+      mode: 'Cash',
+      class: 'Individual',
+      cancel: 'No',
+      bill_discount: '',
+      bill_discount_amount: '',
+      gross: '',
+      round_off: '',
+      bill_amount: '',
+      note_1: '',
+      note_2: '',
+      freight_postage: '',
+      processing_charge: '',
+      bill_no: '',
+      branch_id: '',
+      agent_id: '',
+      agent_nm: '',
+    });
+    setItems([]);
+    setFormData({
+      itemName: '',
+      quantity: '',
+      rate: '',
+      exchangeRate: '',
+      currency: defaultCur?.name || 'Indian Rupees',
+      tax: '',
+      discount: '',
+      currencyIndex: defaultCur?.id || 0,
+      titleId: '',
+      purchaseCompanyId: '',
+      purchaseId: '',
+      purchaseItemId: '',
+    });
+    setIsEditMode(false);
+    setSaleId(null);
+    setSaleIdToLoad('');
+    setActiveDiscountField(null);
+    setIsMalayalam(false);
+    setCustomerSuggestions([]);
+    setShowCustomerSuggestions(false);
+    setCustomerHighlightedIndex(-1);
+    setAgentSuggestions([]);
+    setShowAgentSuggestions(false);
+    setAgentHighlightedIndex(-1);
+  };
+
   const handleSubmitSale = async () => {
     const requiredFields = [
       'customer_nm',
@@ -724,58 +817,7 @@ export default function SaleBillPage() {
         );
       }
 
-      const defaultCur = currencies.find((cur) => cur.name === 'Indian Rupees');
-
-      setSaleMaster({
-        customer_nm: '',
-        customer_id: '',
-        billing_address: '',
-        sale_date: new Date().toISOString().split('T')[0],
-        mobile_number: '',
-        type: 'Cash Memo',
-        mode: 'Cash',
-        class: 'Individual',
-        cancel: 'No',
-        bill_discount: '',
-        bill_discount_amount: '',
-        gross: '',
-        round_off: '',
-        bill_amount: '',
-        note_1: '',
-        note_2: '',
-        freight_postage: '',
-        processing_charge: '',
-        bill_no: '',
-        branch_id: '',
-        agent_id: '',
-        agent_nm: '',
-      });
-      setItems([]);
-      setFormData({
-        itemName: '',
-        quantity: '',
-        rate: '',
-        exchangeRate: '',
-        currency: defaultCur?.name || 'Indian Rupees',
-        tax: '',
-        discount: '',
-        currencyIndex: defaultCur?.id || 0,
-        titleId: '',
-        purchaseCompanyId: '',
-        purchaseId: '',
-        purchaseItemId: '',
-      });
-      setIsEditMode(false);
-      setSaleId(null);
-      setSaleIdToLoad('');
-      setActiveDiscountField(null);
-      setIsMalayalam(false);
-      setCustomerSuggestions([]);
-      setShowCustomerSuggestions(false);
-      setCustomerHighlightedIndex(-1);
-      setAgentSuggestions([]);
-      setShowAgentSuggestions(false);
-      setAgentHighlightedIndex(-1);
+      resetSaleForm();
     } catch (error) {
       console.error(
         'Error details:',
@@ -905,11 +947,10 @@ export default function SaleBillPage() {
     saleMaster.type,
   );
 
-  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
-  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
-  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
-  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
+  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -918,7 +959,7 @@ export default function SaleBillPage() {
   );
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -930,19 +971,11 @@ export default function SaleBillPage() {
         icon={pageIcon}
         title="Sale Bill"
         subtitle="Create and manage sale bills"
+        compact
       />
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Sale details</span>
-            <p className="text-xs text-gray-500">Customer, billing, and totals</p>
-          </div>
-          <p className="text-xs text-gray-500">Gross / Bill amount auto update</p>
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+      <div className={`${cardClasses} p-3`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
             <input
               type="text"
               name="bill_no"
@@ -1170,239 +1203,234 @@ export default function SaleBillPage() {
               className={`${inputClasses} text-right`}
               step="0.01"
             />
-          </div>
         </div>
       </div>
 
-      <div className={`${cardClasses} overflow-hidden`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Line items</span>
-            <p className="text-xs text-gray-500">Products added to this sale</p>
-          </div>
-          <div className="text-sm font-semibold text-gray-700">
-            Total: {totalValue.toFixed(2)}
-          </div>
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex items-center justify-end px-1 pb-2 text-xs text-gray-600">
+          <span className="font-semibold text-gray-800">Total: {totalValue.toFixed(2)}</span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px]">
-            <thead>
-              <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs uppercase tracking-wide">
-                <th className="px-3 py-2 text-left font-semibold w-[360px]">Item Name</th>
-                <th className="px-3 py-2 text-right font-semibold w-[110px]">Qty</th>
-                <th className="px-3 py-2 text-right font-semibold w-[130px]">Rate</th>
-                <th className="px-3 py-2 text-right font-semibold w-[90px]">Ex Rt</th>
-                <th className="px-3 py-2 text-left font-semibold w-[100px]">Currency</th>
-                <th className="px-3 py-2 text-right font-semibold w-[120px]">Tax %</th>
-                <th className="px-3 py-2 text-right font-semibold w-[110px]">Disc %</th>
-                <th className="px-3 py-2 text-right font-semibold w-[110px]">Value</th>
-                <th className="px-3 py-2 text-center font-semibold w-[48px]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-sm">
-                    No items added yet. Use the form below to add lines.
-                  </td>
+        <div className="relative rounded-md border border-gray-100 overflow-hidden">
+          <div className="overflow-auto max-h-[45vh] min-h-[260px]">
+            <table className="w-full min-w-[980px] text-xs">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
+                  <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Item Name</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Qty</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Rate</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Ex Rt</th>
+                  <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Currency</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Tax %</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Disc %</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[110px]">Value</th>
+                  <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
                 </tr>
-              ) : (
-                items.map((item, index) => (
-                  <tr key={index} className="hover:bg-blue-50/40 transition-colors">
-                    <td className="px-3 py-2">
-                      <input
-                        type="text"
-                        value={item.itemName}
-                        onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                        className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
-                        style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={item.rate}
-                        onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={item.exchangeRate}
-                        onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <select
-                        value={item.currency}
-                        onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
-                        className={tableInputClasses}
-                      >
-                        <option value="" disabled>Currency</option>
-                        {currencies.map((cur) => (
-                          <option key={cur.id} value={cur.name}>{cur.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={item.tax}
-                        onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                        disabled={isEditMode}
-                        step="0.01"
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={item.discount || 0}
-                        onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                        disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
-                        step="0.01"
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
-                      {Number(item.value).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <button
-                        onClick={() => handleDeleteItem(index)}
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Delete item"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-[13px]">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-xs">
+                      No items added yet. Use the form below to add lines.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className={`${cardClasses} overflow-hidden`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Add item</span>
-            <p className="text-xs text-gray-500">Pick a product and set rates</p>
-          </div>
-          <p className="hidden md:block text-xs text-gray-500">Tip: prefix with "." for Malayalam titles</p>
-        </div>
-
-        <div className="p-4">
-          <div className="grid grid-cols-[420px_120px_140px_110px_110px_120px_110px_1fr] gap-3 w-full overflow-x-auto">
-            <div className="relative">
-              <input
-                type="text"
-                name="itemName"
-                value={formData.itemName}
-                onChange={handleInputChange}
-                onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-                placeholder="Item Name"
-                className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
-                style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                autoComplete="off"
-              />
-              {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
-                <ul
-                  className="absolute z-10 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam"
-                  style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}
-                >
-                  {suggestions.map((product, index) => (
-                    <li
-                      key={product.id}
-                      id={`suggestion-${index}`}
-                      className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
-                      onClick={() => handleItemSuggestionClick(product)}
-                    >
-                      {isDotPrefixed ? product.title_m : product.title}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <input
-              type="number"
-              name="quantity"
-              value={formData.quantity}
-              onChange={handleInputChange}
-              placeholder="Qty"
-              className={tableInputClasses}
-            />
-            <input
-              type="number"
-              name="rate"
-              value={formData.rate}
-              onChange={handleInputChange}
-              placeholder="Rate"
-              className={tableInputClasses}
-            />
-            <input
-              type="number"
-              name="exchangeRate"
-              value={formData.exchangeRate}
-              onChange={handleInputChange}
-              placeholder="Exchange Rate"
-              className={tableInputClasses}
-            />
-            <select
-              name="currency"
-              value={formData.currency}
-              onChange={handleInputChange}
-              className={tableInputClasses}
-            >
-              <option value="" disabled>Currency</option>
-              {currencies.map((cur) => (
-                <option key={cur.id} value={cur.name}>{cur.name}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              name="tax"
-              value={formData.tax}
-              onChange={handleInputChange}
-              placeholder="Tax %"
-              className={tableInputClasses}
-              disabled={isEditMode || isItemSelected}
-              step="0.01"
-            />
-            <input
-              type="number"
-              name="discount"
-              value={formData.discount}
-              onChange={handleInputChange}
-              placeholder="Disc %"
-              className={tableInputClasses}
-              disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
-              step="0.01"
-            />
-            <button
-              onClick={handleAddItem}
-              className={`${actionButtonClasses} w-full justify-center`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Item
-            </button>
+                ) : (
+                  items.map((item, index) => (
+                    <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="text"
+                          value={item.itemName}
+                          onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                          className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                          style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.rate}
+                          onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.exchangeRate}
+                          onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <select
+                          value={item.currency}
+                          onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                          className={tableInputClasses}
+                        >
+                          <option value="" disabled>Currency</option>
+                          {currencies.map((cur) => (
+                            <option key={cur.id} value={cur.name}>{cur.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.tax}
+                          onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          disabled={isEditMode}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.discount || 0}
+                          onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right text-xs font-semibold text-gray-700">
+                        {Number(item.value).toFixed(2)}
+                      </td>
+                      <td className="px-2.5 py-1.5 text-center">
+                        <button
+                          onClick={() => handleDeleteItem(index)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Delete item"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
+      <div className={`${cardClasses} p-3 overflow-visible`}>
+        <div className="text-[11px] text-gray-500 mb-2">
+          Tip: prefix with "." for Malayalam titles
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_80px_100px_90px_100px_80px_80px_1fr] gap-2 w-full">
+          <div className="relative">
+            <input
+              type="text"
+              name="itemName"
+              value={formData.itemName}
+              onChange={handleInputChange}
+              onKeyDown={(e) => handleKeyDown(e, 'itemName')}
+              placeholder="Item Name"
+              className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
+              style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+              autoComplete="off"
+              ref={productInputRef}
+            />
+          </div>
+          <input
+            type="number"
+            name="quantity"
+            value={formData.quantity}
+            onChange={handleInputChange}
+            placeholder="Qty"
+            className={tableInputClasses}
+          />
+          <input
+            type="number"
+            name="rate"
+            value={formData.rate}
+            onChange={handleInputChange}
+            placeholder="Rate"
+            className={tableInputClasses}
+          />
+          <input
+            type="number"
+            name="exchangeRate"
+            value={formData.exchangeRate}
+            onChange={handleInputChange}
+            placeholder="Exchange Rate"
+            className={tableInputClasses}
+          />
+          <select
+            name="currency"
+            value={formData.currency}
+            onChange={handleInputChange}
+            className={tableInputClasses}
+          >
+            <option value="" disabled>Currency</option>
+            {currencies.map((cur) => (
+              <option key={cur.id} value={cur.name}>{cur.name}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            name="tax"
+            value={formData.tax}
+            onChange={handleInputChange}
+            placeholder="Tax %"
+            className={tableInputClasses}
+            disabled={isEditMode || isItemSelected}
+            step="0.01"
+          />
+          <input
+            type="number"
+            name="discount"
+            value={formData.discount}
+            onChange={handleInputChange}
+            placeholder="Disc %"
+            className={tableInputClasses}
+            disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
+            step="0.01"
+          />
+          <button
+            onClick={handleAddItem}
+            className={`${actionButtonClasses} w-full justify-center`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Item
+          </button>
+        </div>
+      </div>
+
+      {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
+        <ul
+          className="fixed z-[1200] bg-white border border-gray-200 shadow-xl rounded-lg text-xs max-h-60 overflow-y-auto font-malayalam"
+          style={{
+            top: suggestionPosition.top,
+            left: suggestionPosition.left,
+            width: suggestionPosition.width,
+            fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
+          }}
+        >
+          {suggestions.map((product, index) => (
+            <li
+              key={product.id}
+              id={`suggestion-${index}`}
+              className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+              onClick={() => handleItemSuggestionClick(product)}
+            >
+              {isDotPrefixed ? product.title_m : product.title}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* Batch modal */}
       {showBatchModal && selectedProduct && (
@@ -1490,22 +1518,15 @@ export default function SaleBillPage() {
         </div>
       )}
 
-      <div className={`${cardClasses} overflow-hidden`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Actions</span>
-            <p className="text-xs text-gray-500">Load a sale or submit/update</p>
-          </div>
-        </div>
-
-        <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
-          <div className="flex flex-1 flex-col sm:flex-row gap-3">
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={saleIdToLoad}
               onChange={(e) => setSaleIdToLoad(e.target.value)}
               placeholder="Sale ID"
-              className={`${inputClasses} w-full sm:w-64`}
+              className={`${inputClasses} w-full sm:w-60`}
             />
             <button
               onClick={handleLoadSale}
@@ -1515,12 +1536,18 @@ export default function SaleBillPage() {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={handleSubmitSale}
-              className={`${actionButtonClasses} min-w-[180px]`}
+              className={`${actionButtonClasses} min-w-[160px]`}
             >
               {isEditMode ? 'Update Sale' : 'Submit Sale'}
+            </button>
+            <button
+              onClick={resetSaleForm}
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+            >
+              Reset Form
             </button>
           </div>
         </div>

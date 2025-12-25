@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="author_wise_title_sales_no_group" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="0c2830db-14a6-49c6-924d-7b8e208b7411">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Mathrubhumi"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="315"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="674"/>
+	<subDataset name="DatasetCompanyDetails" uuid="e335016c-169d-46dd-a440-30ac7f57e8b5">
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Mathrubhumi"/>
+		<parameter name="p_company_id" class="java.lang.Integer"/>
+		<queryString language="SQL">
+			<![CDATA[select company_name, address1, address2, city_with_pin, email, contact_nos, gstin, pan, cin, for_whom
+from get_company_details($P{p_company_id})]]>
+		</queryString>
+		<field name="company_name" class="java.lang.String"/>
+		<field name="address1" class="java.lang.String"/>
+		<field name="address2" class="java.lang.String"/>
+		<field name="city_with_pin" class="java.lang.String"/>
+		<field name="email" class="java.lang.String"/>
+		<field name="contact_nos" class="java.lang.String"/>
+		<field name="gstin" class="java.lang.String"/>
+		<field name="pan" class="java.lang.String"/>
+		<field name="cin" class="java.lang.String"/>
+		<field name="for_whom" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="p_company_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_from_date" class="java.sql.Date">
+		<defaultValueExpression><![CDATA[java.sql.Date.valueOf("2025-04-01")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_to_date" class="java.sql.Date">
+		<defaultValueExpression><![CDATA[java.sql.Date.valueOf("2025-12-31")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_author_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[2748]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT o_title, o_rate, o_quantity
+FROM get_author_wise_title_sales(
+    $P{p_company_id},
+    $P{p_from_date},
+    $P{p_to_date},
+    $P{p_author_id}
+)
+ORDER BY o_title]]>
+	</queryString>
+	<field name="o_title" class="java.lang.String"/>
+	<field name="o_rate" class="java.math.BigDecimal"/>
+	<field name="o_quantity" class="java.lang.Integer"/>
+	<variable name="grand_qty_total" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_quantity}]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="89" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="55" width="480" height="18" uuid="a0ca1b2f-039f-4c3d-86b4-f55b01a9177d">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Author-wise Title Sales]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="72" width="520" height="16" uuid="49d5a6b1-19a9-4b06-9c8a-369d3b1cab0a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textFieldExpression><![CDATA["From " + new java.text.SimpleDateFormat("dd-MM-yyyy").format($P{p_from_date})
++ " to " + new java.text.SimpleDateFormat("dd-MM-yyyy").format($P{p_to_date})
++ "  (Author ID: " + String.valueOf($P{p_author_id}) + ")"]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement x="1" y="30" width="380" height="23" uuid="63f03c6a-fef7-4c7d-9087-f3ee6925f846"/>
+				<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+					<datasetRun subDataset="DatasetCompanyDetails" uuid="d8fb69bc-df0f-4df1-b851-b6852edae6d7">
+						<datasetParameter name="p_company_id">
+							<datasetParameterExpression><![CDATA[$P{p_company_id}]]></datasetParameterExpression>
+						</datasetParameter>
+						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					</datasetRun>
+					<jr:listContents height="23" width="380">
+						<textField>
+							<reportElement x="0" y="1" width="380" height="22" uuid="ba5affc3-3370-417b-b708-801514567d5a">
+								<property name="com.jaspersoft.studio.unit.y" value="px"/>
+								<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							</reportElement>
+							<textElement>
+								<font size="16" isBold="true"/>
+							</textElement>
+							<textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression>
+						</textField>
+					</jr:listContents>
+				</jr:list>
+			</componentElement>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="24" splitType="Stretch">
+			<staticText>
+				<reportElement x="1" y="4" width="405" height="14" uuid="59c34036-8353-4698-b1bb-01863e4d1c20">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<text><![CDATA[Title]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="406" y="4" width="80" height="14" uuid="0acf5f67-8c05-4227-985f-cb2cdb0cbae5"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Rate]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="486" y="4" width="77" height="14" uuid="fc6b0af6-02a6-4cbc-9e0f-268bbae5c04b"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Qty]]></text>
+			</staticText>
+			<line>
+				<reportElement x="1" y="1" width="563" height="1" forecolor="#B5B3B3" uuid="366efb27-90b3-4045-8611-c83f1420e8ec">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+			<line>
+				<reportElement x="1" y="21" width="563" height="1" forecolor="#B5B3B3" uuid="ef55d42b-b89f-4ae6-8944-2603dad5c600">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<textField>
+				<reportElement x="1" y="2" width="405" height="14" uuid="eafd3fa3-6f35-4568-945b-8ec78649b59a"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_title}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="406" y="2" width="80" height="14" uuid="1a3ad1e8-2f5e-4599-80f5-ccf73fac9370"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_rate}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0">
+				<reportElement x="486" y="2" width="77" height="14" uuid="36669d32-7884-4ff5-82c6-00a9f6e71fb8"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_quantity}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="23" splitType="Stretch">
+			<line>
+				<reportElement x="486" y="19" width="77" height="1" forecolor="#B5B3B3" uuid="9617003e-e10a-40de-9256-e0e5e88adb76">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+			<line>
+				<reportElement x="486" y="21" width="77" height="1" forecolor="#B5B3B3" uuid="46ecba3a-6360-44c3-96af-314afbe3b1bb">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+			<staticText>
+				<reportElement x="406" y="4" width="80" height="14" uuid="53ec492e-9260-4704-92aa-78d60413968b">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Grand Total]]></text>
+			</staticText>
+			<textField pattern="#,##0">
+				<reportElement x="486" y="1" width="77" height="16" uuid="c02df83d-1b65-441e-9e83-48379f1af112">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_qty_total}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="486" y="1" width="77" height="1" forecolor="#B5B3B3" uuid="77343d3f-4f91-41b0-bebb-03a5fbbfa76b">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

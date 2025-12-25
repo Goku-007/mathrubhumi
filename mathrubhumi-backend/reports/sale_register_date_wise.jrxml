@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5-74d586df47b25dbd05bd0957999819196e59934a  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="sale_register_date_wise" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="0d51053a-b823-46b7-98db-d407ab729052">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Mathrubhumi"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<subDataset name="DatasetCompanyDetails" uuid="0c180933-b427-445c-a36f-452a2dc9dc40">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Mathrubhumi"/>
+		<parameter name="p_company_id" class="java.lang.Integer"/>
+		<queryString language="SQL">
+			<![CDATA[select company_name
+            from get_company_details($P{p_company_id})]]>
+		</queryString>
+		<field name="company_name" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.label" value="company_name"/>
+		</field>
+	</subDataset>
+	<parameter name="p_company_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_sale_type" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[-1]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_from_date" class="java.sql.Date">
+		<defaultValueExpression><![CDATA[java.sql.Date.valueOf("2025-04-01")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_to_date" class="java.sql.Date">
+		<defaultValueExpression><![CDATA[java.sql.Date.valueOf("2025-12-31")]]></defaultValueExpression>
+	</parameter>
+	<queryString language="SQL">
+		<![CDATA[select
+            o_sale_date,
+            o_bill_no,
+            o_sale_type,
+            o_customer_nm,
+            o_gross_sale,
+            o_nett_sale,
+            o_total_discount,
+            o_freight_postage,
+            o_note_1,
+            o_note_2,
+            o_user
+        from get_sales_bill_wise(
+            $P{p_company_id},
+            $P{p_sale_type},
+            $P{p_from_date},
+            $P{p_to_date}
+        )
+        order by o_sale_date, o_bill_no]]>
+	</queryString>
+	<field name="o_sale_date" class="java.sql.Date"/>
+	<field name="o_bill_no" class="java.lang.String"/>
+	<field name="o_sale_type" class="java.lang.String"/>
+	<field name="o_customer_nm" class="java.lang.String"/>
+	<field name="o_gross_sale" class="java.math.BigDecimal"/>
+	<field name="o_nett_sale" class="java.math.BigDecimal"/>
+	<field name="o_total_discount" class="java.math.BigDecimal"/>
+	<field name="o_freight_postage" class="java.math.BigDecimal"/>
+	<field name="o_note_1" class="java.lang.String"/>
+	<field name="o_note_2" class="java.lang.String"/>
+	<field name="o_user" class="java.lang.String"/>
+	<variable name="daily_gross_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sale_date_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_gross_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="daily_discount_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sale_date_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_total_discount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="daily_freight_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sale_date_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_freight_postage}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="daily_nett_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sale_date_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_nett_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="grand_gross_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_gross_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="grand_discount_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_total_discount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="grand_freight_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_freight_postage}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="grand_nett_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_nett_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<group name="o_sale_date_group">
+		<groupExpression><![CDATA[$F{o_sale_date}]]></groupExpression>
+		<groupHeader>
+			<band height="16">
+				<textField pattern="dd/MM/yyyy">
+					<reportElement x="0" y="0" width="90" height="14" uuid="da3401dd-1bef-4e22-9a0e-ccbadebffc2b"/>
+					<textElement textAlignment="Left">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{o_sale_date}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="24">
+				<line>
+					<reportElement x="295" y="0" width="260" height="1" forecolor="#B5B3B3" uuid="ca19704a-9cdd-4be3-a797-391aeb20e26c"/>
+				</line>
+				<line>
+					<reportElement x="295" y="21" width="260" height="1" forecolor="#B5B3B3" uuid="f5485235-21ca-47fe-adb2-d385781226f0"/>
+				</line>
+				<staticText>
+					<reportElement x="132" y="4" width="175" height="14" uuid="9b1908c1-a164-4cd9-8e16-f46e1a99b22d"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Daily Total]]></text>
+				</staticText>
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="320" y="3" width="70" height="16" uuid="bc32ad1e-4acf-4a06-a4ab-0a703e139561"/>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{daily_gross_total}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="393" y="3" width="54" height="16" uuid="0ad50f4b-cea0-4168-acf8-21be8e9bdc82"/>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{daily_discount_total}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="449" y="3" width="44" height="16" uuid="0180b741-a867-435b-ab68-d0cdac0a027b">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{daily_freight_total}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="495" y="3" width="60" height="16" uuid="b9ac71e9-23fb-4f14-8065-74ff275a5101"/>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{daily_nett_total}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="89" splitType="Stretch">
+			<componentElement>
+				<reportElement x="0" y="30" width="380" height="23" uuid="67731987-b11e-46e1-9749-8cdc72fbc98e"/>
+				<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" printOrder="Vertical">
+					<datasetRun subDataset="DatasetCompanyDetails" uuid="92133471-30e5-40fb-a12b-01919ecc998b">
+						<datasetParameter name="p_company_id">
+							<datasetParameterExpression><![CDATA[$P{p_company_id}]]></datasetParameterExpression>
+						</datasetParameter>
+						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					</datasetRun>
+					<jr:listContents height="23" width="380">
+						<textField>
+							<reportElement x="0" y="1" width="380" height="22" uuid="a0bdf9af-e8d2-419b-8ad4-31b98249f55c"/>
+							<textElement>
+								<font size="16" isBold="true"/>
+							</textElement>
+							<textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression>
+						</textField>
+					</jr:listContents>
+				</jr:list>
+			</componentElement>
+			<staticText>
+				<reportElement x="0" y="55" width="240" height="18" uuid="6c3676d3-4b48-4d16-ae34-82d1bf95708d"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sale Register (Date-wise)]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="72" width="520" height="16" uuid="3b918d87-bc37-40c4-b859-5bef2899c198"/>
+				<textFieldExpression><![CDATA["Bill wise Sale Register from "
+                    + new java.text.SimpleDateFormat("dd-MM-yyyy").format($P{p_from_date})
+                    + " to "
+                    + new java.text.SimpleDateFormat("dd-MM-yyyy").format($P{p_to_date})]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="24" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="1" width="555" height="1" forecolor="#B5B3B3" uuid="36362a14-0e5b-45bd-85a9-aa1715e30626"/>
+			</line>
+			<line>
+				<reportElement x="0" y="21" width="555" height="1" forecolor="#B5B3B3" uuid="1c48bf85-21a4-4026-a6c3-ba9e76bdcd5c"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="4" width="55" height="14" uuid="2e1be882-8d63-4228-884d-8ffaa05ecded"/>
+				<text><![CDATA[Bill No]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="75" y="4" width="55" height="14" uuid="f462e0e3-7210-4a92-a48c-f5763f6aedec"/>
+				<text><![CDATA[Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="132" y="4" width="185" height="14" uuid="b367fd79-cb66-43c9-8f47-9308bcb1f9a4"/>
+				<text><![CDATA[Customer]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="4" width="70" height="14" uuid="6d05a363-917c-4ca7-b8ea-8ad3f7430d82"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Gross]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="393" y="4" width="54" height="14" uuid="ca13c395-960c-4234-bff9-dbc1fa20e357"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Discount]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="450" y="4" width="44" height="14" uuid="f8ac0e72-f15e-4858-82e4-284b5c0faece"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Freight]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="495" y="4" width="60" height="14" uuid="0096c378-e8be-4ac8-a575-2f715723d6aa"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Nett]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="2" width="80" height="14" uuid="ea73ed5b-41d1-41ab-872f-ce937369cb41"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_bill_no}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="75" y="2" width="55" height="14" uuid="08f29ac7-3450-4911-87a0-c2978361fa21"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_sale_type}]]></textFieldExpression>
+			</textField>
+			<textField textAdjust="StretchHeight">
+				<reportElement x="132" y="2" width="185" height="14" uuid="23360f58-33d3-4bd5-b428-067b1e15e46e"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_customer_nm}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="320" y="2" width="70" height="14" uuid="d54a3f2f-4975-4c1a-9336-2715ec47e6f0"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{o_gross_sale}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="393" y="2" width="54" height="14" uuid="0dcc430f-c520-4df1-ac90-c0d49537909c"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{o_total_discount}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="449" y="2" width="44" height="14" uuid="eda0798d-851c-4d4f-82a4-7e53fd8b2610">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{o_freight_postage}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="495" y="2" width="60" height="14" uuid="b4a59535-0d53-4d9e-9b7a-68d36e378afb"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{o_nett_sale}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="23" splitType="Stretch">
+			<line>
+				<reportElement x="295" y="19" width="260" height="1" forecolor="#B5B3B3" uuid="01bc57c0-4351-413c-992e-0a2784622607"/>
+			</line>
+			<line>
+				<reportElement x="295" y="21" width="260" height="1" forecolor="#B5B3B3" uuid="3e2a87ad-8f23-404f-a088-e09ee15cc66c"/>
+			</line>
+			<staticText>
+				<reportElement x="132" y="4" width="175" height="14" uuid="fa80ad82-1b18-4f71-842d-36b0afb4fd5a"/>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Grand Total]]></text>
+			</staticText>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="320" y="1" width="70" height="16" uuid="25f5a12c-f13d-4e73-85bc-785a4752dd58"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_gross_total}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="393" y="1" width="54" height="16" uuid="a539b8a3-fb14-481e-bad1-5804b42f3ca1"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_discount_total}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="449" y="1" width="44" height="16" uuid="f3083705-16b2-4be8-a3b8-210bfc907b72">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_freight_total}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="495" y="1" width="60" height="16" uuid="3ea2bb10-3176-4344-938a-df4d0d2ef56f"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_nett_total}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

@@ -170,11 +170,10 @@ export default function PPReceiptEntry() {
   /* ---------- computed: disable Receipt No + disable many fields for Installment ---------- */
   const isInstallment = form.receiptType === "Installment";
 
-  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
-  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
-  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
-  const subduedInputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
+  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const subduedInputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,7 +363,7 @@ export default function PPReceiptEntry() {
 
   /* ---------- render ---------- */
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
       {/* Modal (notification popup) */}
       <Modal
         isOpen={modal.isOpen}
@@ -377,356 +376,283 @@ export default function PPReceiptEntry() {
         icon={pageIcon}
         title="P P Receipt Entry"
         subtitle="Capture and manage PP receipts"
+        compact
       />
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Receipt details</span>
-            <p className="text-xs text-gray-500">Type, number, status, and date</p>
-          </div>
-        </div>
+      <div className={`${cardClasses} p-3`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <select
+            name="receiptType"
+            value={form.receiptType}
+            onChange={handleChange}
+            className={inputClasses}
+            aria-label="Receipt Type"
+          >
+            {Object.keys(R_TYPE).map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
 
-        <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Receipt Type</label>
-              <select
-                name="receiptType"
-                value={form.receiptType}
-                onChange={handleChange}
-                className={inputClasses}
-              >
-                {Object.keys(R_TYPE).map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
+          <input
+            name="receiptNo"
+            value={form.receiptNo}
+            readOnly
+            tabIndex={-1}
+            aria-readonly="true"
+            placeholder="Receipt No"
+            className={`${subduedInputClasses} select-none pointer-events-none font-semibold`}
+          />
 
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Receipt No</label>
-              <input
-                name="receiptNo"
-                value={form.receiptNo}
-                readOnly
-                tabIndex={-1}
-                aria-readonly="true"
-                className={`${subduedInputClasses} select-none pointer-events-none font-semibold`}
-              />
-            </div>
+          <select
+            name="cancelled"
+            value={form.cancelled}
+            onChange={handleChange}
+            className={inputClasses}
+            aria-label="Cancelled"
+          >
+            <option value="0">Cancelled: No</option>
+            <option value="1">Cancelled: Yes</option>
+          </select>
 
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
-              <select
-                name="cancelled"
-                value={form.cancelled}
-                onChange={handleChange}
-                className={inputClasses}
-              >
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-              </select>
-            </div>
+          <input
+            type="date"
+            name="date"
+            value={form.date}
+            onChange={handleChange}
+            className={inputClasses}
+          />
 
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Date</label>
-              <input
-                type="date"
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-                className={inputClasses}
-              />
-            </div>
-
-            <div className="flex flex-col lg:col-span-1">
-              <label className="text-xs text-gray-600 mb-1">PP Reg. No</label>
-              <input
-                name="ppRegNo"
-                value={form.ppRegNo}
-                onChange={handleChange}
-                onKeyDown={handleRegNoKey}
-                readOnly={!isInstallment}
-                aria-readonly={!isInstallment}
-                className={`${inputClasses} ${!isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                placeholder=""
-              />
-            </div>
-          </div>
+          <input
+            name="ppRegNo"
+            value={form.ppRegNo}
+            onChange={handleChange}
+            onKeyDown={handleRegNoKey}
+            readOnly={!isInstallment}
+            aria-readonly={!isInstallment}
+            placeholder="PP Reg. No"
+            className={`${inputClasses} ${!isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+          />
         </div>
       </div>
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Customer & payment</span>
-            <p className="text-xs text-gray-500">Book selection, customer info, payment</p>
-          </div>
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-            {/* PP Book Name + suggestions */}
-            <div className="relative lg:col-span-2">
-              <label className="text-xs text-gray-600 mb-1 block">PP Book Name</label>
-              <input
-                name="bookName"
-                value={form.bookName}
-                onChange={handleBookChange}
-                onBlur={closeAfterBlur(() => setShowBookSuggestions(false))}
-                placeholder="Start typing to search…"
-                className={`${inputClasses} ${isInstallment ? 'bg-gray-50 cursor-not-allowed text-gray-600' : ''}`}
-                autoComplete="off"
-                disabled={isInstallment}
-              />
-              {showBookSuggestions && !isInstallment && bookSuggestions.length > 0 && (
-                <ul className="absolute z-50 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                  {bookSuggestions.map((row, i) => (
-                    <li
-                      key={`${row.id ?? i}`}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                      onMouseDown={() => {
-                        setForm((p) => ({ ...p, bookName: row.title || "" }));
-                        setPpBookId(row.id ?? null);
-                        setShowBookSuggestions(false);
-                      }}
-                    >
-                      {row.title}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Copies</label>
-              <input
-                type="number"
-                name="copies"
-                value={form.copies}
-                onChange={handleChange}
-                className={`${inputClasses} text-right ${isInstallment ? 'bg-gray-50 cursor-not-allowed text-gray-600' : ''}`}
-                onWheel={(e) => e.currentTarget.blur()}
-                disabled={isInstallment}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Installments</label>
-              <input
-                name="installments"
-                value={form.installments}
-                onChange={handleChange}
-                placeholder=""
-                className={inputClasses}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-            {/* PP Customer Name + suggestions */}
-            <div className="relative lg:col-span-2">
-              <label className="text-xs text-gray-600 mb-1 block">PP Customer Name</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handlePPCustomerChange}
-                onBlur={closeAfterBlur(() => setShowPPCustomerSuggestions(false))}
-                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                placeholder="Type customer name…"
-                autoComplete="off"
-                disabled={isInstallment}
-              />
-              {showPPCustomerSuggestions && !isInstallment && ppCustomerSuggestions.length > 0 && (
-                <ul className="absolute z-40 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                  {ppCustomerSuggestions.map((m, i) => (
-                    <li
-                      key={`${m.id ?? i}`}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                      onMouseDown={() => {
-                        setForm((p) => ({ ...p, name: m.pp_customer_nm || "" }));
-                        setPpCustomerId(m.id ?? null);
-                        setShowPPCustomerSuggestions(false);
-                      }}
-                    >
-                      {m.pp_customer_nm}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="relative">
-              <label className="text-xs text-gray-600 mb-1 block">Agent</label>
-              <input
-                name="agent"
-                value={form.agent}
-                onChange={handleAgentChange}
-                onBlur={closeAfterBlur(() => setShowAgentSuggestions(false))}
-                className={inputClasses}
-                autoComplete="off"
-                placeholder=""
-              />
-              {showAgentSuggestions && agentSuggestions.length > 0 && (
-                <ul className="absolute z-40 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                  {agentSuggestions.map((a, i) => (
-                    <li
-                      key={`${a.id ?? i}`}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                      onMouseDown={() => {
-                        setForm((p) => ({ ...p, agent: a.agent_nm || "" }));
-                        setAgentId(a.id ?? null);
-                        setShowAgentSuggestions(false);
-                      }}
-                    >
-                      {a.agent_nm}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Mode of Pay</label>
-              <select
-                name="modeOfPay"
-                value={form.modeOfPay}
-                onChange={handleChange}
-                className={inputClasses}
-              >
-                {Object.keys(A_TYPE).map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {/* Address 1 */}
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Address 1</label>
-              <input
-                name="address1"
-                value={form.address1}
-                onChange={handleChange}
-                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                onWheel={(e) => e.currentTarget.blur()}
-                disabled={isInstallment}
-              />
-            </div>
-
-            {/* Address 2 */}
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Address 2</label>
-              <input
-                name="address2"
-                value={form.address2}
-                onChange={handleChange}
-                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                placeholder=""
-                disabled={isInstallment}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">City</label>
-              <input
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                placeholder=""
-                disabled={isInstallment}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Pin</label>
-              <input
-                name="pin"
-                value={form.pin}
-                onChange={handleChange}
-                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                placeholder=""
-                disabled={isInstallment}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Phone</label>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
-                placeholder=""
-                disabled={isInstallment}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                name="amount"
-                value={form.amount}
-                onChange={handleChange}
-                placeholder=""
-                className={`${inputClasses} text-right`}
-                onWheel={(e) => e.currentTarget.blur()}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Bank</label>
-              <input
-                name="bank"
-                value={form.bank}
-                onChange={handleChange}
-                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
-                readOnly={!isCheque}
-                tabIndex={isCheque ? 0 : -1}
-                aria-readonly={!isCheque}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1 block">Chq/DD No</label>
-              <input
-                name="chqdd"
-                value={form.chqdd}
-                onChange={handleChange}
-                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
-                readOnly={!isCheque}
-                tabIndex={isCheque ? 0 : -1}
-                aria-readonly={!isCheque}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-600 mb-1 block">Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={2}
-              className={`${inputClasses} min-h-[60px]`}
+      <div className={`${cardClasses} p-3 space-y-2`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <div className="relative xl:col-span-2">
+            <input
+              name="bookName"
+              value={form.bookName}
+              onChange={handleBookChange}
+              onBlur={closeAfterBlur(() => setShowBookSuggestions(false))}
+              placeholder="PP Book Name"
+              className={`${inputClasses} ${isInstallment ? 'bg-gray-50 cursor-not-allowed text-gray-600' : ''}`}
+              autoComplete="off"
+              disabled={isInstallment}
             />
+            {showBookSuggestions && !isInstallment && bookSuggestions.length > 0 && (
+              <ul className="absolute z-50 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-xs max-h-48 overflow-y-auto">
+                {bookSuggestions.map((row, i) => (
+                  <li
+                    key={`${row.id ?? i}`}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                    onMouseDown={() => {
+                      setForm((p) => ({ ...p, bookName: row.title || "" }));
+                      setPpBookId(row.id ?? null);
+                      setShowBookSuggestions(false);
+                    }}
+                  >
+                    {row.title}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+
+          <input
+            type="number"
+            name="copies"
+            value={form.copies}
+            onChange={handleChange}
+            placeholder="Copies"
+            className={`${inputClasses} text-right ${isInstallment ? 'bg-gray-50 cursor-not-allowed text-gray-600' : ''}`}
+            onWheel={(e) => e.currentTarget.blur()}
+            disabled={isInstallment}
+          />
+          <input
+            name="installments"
+            value={form.installments}
+            onChange={handleChange}
+            placeholder="Installments"
+            className={inputClasses}
+          />
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <div className="relative xl:col-span-2">
+            <input
+              name="name"
+              value={form.name}
+              onChange={handlePPCustomerChange}
+              onBlur={closeAfterBlur(() => setShowPPCustomerSuggestions(false))}
+              className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+              placeholder="PP Customer Name"
+              autoComplete="off"
+              disabled={isInstallment}
+            />
+            {showPPCustomerSuggestions && !isInstallment && ppCustomerSuggestions.length > 0 && (
+              <ul className="absolute z-40 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-xs max-h-48 overflow-y-auto">
+                {ppCustomerSuggestions.map((m, i) => (
+                  <li
+                    key={`${m.id ?? i}`}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                    onMouseDown={() => {
+                      setForm((p) => ({ ...p, name: m.pp_customer_nm || "" }));
+                      setPpCustomerId(m.id ?? null);
+                      setShowPPCustomerSuggestions(false);
+                    }}
+                  >
+                    {m.pp_customer_nm}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="relative">
+            <input
+              name="agent"
+              value={form.agent}
+              onChange={handleAgentChange}
+              onBlur={closeAfterBlur(() => setShowAgentSuggestions(false))}
+              className={inputClasses}
+              autoComplete="off"
+              placeholder="Agent"
+            />
+            {showAgentSuggestions && agentSuggestions.length > 0 && (
+              <ul className="absolute z-40 bg-white border border-gray-200 mt-1 w-full shadow-md rounded-lg text-xs max-h-48 overflow-y-auto">
+                {agentSuggestions.map((a, i) => (
+                  <li
+                    key={`${a.id ?? i}`}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                    onMouseDown={() => {
+                      setForm((p) => ({ ...p, agent: a.agent_nm || "" }));
+                      setAgentId(a.id ?? null);
+                      setShowAgentSuggestions(false);
+                    }}
+                  >
+                    {a.agent_nm}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <select
+            name="modeOfPay"
+            value={form.modeOfPay}
+            onChange={handleChange}
+            className={inputClasses}
+            aria-label="Mode of Pay"
+          >
+            {Object.keys(A_TYPE).map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <input
+            name="address1"
+            value={form.address1}
+            onChange={handleChange}
+            placeholder="Address 1"
+            className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+            onWheel={(e) => e.currentTarget.blur()}
+            disabled={isInstallment}
+          />
+
+          <input
+            name="address2"
+            value={form.address2}
+            onChange={handleChange}
+            placeholder="Address 2"
+            className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+            disabled={isInstallment}
+          />
+
+          <input
+            name="city"
+            value={form.city}
+            onChange={handleChange}
+            placeholder="City"
+            className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+            disabled={isInstallment}
+          />
+          <input
+            name="pin"
+            value={form.pin}
+            onChange={handleChange}
+            placeholder="Pin"
+            className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+            disabled={isInstallment}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <input
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            placeholder="Phone"
+            className={`${inputClasses} ${isCancelled ? 'bg-gray-50' : ''} ${isInstallment ? 'bg-gray-50 text-gray-600 border-gray-200' : ''}`}
+            disabled={isInstallment}
+          />
+
+          <input
+            type="number"
+            step="0.01"
+            name="amount"
+            value={form.amount}
+            onChange={handleChange}
+            placeholder="Amount"
+            className={`${inputClasses} text-right`}
+            onWheel={(e) => e.currentTarget.blur()}
+          />
+
+          <input
+            name="bank"
+            value={form.bank}
+            onChange={handleChange}
+            placeholder="Bank"
+            className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+            readOnly={!isCheque}
+            tabIndex={isCheque ? 0 : -1}
+            aria-readonly={!isCheque}
+          />
+          <input
+            name="chqdd"
+            value={form.chqdd}
+            onChange={handleChange}
+            placeholder="Chq/DD No"
+            className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+            readOnly={!isCheque}
+            tabIndex={isCheque ? 0 : -1}
+            aria-readonly={!isCheque}
+          />
+        </div>
+
+        <textarea
+          name="notes"
+          value={form.notes}
+          onChange={handleChange}
+          rows={2}
+          placeholder="Notes"
+          className={`${inputClasses} min-h-[52px]`}
+        />
       </div>
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Actions</span>
-            <p className="text-xs text-gray-500">Save, new, reset, or load a receipt</p>
-          </div>
-        </div>
-
-        <div className="p-4 flex flex-col gap-3">
-          <div className="flex flex-wrap gap-3">
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={saving}
@@ -734,7 +660,7 @@ export default function PPReceiptEntry() {
               onClick={saveReceipt}
               title="Calls the stored procedure to insert the receipt"
             >
-              {saving ? "Saving…" : "Save Receipt"}
+              {saving ? "Saving..." : "Save Receipt"}
             </button>
 
             <button
@@ -777,13 +703,13 @@ export default function PPReceiptEntry() {
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
             <input
               type="number"
               value={loadReceiptNo}
               onChange={(e) => setLoadReceiptNo(e.target.value)}
               placeholder="Receipt No"
-              className={`${inputClasses} w-full sm:w-64 text-right`}
+              className={`${inputClasses} w-full sm:w-60 text-right`}
             />
             <button
               type="button"
@@ -792,7 +718,7 @@ export default function PPReceiptEntry() {
               title="Load an existing receipt by receipt number"
               disabled={loadingReceipt}
             >
-              {loadingReceipt ? "Loading…" : "Load Receipt"}
+              {loadingReceipt ? "Loading..." : "Load Receipt"}
             </button>
           </div>
         </div>

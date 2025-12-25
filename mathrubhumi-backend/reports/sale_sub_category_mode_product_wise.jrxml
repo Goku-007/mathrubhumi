@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.5.final using JasperReports Library version 6.21.5 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+	name="sale_sub_category_mode_product_wise" pageWidth="595" pageHeight="842" columnWidth="555"
+	leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e9b2af22-34ec-45f0-b4f7-7599af2e8dea">
+
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Mathrubhumi"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="315"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="674"/>
+
+	<!-- Company header dataset (same style as your working report) -->
+	<subDataset name="DatasetCompanyDetails" uuid="ee1d4037-cc36-4c56-b454-958b0913efb4">
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Mathrubhumi"/>
+		<parameter name="p_company_id" class="java.lang.Integer"/>
+		<queryString language="SQL">
+			<![CDATA[
+select company_name, address1, address2, city_with_pin, email, contact_nos, gstin, pan, cin, for_whom
+from get_company_details($P{p_company_id})
+			]]>
+		</queryString>
+
+		<field name="company_name" class="java.lang.String"/>
+		<field name="address1" class="java.lang.String"/>
+		<field name="address2" class="java.lang.String"/>
+		<field name="city_with_pin" class="java.lang.String"/>
+		<field name="email" class="java.lang.String"/>
+		<field name="contact_nos" class="java.lang.String"/>
+		<field name="gstin" class="java.lang.String"/>
+		<field name="pan" class="java.lang.String"/>
+		<field name="cin" class="java.lang.String"/>
+		<field name="for_whom" class="java.lang.String"/>
+	</subDataset>
+
+	<!-- Parameters -->
+	<parameter name="p_company_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_from_date" class="java.sql.Date">
+		<defaultValueExpression><![CDATA[java.sql.Date.valueOf("2025-04-01")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="p_to_date" class="java.sql.Date">
+		<defaultValueExpression><![CDATA[java.sql.Date.valueOf("2025-12-31")]]></defaultValueExpression>
+	</parameter>
+
+	<!-- Main Query -->
+	<queryString>
+		<![CDATA[
+SELECT o_sub_category_nm, o_mode, o_title, o_gross_sale, o_nett_sale, o_total_discount, o_quantity
+FROM get_sales_sub_category_mode_product_wise(
+	$P{p_company_id},
+	$P{p_from_date},
+	$P{p_to_date}
+)
+ORDER BY o_sub_category_nm, o_mode, o_title
+		]]>
+	</queryString>
+
+	<!-- Fields -->
+	<field name="o_sub_category_nm" class="java.lang.String"/>
+	<field name="o_mode" class="java.lang.String"/>
+	<field name="o_title" class="java.lang.String"/>
+	<field name="o_gross_sale" class="java.math.BigDecimal"/>
+	<field name="o_nett_sale" class="java.math.BigDecimal"/>
+	<field name="o_total_discount" class="java.math.BigDecimal"/>
+	<field name="o_quantity" class="java.lang.Integer"/>
+
+	<!-- Sub-category totals -->
+	<variable name="sub_qty_total" class="java.lang.Integer" resetType="Group" resetGroup="o_sub_category_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_quantity}]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<variable name="sub_discount_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sub_category_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_total_discount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="sub_gross_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sub_category_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_gross_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="sub_nett_total" class="java.math.BigDecimal" resetType="Group" resetGroup="o_sub_category_group" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_nett_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+
+	<!-- Grand totals -->
+	<variable name="grand_qty_total" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_quantity}]]></variableExpression>
+		<initialValueExpression><![CDATA[0]]></initialValueExpression>
+	</variable>
+	<variable name="grand_discount_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_total_discount}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="grand_gross_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_gross_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="grand_nett_total" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{o_nett_sale}]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+
+	<!-- Group on Sub Category -->
+	<group name="o_sub_category_group">
+		<groupExpression><![CDATA[$F{o_sub_category_nm}]]></groupExpression>
+		<groupHeader>
+			<band height="16">
+				<textField isStretchWithOverflow="false">
+					<reportElement x="1" y="0" width="560" height="14" uuid="3525b273-ba91-4ece-8dd9-b0bb44d48586">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Left">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{o_sub_category_nm}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+
+		<groupFooter>
+			<band height="24">
+				<line>
+					<reportElement x="271" y="0" width="292" height="1" forecolor="#B5B3B3" uuid="02d0d4b3-bdc0-451e-942c-ce7d96f02ec3">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					</reportElement>
+				</line>
+				<line>
+					<reportElement x="271" y="21" width="292" height="1" forecolor="#B5B3B3" uuid="f5666b3f-3896-4350-8961-5d251c1275e1">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					</reportElement>
+				</line>
+
+				<staticText>
+					<reportElement x="112" y="4" width="155" height="14" uuid="8040d94b-6137-4ef0-9ce9-8c4988f34b31">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<text><![CDATA[Sub Category Total]]></text>
+				</staticText>
+
+				<textField pattern="#,##0">
+					<reportElement x="271" y="3" width="42" height="16" uuid="72ed8e2e-ab4b-4825-a0ce-cbd5e062dc7f">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					</reportElement>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{sub_qty_total}]]></textFieldExpression>
+				</textField>
+
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="313" y="3" width="80" height="16" uuid="66e1acc6-546a-40bd-bf0d-e61c2405c527"/>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{sub_discount_total}]]></textFieldExpression>
+				</textField>
+
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="393" y="3" width="85" height="16" uuid="d0e03a47-7d63-4120-b232-5de75a63d38b"/>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{sub_gross_total}]]></textFieldExpression>
+				</textField>
+
+				<textField pattern="#,##0.00#;#,##0.00#-">
+					<reportElement x="478" y="3" width="85" height="16" uuid="fc5316f8-d1bc-4e1d-8d1a-e02bb15ae72a"/>
+					<textElement textAlignment="Right">
+						<font size="10.5" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{sub_nett_total}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+
+	<!-- Title -->
+	<title>
+		<band height="89" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="55" width="430" height="18" uuid="42a3e286-3bd3-471b-9bc1-c33fd24e7c96">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sale Register (Sub Category / Mode / Product)]]></text>
+			</staticText>
+
+			<textField>
+				<reportElement x="0" y="72" width="520" height="16" uuid="49a6b872-fc6b-4938-92c9-2e24a5b7e68c">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textFieldExpression><![CDATA[
+"From " + new java.text.SimpleDateFormat("dd-MM-yyyy").format($P{p_from_date})
++ " to " + new java.text.SimpleDateFormat("dd-MM-yyyy").format($P{p_to_date})
+]]></textFieldExpression>
+			</textField>
+
+			<componentElement>
+				<reportElement x="1" y="30" width="380" height="23" uuid="6bb9dcf4-ce19-461d-b502-be59b6779afd"/>
+				<jr:list xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components"
+					xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd"
+					printOrder="Vertical">
+					<datasetRun subDataset="DatasetCompanyDetails" uuid="af455955-6eeb-424d-82c4-484f5b21a89f">
+						<datasetParameter name="p_company_id">
+							<datasetParameterExpression><![CDATA[$P{p_company_id}]]></datasetParameterExpression>
+						</datasetParameter>
+						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					</datasetRun>
+					<jr:listContents height="23" width="380">
+						<textField>
+							<reportElement x="0" y="1" width="380" height="22" uuid="649bcf65-f6e8-4faf-b7b1-d630e7a4ed36">
+								<property name="com.jaspersoft.studio.unit.y" value="px"/>
+								<property name="com.jaspersoft.studio.unit.height" value="px"/>
+							</reportElement>
+							<textElement>
+								<font size="16" isBold="true"/>
+							</textElement>
+							<textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression>
+						</textField>
+					</jr:listContents>
+				</jr:list>
+			</componentElement>
+		</band>
+	</title>
+
+	<!-- Column Header -->
+	<columnHeader>
+		<band height="24" splitType="Stretch">
+			<staticText>
+				<reportElement x="1" y="4" width="55" height="14" uuid="8f125474-9206-487f-8754-43ae045460cf">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<text><![CDATA[Mode]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="56" y="4" width="215" height="14" uuid="08c921a3-0609-4191-aa4a-66bb87a07108"/>
+				<text><![CDATA[Title]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="271" y="4" width="42" height="14" uuid="f0589953-0f87-4374-8003-2c88c32657b1"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Qty]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="313" y="4" width="80" height="14" uuid="25e491fb-ff17-418f-9ea5-7a57a4711f6d"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Discount]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="393" y="4" width="85" height="14" uuid="12865d54-37c9-4699-8438-5dea1b47e832"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Gross]]></text>
+			</staticText>
+
+			<staticText>
+				<reportElement x="478" y="4" width="85" height="14" uuid="0ebce658-73a3-40ee-b8f6-8fa46d363989"/>
+				<textElement textAlignment="Right"/>
+				<text><![CDATA[Nett]]></text>
+			</staticText>
+
+			<line>
+				<reportElement x="1" y="1" width="563" height="1" forecolor="#B5B3B3" uuid="79a67891-d767-4c93-aa45-d3f3896cb15a">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+			<line>
+				<reportElement x="1" y="21" width="563" height="1" forecolor="#B5B3B3" uuid="c2ca3846-1cb7-4550-a1a7-48ba32a2320b">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+		</band>
+	</columnHeader>
+
+	<!-- Detail -->
+	<detail>
+		<band height="18" splitType="Stretch">
+			<textField isStretchWithOverflow="false">
+				<reportElement x="1" y="2" width="55" height="14" uuid="3fa754a6-3ccf-49dd-8c7f-61dc6380768a"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_mode}]]></textFieldExpression>
+			</textField>
+
+			<!-- Keep single-line title -->
+			<textField isStretchWithOverflow="false">
+				<reportElement x="56" y="2" width="215" height="14" uuid="7996fd06-60dc-4290-83b6-d51dd389e51a"/>
+				<textElement>
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_title}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0">
+				<reportElement x="271" y="2" width="42" height="14" uuid="9239da0b-81ff-4898-94f1-8bc2a38784fc"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_quantity}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="313" y="2" width="80" height="14" uuid="b92dd110-9279-4ee6-9b65-716ccae34dd4"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_total_discount}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="393" y="2" width="85" height="14" uuid="c7fa03b2-24c7-49b1-bd3f-f162fbb8c714"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_gross_sale}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="478" y="2" width="85" height="14" uuid="74c793e9-01e2-406f-a0ce-22fa45148448"/>
+				<textElement textAlignment="Right">
+					<font fontName="Times New Roman" size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{o_nett_sale}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+
+	<!-- Summary (Grand Total) -->
+	<summary>
+		<band height="23" splitType="Stretch">
+			<line>
+				<reportElement x="271" y="19" width="292" height="1" forecolor="#B5B3B3" uuid="7b43f220-a12c-4ad1-be6b-66d321e5cd76">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+			<line>
+				<reportElement x="271" y="21" width="292" height="1" forecolor="#B5B3B3" uuid="057889ae-a576-4756-90b9-2a460915a132">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+			</line>
+
+			<staticText>
+				<reportElement x="112" y="4" width="155" height="14" uuid="ea79d00c-f322-4208-aca8-adf277c7da4c">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Grand Total]]></text>
+			</staticText>
+
+			<textField pattern="#,##0">
+				<reportElement x="271" y="1" width="42" height="16" uuid="83de8e0f-9e46-4348-8975-8444f1c12575">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_qty_total}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="313" y="1" width="80" height="16" uuid="65ea0861-d5d7-4e83-b7e6-6a5c6cc3b622"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_discount_total}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="393" y="1" width="85" height="16" uuid="b4837582-7f7a-4024-b499-fab0ef4eb043"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_gross_total}]]></textFieldExpression>
+			</textField>
+
+			<textField pattern="#,##0.00#;#,##0.00#-">
+				<reportElement x="478" y="1" width="85" height="16" uuid="7410bda7-eeee-4125-a379-4a8c0e695ea0"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{grand_nett_total}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+
+</jasperReport>

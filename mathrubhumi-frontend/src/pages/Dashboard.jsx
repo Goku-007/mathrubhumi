@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import DashboardHome from "./DashboardHome";
 import SaleBill from "./Transactions/SaleBill";
 import GoodsInward from "./Transactions/GoodsInward";
@@ -23,8 +23,17 @@ import PrivilegersMaster from "./Masters/PrivilegersMaster";
 import AgentsMaster from "./Masters/AgentsMaster";
 import PurchaseBreakupsMaster from "./Masters/PurchaseBreakupsMaster";
 import RoyaltyRecipientsMaster from "./Masters/RoyaltyRecipientsMaster";
+import UserManagement from "./Admin/UserManagement";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!localStorage.getItem("access")) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
@@ -52,6 +61,7 @@ const Dashboard = () => {
           <Route path="agents-master" element={<AgentsMaster />} />
           <Route path="purchase-breakups-master" element={<PurchaseBreakupsMaster />} />
           <Route path="royalty-recipients-master" element={<RoyaltyRecipientsMaster />} />
+          <Route path="users" element={<UserManagement />} />
         </Routes>
       </main>
     </div>

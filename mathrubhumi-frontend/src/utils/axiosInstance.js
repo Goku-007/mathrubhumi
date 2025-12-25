@@ -1,5 +1,6 @@
 // src/utils/axiosInstance.js
 import axios from "axios";
+import { getSession, clearSession } from "./session";
 
 const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
 const LAST_ACTIVITY_KEY = "lastActivityTs";
@@ -32,6 +33,7 @@ api.interceptors.request.use((config) => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     localStorage.removeItem(LAST_ACTIVITY_KEY);
+    clearSession();
     if (typeof window !== "undefined") {
       window.location.href = "/login";
     }
@@ -43,6 +45,11 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const { branch } = getSession();
+  if (branch?.id) {
+    config.headers["X-Branch-Id"] = String(branch.id);
   }
   return config;
 });
@@ -62,6 +69,7 @@ api.interceptors.response.use(
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
       localStorage.removeItem(LAST_ACTIVITY_KEY);
+      clearSession();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
@@ -106,6 +114,7 @@ api.interceptors.response.use(
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
         localStorage.removeItem(LAST_ACTIVITY_KEY);
+        clearSession();
         if (typeof window !== "undefined") {
           window.location.href = "/login";  // or '/'
         }
@@ -117,6 +126,7 @@ api.interceptors.response.use(
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
       localStorage.removeItem(LAST_ACTIVITY_KEY);
+      clearSession();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }

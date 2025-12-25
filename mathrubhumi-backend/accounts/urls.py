@@ -1,14 +1,20 @@
 from django.urls import path
 from .views import protected_view
 from .views import register_user
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from .auth import CustomTokenObtainPairView, branches_list, me
+from .admin_api import user_admin_detail, users_admin
 
 urlpatterns = [
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('protected/', protected_view, name='protected'),
     path('register/', register_user, name='register'),
+    path('branches/', branches_list, name='branches_list'),
+    path('me/', me, name='me'),
+    path('admin/users/', users_admin, name='users_admin'),
+    path('admin/users/<int:user_id>/', user_admin_detail, name='user_admin_detail'),
     # Suggestions
     path('pp-books-title-search/', views.pp_books_title_search, name='pp_books_title_search'),
     path('pp-customers-name-search/', views.pp_customers_name_search, name='pp_customers_name_search'),

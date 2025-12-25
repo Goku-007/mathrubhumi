@@ -1,9 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "./Modal";
+import { clearSession, getInitials, getSession } from "../utils/session";
 
 const Sidebar = () => {
   const navigate = useNavigate();
+
+  const { user: sessionUser, branch: sessionBranch } = getSession();
+  const user = {
+    name: sessionUser?.name || "User",
+    email: sessionUser?.email || "",
+    role: sessionUser?.role || "Staff",
+    is_admin: Boolean(sessionUser?.is_admin || String(sessionUser?.role || "").toLowerCase() === "admin"),
+    initials: getInitials(sessionUser?.name || sessionUser?.email || "User"),
+  };
+  const branch = sessionBranch?.branches_nm ? sessionBranch : null;
 
   const [collapsed, setCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({
@@ -15,6 +26,8 @@ const Sidebar = () => {
     Help: false,
   });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const profileButtonRef = useRef(null);
+  const profileMenuRef = useRef(null);
 
   const [modal, setModal] = useState({
     isOpen: false,
@@ -26,6 +39,29 @@ const Sidebar = () => {
   const toggleMenu = (menu) => {
     setExpandedMenus((prev) => ({ ...prev, [menu]: !prev[menu] }));
   };
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setUserMenuOpen(false);
+    };
+
+    const onMouseDown = (e) => {
+      const btn = profileButtonRef.current;
+      const menu = profileMenuRef.current;
+      if (!btn || !menu) return;
+      if (btn.contains(e.target) || menu.contains(e.target)) return;
+      setUserMenuOpen(false);
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("mousedown", onMouseDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("mousedown", onMouseDown);
+    };
+  }, [userMenuOpen]);
 
   const showModal = (
     message,
@@ -48,6 +84,8 @@ const Sidebar = () => {
   const performLogout = () => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
+    localStorage.removeItem("lastActivityTs");
+    clearSession();
     navigate("/");
     closeModal();
   };
@@ -84,7 +122,7 @@ const Sidebar = () => {
       { label: "Credit Realisation Entry", route: "/dashboard/credit-realisation-entry" },
     ],
     Reports: [],
-    Utilities: [],
+    Utilities: user.is_admin ? [{ label: "User Management", route: "/dashboard/users" }] : [],
     Window: [],
     Help: [],
   };
@@ -127,14 +165,6 @@ const Sidebar = () => {
       { label: "Cancel", onClick: closeModal, className: "bg-gray-600 hover:bg-gray-700" },
       { label: "Confirm", onClick: performLogout, className: "bg-red-600 hover:bg-red-700" },
     ]);
-  };
-
-  // mock user; replace with real session later
-  const user = {
-    name: "Sudheer P",
-    email: "sudheer@example.com",
-    role: "Admin L1",
-    initials: "MG",
   };
 
   return (
@@ -258,99 +288,135 @@ const Sidebar = () => {
 
       {/* Profile Footer */}
       <div className="relative p-3 border-t border-white/10 bg-white/5 backdrop-blur-sm">
-        {/* Click layer keeps the menu inside the sidebar bounds */}
-        <button
-          onClick={() => setUserMenuOpen((s) => !s)}
-          className={`w-full ${collapsed ? "p-2" : "px-3 py-2"} rounded-xl border border-white/10
-            bg-white/5 hover:bg-blue-900/40 transition flex items-center gap-3 focus:outline-none
-            focus-visible:ring-2 focus-visible:ring-blue-400`}
-          aria-expanded={userMenuOpen}
-          aria-haspopup="true"
-        >
-          {/* Avatar */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white text-xs font-semibold shadow ring-1 ring-white/20">
-            {user.initials}
-          </div>
-
-          {/* Identity */}
-          {!collapsed && (
-            <div className="flex-1 min-w-0 text-left">
-              <div className="flex items-center justify-between">
-                <span className="truncate text-sm font-medium">{user.name}</span>
-                <svg
-                  className={`ml-2 h-4 w-4 text-slate-300 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
+        <div className={`rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/5 shadow-sm ${collapsed ? "p-1.5" : "p-2"}`}>
+          <button
+            ref={profileButtonRef}
+            onClick={() => setUserMenuOpen((s) => !s)}
+            className={`w-full rounded-xl ${collapsed ? "p-2 justify-center" : "px-3 py-2"} transition flex items-center gap-3
+              hover:bg-blue-900/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400`}
+            aria-expanded={userMenuOpen}
+            aria-haspopup="true"
+            title={
+              collapsed
+                ? `${user.name}${user.email ? ` • ${user.email}` : ""}${branch?.branches_nm ? ` • ${branch.branches_nm}` : ""}`
+                : undefined
+            }
+          >
+            {/* Avatar */}
+            <div className="relative">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white text-xs font-semibold shadow ring-1 ring-white/20">
+                {user.initials}
               </div>
-              <div className="truncate text-[11px] text-slate-300/80">{user.email}</div>
-              <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-blue-100">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                {user.role}
-              </div>
+              <span
+                className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-blue-950/80"
+                title="Online"
+              />
             </div>
-          )}
-        </button>
+
+            {!collapsed && (
+              <div className="flex-1 min-w-0 text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-semibold text-slate-100">{user.name}</span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-blue-100">
+                    <span
+                      className={`inline-block h-1.5 w-1.5 rounded-full ${
+                        String(user.role).toLowerCase() === "admin"
+                          ? "bg-emerald-400"
+                          : String(user.role).toLowerCase() === "manager"
+                            ? "bg-sky-400"
+                            : "bg-slate-300"
+                      }`}
+                    />
+                    {user.role}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-300/80 min-w-0">
+                  <span className="truncate">{user.email || "—"}</span>
+                  {branch?.branches_nm && (
+                    <>
+                      <span className="text-slate-400/60">•</span>
+                      <span className="truncate">{branch.branches_nm}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!collapsed && (
+              <div className="flex items-center">
+                <div className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10">
+                  <svg
+                    className={`h-4 w-4 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            )}
+          </button>
+        </div>
 
         {/* Drop-up menu (stays within sidebar) */}
         <div
           className={`absolute left-3 right-3 bottom-16 transition-all duration-200 origin-bottom
             ${userMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}
         >
-          <div className="rounded-xl border border-white/10 bg-blue-950/90 backdrop-blur-xl shadow-xl overflow-hidden">
-            {/* Profile quick actions */}
-            {!collapsed && (
-              <div className="px-3 py-3 border-b border-white/10">
-                <div className="text-xs text-slate-300/80">Signed in as</div>
-                <div className="text-sm font-medium text-slate-100 truncate">{user.email}</div>
+          <div
+            ref={profileMenuRef}
+            className="rounded-2xl border border-white/10 bg-blue-950/90 backdrop-blur-xl shadow-2xl overflow-hidden"
+          >
+            <div className="px-4 py-4 border-b border-white/10">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-100 ring-1 ring-white/10">
+                  <span className="text-xs font-semibold">{user.initials}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-slate-100 truncate">{user.name}</div>
+                  <div className="text-xs text-slate-300/80 truncate">{user.email || "—"}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-blue-100">
+                      {user.role}
+                    </span>
+                    {branch?.branches_nm && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-blue-100/90">
+                        <svg className="h-3.5 w-3.5 text-blue-200/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 6h10M7 14h10M5 18h14" />
+                        </svg>
+                        <span className="truncate max-w-[180px]">{branch.branches_nm}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
 
-            <ul className="py-1 max-h-56 overflow-y-auto">
-              <li>
-                <button
-                  type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-100 hover:bg-blue-900/60"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.938 13.938 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  View profile
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-100 hover:bg-blue-900/60"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7h16M4 12h10M4 17h16" />
-                  </svg>
-                  Organization
-                </button>
-              </li>
-              <li className="border-t border-white/10 my-1" />
-              {/* RBAC placeholder */}
-              <li>
-                <button
-                  type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 cursor-not-allowed"
-                  title="RBAC coming soon"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zM6 20v-1a6 6 0 0112 0v1" />
-                  </svg>
-                  Roles and permissions
-                  <span className="ml-auto text-[10px] rounded-full border border-white/10 px-1.5 py-0.5 text-slate-400">soon</span>
-                </button>
-              </li>
+            <ul className="py-2">
+              {user.is_admin && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/dashboard/users");
+                      setUserMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-100 hover:bg-blue-900/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Manage users
+                  </button>
+                </li>
+              )}
               <li className="border-t border-white/10 my-1" />
               <li>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-200 hover:bg-rose-900/40"
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-rose-200 hover:bg-rose-900/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />

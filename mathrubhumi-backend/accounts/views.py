@@ -14,6 +14,7 @@ from django.db import transaction, connection
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_date
+from .permissions import is_admin_user
 
 logger = logging.getLogger(__name__)
 
@@ -79,15 +80,22 @@ def protected_view(request):
     return Response({'message': f'Hello {user.username}, you are authenticated!'})
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def register_user(request):
-    data = request.data
-    email = data.get("email")
-    password = data.get("password")
-    name = data.get("name")
-    role_name = data.get("role", "cashier")
+    if not is_admin_user(request.user):
+        return Response({"error": "Admin permissions required."}, status=status.HTTP_403_FORBIDDEN)
+
+    data = request.data or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    name = (data.get("name") or "").strip()
+    role_name = (data.get("role") or "Staff").strip()
 
     if not email or not password or not name:
         return Response({"error": "Missing fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if role_name.lower() not in {"manager", "staff"}:
+        return Response({"error": "Role must be Manager or Staff"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         validate_password(password)
@@ -97,13 +105,18 @@ def register_user(request):
     if CustomUser.objects.filter(email=email).exists():
         return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-    role, _ = Role.objects.get_or_create(name=role_name)
+    role, _ = Role.objects.get_or_create(name=role_name.title())
     user = CustomUser.objects.create_user(email=email, password=password, name=name, role=role)
-    user = authenticate(request, email=email, password=password)
-    if user:
-        login(request, user)
 
-    return Response({"message": "User registered and logged in successfully."})
+    return Response(
+        {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": role.name,
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 
 ################### SUGGESTIONS ###################

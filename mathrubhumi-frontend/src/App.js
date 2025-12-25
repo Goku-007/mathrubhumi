@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
-import RegisterPage from "./pages/Register";
 import IdleTimeoutModal from "./components/IdleTimeoutModal";
 import { startIdleTimer, stopIdleTimer } from "./utils/idleTimer";
+import { clearSession } from "./utils/session";
 
 function App() {
   const [showIdleModal, setShowIdleModal] = useState(false);
@@ -17,6 +17,7 @@ function App() {
       // Clear tokens
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
+      clearSession();
       setShowIdleModal(true);
     };
     startIdleTimer(onIdle, timeoutMs);
@@ -34,7 +35,6 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
     </Router>

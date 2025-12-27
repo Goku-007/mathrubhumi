@@ -11,7 +11,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import CustomUser, Role
 from django.db import transaction, connection
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_date
 from .permissions import is_admin_user
@@ -4612,6 +4612,108 @@ def pp_installment_prefill(request):
         }
         return JsonResponse(data, status=200)
     except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def sale_types_list(request):
+    """Get all sale types from sale_types table"""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT sale_typeid, sale_type
+                FROM sale_types
+                ORDER BY sale_typeid
+                """
+            )
+            rows = cursor.fetchall()
+        
+        data = [{"sale_typeid": row[0], "sale_type": row[1] or ""} for row in rows]
+        return JsonResponse(data, safe=False, json_dumps_params={'ensure_ascii': False})
+    except Exception as e:
+        logger.exception("Error in sale_types_list")
+        return JsonResponse({'error': str(e)}, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bill_wise_sale_register_report(request):
+    """Generate bill-wise sale register report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        sale_type_id = request.GET.get('sale_type_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not sale_type_id or sale_type_id == '':
+            return JsonResponse({'error': 'sale_type_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+            sale_type_id_int = int(sale_type_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_sales_bill_wise() that the jrxml uses
+        # The jrxml expects p_company_id, using branch_id as company_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_sale_date,
+                    o_bill_no,
+                    o_sale_type,
+                    o_customer_nm,
+                    CAST(o_gross_sale AS numeric(18,2)) AS o_gross_sale,
+                    CAST(o_nett_sale AS numeric(18,2)) AS o_nett_sale,
+                    CAST(o_total_discount AS numeric(18,2)) AS o_total_discount,
+                    CAST(o_freight_postage AS numeric(18,2)) AS o_freight_postage,
+                    o_note_1,
+                    o_note_2,
+                    o_user
+                FROM get_sales_bill_wise(%s, %s, %s::date, %s::date)
+                ORDER BY o_sale_date, o_bill_no
+                """,
+                [branch_id_int, sale_type_id_int, date_from, date_to]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'sale_date': row[0].isoformat() if row[0] else None,
+                'bill_no': row[1] or '',
+                'sale_type': row[2] or '',
+                'customer_nm': row[3] or '',
+                'gross_sale': float(row[4]) if row[4] else 0.0,
+                'nett_sale': float(row[5]) if row[5] else 0.0,
+                'total_discount': float(row[6]) if row[6] else 0.0,
+                'freight_postage': float(row[7]) if row[7] else 0.0,
+                'note_1': row[8] or '',
+                'note_2': row[9] or '',
+                'user': row[10] or '',
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'sale_type_id': sale_type_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in bill_wise_sale_register_report")
         return JsonResponse({'error': str(e)}, status=400)
     
 

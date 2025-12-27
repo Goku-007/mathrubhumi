@@ -123,4 +123,7 @@ urlpatterns = [
     path('cr-realisation-by-customer-id/', views.cr_realisation_by_customer_id, name='cr_realisation_by_customer_id'),
     path('cr-realisation-save/', views.cr_realisation_save, name='cr_realisation_save'),
     path('cr-realisation-by-no/', views.cr_realisation_by_no, name='cr_realisation_by_no'),
+    # Reports routes
+    path('sale-types/', views.sale_types_list, name='sale_types_list'),
+    path('reports/bill-wise-sale-register/', views.bill_wise_sale_register_report, name='bill_wise_sale_register_report'),
 ]

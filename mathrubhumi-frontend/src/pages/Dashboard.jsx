@@ -24,6 +24,7 @@ import AgentsMaster from "./Masters/AgentsMaster";
 import PurchaseBreakupsMaster from "./Masters/PurchaseBreakupsMaster";
 import RoyaltyRecipientsMaster from "./Masters/RoyaltyRecipientsMaster";
 import UserManagement from "./Admin/UserManagement";
+import BillWiseSaleRegister from "./Reports/BillWiseSaleRegister";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -62,6 +63,7 @@ const Dashboard = () => {
           <Route path="purchase-breakups-master" element={<PurchaseBreakupsMaster />} />
           <Route path="royalty-recipients-master" element={<RoyaltyRecipientsMaster />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="bill-wise-sale-register" element={<BillWiseSaleRegister />} />
         </Routes>
       </main>
     </div>

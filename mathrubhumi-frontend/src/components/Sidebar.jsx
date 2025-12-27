@@ -121,7 +121,9 @@ const Sidebar = () => {
       { label: "Remittance Entry", route: "/dashboard/remittance-entry" },
       { label: "Credit Realisation Entry", route: "/dashboard/credit-realisation-entry" },
     ],
-    Reports: [],
+    Reports: [
+      { label: "Bill-Wise Sale Register", route: "/dashboard/bill-wise-sale-register" },
+    ],
     Utilities: user.is_admin ? [{ label: "User Management", route: "/dashboard/users" }] : [],
     Window: [],
     Help: [],

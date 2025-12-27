@@ -26,17 +26,22 @@ const fmtDmy = (isoOrDate) => {
 /* ---------- a_type map for Remittance ---------- */
 const A_TYPE = {
   "Credit Sale Chq/DD": 0,
-  Cash: 1,
-  "Card Books": 2,
-  "Cash Sale Chq/DD": 3,
-  "Scheme Chq/DD": 4,
-  "P P Chq/DD": 5,
-  "Digital Payment": 6,
-  "Card Periodicals": 7,
-  "Card Calender": 8,
-  "Card Diary": 9,
-  "Card Paperbox": 10,
-  "Card Others": 11,
+  "Cash": 1,
+  "Cash Sale Chq/DD": 2,
+  "Scheme Chq/DD": 3,
+  "P P Chq/DD": 4,
+  "UPI Books": 5,
+  "UPI Periodicals": 6,
+  "UPI Calendar": 7,
+  "UPI Diary": 8,
+  "UPI Paperbox": 9,
+  "UPI Others": 10,
+  "Card Books": 11,
+  "Card Periodicals": 12,
+  "Card Calender": 13,
+  "Card Diary": 14,
+  "Card Paperbox": 15,
+  "Card Others": 16,
 };
 const A_TYPE_OPTIONS = Object.keys(A_TYPE);
 
@@ -46,7 +51,7 @@ export default function RemittanceEntry() {
     cancelled: "0", // 0 = No, 1 = Yes
     date: today(),
     type: "Cash",
-    customer: "CASH/CARD/DIGITAL",
+    customer: "CASH/CARD/UPI",
     bank: "",
     receiptNo: "",
     chqdd: "",

@@ -42,6 +42,7 @@ def _get_branch(branch_id: int):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = "email"
     branch_id = serializers.IntegerField(write_only=True, required=True, min_value=1)
 
     def validate(self, attrs):

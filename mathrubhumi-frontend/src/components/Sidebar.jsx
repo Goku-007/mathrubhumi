@@ -123,6 +123,8 @@ const Sidebar = () => {
     ],
     Reports: [
       { label: "Bill-Wise Sale Register", route: "/dashboard/bill-wise-sale-register" },
+      { label: "CIAL Sale Register", route: "/dashboard/cial-sale-register" },
+      { label: "ABC Sale Register", route: "/dashboard/abc-sale-register" },
     ],
     Utilities: user.is_admin ? [{ label: "User Management", route: "/dashboard/users" }] : [],
     Window: [],

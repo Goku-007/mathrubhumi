@@ -5,13 +5,11 @@ import PageHeader from '../../components/PageHeader';
 import { getSession } from '../../utils/session';
 import * as XLSX from 'xlsx';
 
-export default function BillWiseSaleRegister() {
+export default function AbcSaleRegister() {
   const { branch } = getSession();
   const branchId = branch?.id || null;
 
-  const [saleTypes, setSaleTypes] = useState([]);
   const [formData, setFormData] = useState({
-    sale_type_id: '',
     date_from: '',
     date_to: '',
   });
@@ -22,13 +20,11 @@ export default function BillWiseSaleRegister() {
     buttons: [],
   });
   const [loading, setLoading] = useState(false);
-  const [loadingTypes, setLoadingTypes] = useState(true);
   const [reportData, setReportData] = useState(null);
   const [reportParams, setReportParams] = useState(null);
   const reportRef = useRef(null);
 
   useEffect(() => {
-    fetchSaleTypes();
     // Set default dates (current month)
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -39,26 +35,6 @@ export default function BillWiseSaleRegister() {
       date_to: lastDay.toISOString().split('T')[0],
     }));
   }, []);
-
-  const fetchSaleTypes = async () => {
-    try {
-      setLoadingTypes(true);
-      const response = await api.get('/auth/sale-types/');
-      const types = response.data || [];
-      setSaleTypes(types);
-      if (types.length === 0) {
-        showModal('No sale types found in the database. Please add sale types first.', 'warning');
-      }
-    } catch (error) {
-      console.error('Error fetching sale types:', error);
-      showModal(
-        `Failed to load sale types: ${error.response?.data?.error || error.message}`,
-        'error'
-      );
-    } finally {
-      setLoadingTypes(false);
-    }
-  };
 
   const showModal = (message, type = 'info', buttons) => {
     setModal({
@@ -80,16 +56,12 @@ export default function BillWiseSaleRegister() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Format number with comma separators and 2 decimal places
-  const formatNumber = (num) => {
-    if (num === null || num === undefined) return '0.00';
-    const value = parseFloat(num);
-    if (isNaN(value)) return '0.00';
-    // Handle negative values with trailing minus
-    if (value < 0) {
-      return Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '-';
-    }
-    return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Format integer number
+  const formatInteger = (num) => {
+    if (num === null || num === undefined) return '0';
+    const value = parseInt(num, 10);
+    if (isNaN(value)) return '0';
+    return value.toLocaleString('en-IN');
   };
 
   // Format date as dd/MM/yyyy
@@ -102,36 +74,8 @@ export default function BillWiseSaleRegister() {
     return `${day}/${month}/${year}`;
   };
 
-  // Group data by sale_date
-  const groupByDate = (data) => {
-    const groups = {};
-    data.forEach(row => {
-      const dateKey = row.sale_date || 'Unknown';
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
-      groups[dateKey].push(row);
-    });
-    return groups;
-  };
-
-  // Calculate totals for a group of rows
-  const calculateTotals = (rows) => {
-    return rows.reduce((acc, row) => ({
-      gross: acc.gross + (row.gross_sale || 0),
-      discount: acc.discount + (row.total_discount || 0),
-      freight: acc.freight + (row.freight_postage || 0),
-      nett: acc.nett + (row.nett_sale || 0),
-    }), { gross: 0, discount: 0, freight: 0, nett: 0 });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.sale_type_id || formData.sale_type_id === '') {
-      showModal('Please select a Sale Type', 'error');
-      return;
-    }
 
     if (!formData.date_from) {
       showModal('Please select a From Date', 'error');
@@ -156,17 +100,9 @@ export default function BillWiseSaleRegister() {
     try {
       setLoading(true);
 
-      const saleTypeId = parseInt(formData.sale_type_id, 10);
-      if (isNaN(saleTypeId)) {
-        showModal('Invalid Sale Type selected', 'error');
-        setLoading(false);
-        return;
-      }
-
-      const response = await api.get('/auth/reports/bill-wise-sale-register/', {
+      const response = await api.get('/auth/reports/abc-sale-register/', {
         params: {
           branch_id: branchId,
-          sale_type_id: saleTypeId,
           date_from: formData.date_from,
           date_to: formData.date_to,
         },
@@ -203,7 +139,7 @@ export default function BillWiseSaleRegister() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Bill-Wise Sale Register Report</title>
+        <title>ABC Sale Register Report</title>
         <style>
           * { box-sizing: border-box; }
           body { 
@@ -233,16 +169,6 @@ export default function BillWiseSaleRegister() {
             font-weight: normal;
           }
           .text-right { text-align: right; }
-          .date-header { 
-            font-weight: bold; 
-            padding: 8px 0 4px 0;
-          }
-          .daily-total td { 
-            font-weight: bold; 
-            border-top: 1px solid #b5b3b3;
-            border-bottom: 1px solid #b5b3b3;
-            padding: 4px 6px;
-          }
           .grand-total td { 
             font-weight: bold;
             font-size: 12px;
@@ -275,71 +201,38 @@ export default function BillWiseSaleRegister() {
   const handleExportExcel = () => {
     if (!reportData || reportData.length === 0) return;
 
-    const groupedData = groupByDate(reportData);
     const excelData = [];
-    let grandTotals = { gross: 0, discount: 0, freight: 0, nett: 0 };
+    let grandTotal = 0;
 
     // Add header row
-    excelData.push(['Bill No', 'Type', 'Customer', 'Gross', 'Discount', 'Freight', 'Nett', 'Note 1', 'Note 2', 'User']);
+    excelData.push(['Title', 'Quantity']);
 
-    Object.keys(groupedData).sort().forEach(dateKey => {
-      const rows = groupedData[dateKey];
-      const dailyTotals = calculateTotals(rows);
-
-      // Add date header
-      excelData.push([formatDate(dateKey), '', '', '', '', '', '', '', '', '']);
-
-      // Add data rows
-      rows.forEach(row => {
-        excelData.push([
-          row.bill_no || '',
-          row.sale_type || '',
-          row.customer_nm || '',
-          row.gross_sale || 0,
-          row.total_discount || 0,
-          row.freight_postage || 0,
-          row.nett_sale || 0,
-          row.note_1 || '',
-          row.note_2 || '',
-          row.user || '',
-        ]);
-      });
-
-      // Add daily total
-      excelData.push(['', '', 'Daily Total', dailyTotals.gross, dailyTotals.discount, dailyTotals.freight, dailyTotals.nett, '', '', '']);
-      excelData.push([]); // Empty row for spacing
-
-      grandTotals.gross += dailyTotals.gross;
-      grandTotals.discount += dailyTotals.discount;
-      grandTotals.freight += dailyTotals.freight;
-      grandTotals.nett += dailyTotals.nett;
+    // Add data rows
+    reportData.forEach(row => {
+      excelData.push([
+        row.title || '',
+        row.quantity || 0,
+      ]);
+      grandTotal += row.quantity || 0;
     });
 
     // Add grand total
-    excelData.push(['', '', 'Grand Total', grandTotals.gross, grandTotals.discount, grandTotals.freight, grandTotals.nett, '', '', '']);
+    excelData.push(['Grand Total', grandTotal]);
 
     // Create workbook and worksheet
     const ws = XLSX.utils.aoa_to_sheet(excelData);
 
     // Set column widths
     ws['!cols'] = [
-      { wch: 12 }, // Bill No
-      { wch: 8 },  // Type
-      { wch: 25 }, // Customer
-      { wch: 12 }, // Gross
-      { wch: 10 }, // Discount
-      { wch: 10 }, // Freight
-      { wch: 12 }, // Nett
-      { wch: 20 }, // Note 1
-      { wch: 18 }, // Note 2
-      { wch: 12 }, // User
+      { wch: 50 }, // Title
+      { wch: 12 }, // Quantity
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sale Register');
+    XLSX.utils.book_append_sheet(wb, ws, 'ABC Sales Register');
 
     // Generate filename with date range
-    const filename = `Sale_Register_${formData.date_from}_to_${formData.date_to}.xlsx`;
+    const filename = `ABC_Sales_Register_${formData.date_from}_to_${formData.date_to}.xlsx`;
     XLSX.writeFile(wb, filename);
   };
 
@@ -351,18 +244,16 @@ export default function BillWiseSaleRegister() {
   const renderReport = () => {
     if (!reportData || reportData.length === 0) return null;
 
-    const groupedData = groupByDate(reportData);
-    const sortedDates = Object.keys(groupedData).sort();
-    let grandTotals = { gross: 0, discount: 0, freight: 0, nett: 0 };
+    let grandTotal = 0;
 
     return (
       <div ref={reportRef} className="bg-white">
         {/* Report Header */}
         <div className="report-header mb-4">
           <div className="company-name text-xl font-bold">{branch?.branches_nm || 'Company'}</div>
-          <div className="report-title text-base font-bold mt-2">Sale Register (Bill-wise)</div>
+          <div className="report-title text-base font-bold mt-2">ABC Sales Register</div>
           <div className="report-subtitle text-sm text-gray-600">
-            Bill wise Sale Register from {formatDate(reportParams?.date_from)} to {formatDate(reportParams?.date_to)}
+            From {formatDate(reportParams?.date_from)} to {formatDate(reportParams?.date_to)}
           </div>
         </div>
 
@@ -370,78 +261,26 @@ export default function BillWiseSaleRegister() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-t border-b border-gray-300">
-              <th className="py-2 px-1 text-left w-16">Bill No</th>
-              <th className="py-2 px-1 text-left w-12">Type</th>
-              <th className="py-2 px-1 text-left w-40">Customer</th>
-              <th className="py-2 px-1 text-right w-20">Gross</th>
-              <th className="py-2 px-1 text-right w-16">Discount</th>
-              <th className="py-2 px-1 text-right w-14">Freight</th>
-              <th className="py-2 px-1 text-right w-20">Nett</th>
-              <th className="py-2 px-1 text-left w-36">Note 1</th>
-              <th className="py-2 px-1 text-left w-32">Note 2</th>
-              <th className="py-2 px-1 text-left w-20">User</th>
+              <th className="py-2 px-1 text-left">Title</th>
+              <th className="py-2 px-1 text-right w-32">Quantity</th>
             </tr>
           </thead>
           <tbody>
-            {sortedDates.map((dateKey, dateIndex) => {
-              const rows = groupedData[dateKey];
-              const dailyTotals = calculateTotals(rows);
-              grandTotals.gross += dailyTotals.gross;
-              grandTotals.discount += dailyTotals.discount;
-              grandTotals.freight += dailyTotals.freight;
-              grandTotals.nett += dailyTotals.nett;
+            {reportData.map((row, index) => {
+              grandTotal += row.quantity || 0;
 
               return (
-                <React.Fragment key={dateKey}>
-                  {/* Date Header Row */}
-                  <tr className="date-header">
-                    <td colSpan={10} className="py-2 font-bold text-sm">
-                      {formatDate(dateKey)}
-                    </td>
-                  </tr>
-
-                  {/* Data Rows */}
-                  {rows.map((row, rowIndex) => (
-                    <tr key={`${dateKey}-${rowIndex}`} className="hover:bg-gray-50">
-                      <td className="py-1 px-1 font-serif">{row.bill_no}</td>
-                      <td className="py-1 px-1 font-serif">{row.sale_type}</td>
-                      <td className="py-1 px-1 font-serif">{row.customer_nm}</td>
-                      <td className="py-1 px-1 text-right">{formatNumber(row.gross_sale)}</td>
-                      <td className="py-1 px-1 text-right">{formatNumber(row.total_discount)}</td>
-                      <td className="py-1 px-1 text-right">{formatNumber(row.freight_postage)}</td>
-                      <td className="py-1 px-1 text-right">{formatNumber(row.nett_sale)}</td>
-                      <td className="py-1 px-1 font-serif">{row.note_1}</td>
-                      <td className="py-1 px-1 font-serif">{row.note_2}</td>
-                      <td className="py-1 px-1 font-serif">{row.user}</td>
-                    </tr>
-                  ))}
-
-                  {/* Daily Total Row */}
-                  <tr className="daily-total border-t border-b border-gray-300">
-                    <td colSpan={3} className="py-2 px-1 text-right font-bold">Daily Total</td>
-                    <td className="py-2 px-1 text-right font-bold">{formatNumber(dailyTotals.gross)}</td>
-                    <td className="py-2 px-1 text-right font-bold">{formatNumber(dailyTotals.discount)}</td>
-                    <td className="py-2 px-1 text-right font-bold">{formatNumber(dailyTotals.freight)}</td>
-                    <td className="py-2 px-1 text-right font-bold">{formatNumber(dailyTotals.nett)}</td>
-                    <td colSpan={3}></td>
-                  </tr>
-
-                  {/* Spacing between date groups */}
-                  {dateIndex < sortedDates.length - 1 && (
-                    <tr><td colSpan={10} className="py-2"></td></tr>
-                  )}
-                </React.Fragment>
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="py-1 px-1 font-serif">{row.title || ''}</td>
+                  <td className="py-1 px-1 text-right">{formatInteger(row.quantity)}</td>
+                </tr>
               );
             })}
 
             {/* Grand Total Row */}
             <tr className="grand-total border-t-2 border-b-2 border-gray-400">
-              <td colSpan={3} className="py-2 px-1 text-right font-bold text-sm">Grand Total</td>
-              <td className="py-2 px-1 text-right font-bold text-sm">{formatNumber(grandTotals.gross)}</td>
-              <td className="py-2 px-1 text-right font-bold text-sm">{formatNumber(grandTotals.discount)}</td>
-              <td className="py-2 px-1 text-right font-bold text-sm">{formatNumber(grandTotals.freight)}</td>
-              <td className="py-2 px-1 text-right font-bold text-sm">{formatNumber(grandTotals.nett)}</td>
-              <td colSpan={3}></td>
+              <td className="py-2 px-1 text-right font-bold text-sm">Grand Total</td>
+              <td className="py-2 px-1 text-right font-bold text-sm">{formatInteger(grandTotal)}</td>
             </tr>
           </tbody>
         </table>
@@ -464,8 +303,8 @@ export default function BillWiseSaleRegister() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         }
-        title="Bill-Wise Sale Register"
-        subtitle="Generate sale register report by bill"
+        title="ABC Sale Register"
+        subtitle="Generate ABC sales register report"
       />
 
       <div className="mt-6 max-w-7xl mx-auto">
@@ -473,29 +312,6 @@ export default function BillWiseSaleRegister() {
         <div className={cardClasses + " p-6 mb-6"}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-              {/* Sale Type Select */}
-              <div>
-                <label htmlFor="sale_type_id" className={labelClasses}>
-                  Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="sale_type_id"
-                  name="sale_type_id"
-                  value={formData.sale_type_id}
-                  onChange={handleInputChange}
-                  className={inputClasses}
-                  disabled={loadingTypes}
-                  required
-                >
-                  <option value="">-- Select Sale Type --</option>
-                  {saleTypes.map((type) => (
-                    <option key={type.sale_typeid} value={String(type.sale_typeid)}>
-                      {type.sale_type || `Type ${type.sale_typeid}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* Date From */}
               <div>
                 <label htmlFor="date_from" className={labelClasses}>
@@ -529,10 +345,10 @@ export default function BillWiseSaleRegister() {
               </div>
 
               {/* Generate Button */}
-              <div className="flex items-end">
+              <div className="flex items-end md:col-span-2">
                 <button
                   type="submit"
-                  disabled={loading || loadingTypes}
+                  disabled={loading}
                   className="w-full px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg shadow-sm hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {loading ? (

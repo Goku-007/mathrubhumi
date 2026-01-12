@@ -52,28 +52,39 @@ class UserBranch(models.Model):
             models.UniqueConstraint(fields=["user", "branch_id"], name="uniq_user_branch"),
         ]
         indexes = [
-            models.Index(fields=["user", "branch_id"]),
-            models.Index(fields=["branch_id"]),
+            models.Index(fields=["user", "branch_id"], name="accounts_us_user_id_d6d8ed_idx"),
+            models.Index(fields=["branch_id"], name="accounts_us_branch__2a0b33_idx"),
         ]
 
 # Customer table for credit sales
+# Note: This table is managed via raw SQL in migration 0002, so Django should not manage it
 class CrCustomer(models.Model):
     customer_name = models.CharField(max_length=255)
+
+    class Meta:
+        managed = False
+        db_table = 'cr_customers'
 
     def __str__(self):
         return self.customer_name
 
 # Title/Product table
+# Note: This table is managed via raw SQL in migration 0002, so Django should not manage it
 class Title(models.Model):
     title = models.CharField(max_length=255)
     title_m = models.TextField(blank=True)
     rate = models.DecimalField(max_digits=10, decimal_places=2)
     language = models.IntegerField(default=0)
 
+    class Meta:
+        managed = False
+        db_table = 'titles'
+
     def __str__(self):
         return self.title
 
 # Sales table (optional)
+# Note: This table is managed via raw SQL in migration 0002, so Django should not manage it
 class Sales(models.Model):
     customer_name = models.CharField(max_length=255)
     billing_address = models.TextField()
@@ -93,10 +104,15 @@ class Sales(models.Model):
     freight_postage = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     processing_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
+    class Meta:
+        managed = False
+        db_table = 'sales'
+
     def __str__(self):
         return f"Sale {self.id}"
 
 # Sale Items table (optional)
+# Note: This table is managed via raw SQL in migration 0002, so Django should not manage it
 class SaleItem(models.Model):
     sale = models.ForeignKey(Sales, related_name='items', on_delete=models.CASCADE)
     sku = models.CharField(max_length=50, blank=True)
@@ -105,6 +121,10 @@ class SaleItem(models.Model):
     discount_p = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     value = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'sale_items'
 
     def __str__(self):
         return f"Item {self.item_name} for Sale {self.sale.id}"

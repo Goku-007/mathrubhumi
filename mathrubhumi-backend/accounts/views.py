@@ -4715,6 +4715,128 @@ def bill_wise_sale_register_report(request):
     except Exception as e:
         logger.exception("Error in bill_wise_sale_register_report")
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cial_sale_register_report(request):
+    """Generate CIAL sale register report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_cial_sales_register() that the jrxml uses
+        # The jrxml expects p_company_id, using branch_id as company_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_sale_date,
+                    nos,
+                    CAST(o_nett_sale AS numeric(18,2)) AS o_nett_sale,
+                    CAST(o_discount AS numeric(18,2)) AS o_discount
+                FROM get_cial_sales_register(%s, %s::date, %s::date)
+                ORDER BY o_sale_date
+                """,
+                [branch_id_int, date_from, date_to]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'sale_date': row[0].isoformat() if row[0] else None,
+                'nos': int(row[1]) if row[1] else 0,
+                'nett_sale': float(row[2]) if row[2] else 0.0,
+                'discount': float(row[3]) if row[3] else 0.0,
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in cial_sale_register_report")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def abc_sale_register_report(request):
+    """Generate ABC sale register report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_abc_sales_register() that the jrxml uses
+        # The jrxml expects p_company_id, using branch_id as company_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_title,
+                    o_quantity
+                FROM get_abc_sales_register(%s, %s::date, %s::date)
+                ORDER BY o_title
+                """,
+                [branch_id_int, date_from, date_to]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'title': row[0] or '',
+                'quantity': int(row[1]) if row[1] else 0,
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in abc_sale_register_report")
+        return JsonResponse({'error': str(e)}, status=400)
     
 
 ################### REMITTANCE ENTRY ###################

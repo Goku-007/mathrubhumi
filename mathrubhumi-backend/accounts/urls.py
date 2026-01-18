@@ -44,6 +44,7 @@ urlpatterns = [
     path('author-create/', views.author_create, name='author_create'),
     path('author-master-search/', views.author_master_search, name='author_master_search'),
     path('author-update/<int:id>/', views.author_update, name='author_update'),
+    path('authors-list/', views.authors_list, name='authors_list'),
     path('publisher-create/', views.publisher_create, name='publisher_create'),
     path('publisher-master-search/', views.publisher_master_search, name='publisher_master_search'),
     path('publisher-update/<int:id>/', views.publisher_update, name='publisher_update'),
@@ -128,4 +129,8 @@ urlpatterns = [
     path('reports/bill-wise-sale-register/', views.bill_wise_sale_register_report, name='bill_wise_sale_register_report'),
     path('reports/cial-sale-register/', views.cial_sale_register_report, name='cial_sale_register_report'),
     path('reports/abc-sale-register/', views.abc_sale_register_report, name='abc_sale_register_report'),
+    path('reports/sales-agent-wise/', views.sales_agent_wise_report, name='sales_agent_wise_report'),
+    path('reports/sale-and-stock/', views.sale_and_stock_report, name='sale_and_stock_report'),
+    path('reports/author-publisher-sales/', views.author_publisher_sales_report, name='author_publisher_sales_report'),
+    path('reports/author-wise-title-sales/', views.author_wise_title_sales_report, name='author_wise_title_sales_report'),
 ]

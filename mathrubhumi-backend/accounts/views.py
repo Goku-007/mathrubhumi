@@ -1916,6 +1916,35 @@ def author_master_search(request):
         logger.error(f"Error in author_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def authors_list(request):
+    """Get all authors for dropdown selection"""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, author_nm
+                  FROM authors
+              ORDER BY author_nm
+                """
+            )
+            results = cursor.fetchall()
+
+        authors = [
+            {
+                'id': row[0],
+                'author_nm': row[1] or ''
+            }
+            for row in results
+        ]
+        return JsonResponse(authors, safe=False, json_dumps_params={'ensure_ascii': False})
+    except Exception as e:
+        logger.error(f"Error in authors_list: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def author_update(request, id):
@@ -4837,7 +4866,272 @@ def abc_sale_register_report(request):
     except Exception as e:
         logger.exception("Error in abc_sale_register_report")
         return JsonResponse({'error': str(e)}, status=400)
-    
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def sales_agent_wise_report(request):
+    """Generate sales agent-wise report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_sales_agent_wise() that the jrxml uses
+        # The jrxml expects p_company_id, using branch_id as company_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_agent,
+                    o_sale_date,
+                    o_sale_type,
+                    CAST(o_gross_sale AS numeric(18,2)) AS o_gross_sale,
+                    CAST(o_nett_sale AS numeric(18,2)) AS o_nett_sale,
+                    CAST(o_total_discount AS numeric(18,2)) AS o_total_discount
+                FROM get_sales_agent_wise(%s, %s::date, %s::date)
+                ORDER BY o_agent, o_sale_date, o_sale_type
+                """,
+                [branch_id_int, date_from, date_to]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'agent': row[0] or '',
+                'sale_date': row[1].isoformat() if row[1] else None,
+                'sale_type': row[2] or '',
+                'gross_sale': float(row[3]) if row[3] else 0.0,
+                'nett_sale': float(row[4]) if row[4] else 0.0,
+                'total_discount': float(row[5]) if row[5] else 0.0,
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in sales_agent_wise_report")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def sale_and_stock_report(request):
+    """Generate sale and stock report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_sale_stock() that the jrxml uses
+        # The jrxml expects p_company_id, using branch_id as company_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_publisher_nm,
+                    o_title,
+                    o_sold_quantity,
+                    o_stock
+                FROM get_sale_stock(%s, %s::date, %s::date)
+                ORDER BY o_sold_quantity DESC
+                """,
+                [branch_id_int, date_from, date_to]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'publisher_nm': row[0] or '',
+                'title': row[1] or '',
+                'sold_quantity': int(row[2]) if row[2] else 0,
+                'stock': int(row[3]) if row[3] else 0,
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in sale_and_stock_report")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def author_publisher_sales_report(request):
+    """Generate Author-Publisher sales report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_author_publisher_wise_sales() that the jrxml uses
+        # The jrxml expects p_company_id, using branch_id as company_id
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_author_nm,
+                    o_publisher_nm,
+                    o_title,
+                    o_quantity,
+                    CAST(o_value AS numeric(18,2)) AS o_value
+                FROM get_author_publisher_wise_sales(%s, %s::date, %s::date)
+                ORDER BY o_author_nm, o_publisher_nm, o_title
+                """,
+                [branch_id_int, date_from, date_to]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'author_nm': row[0] or '',
+                'publisher_nm': row[1] or '',
+                'title': row[2] or '',
+                'quantity': int(row[3]) if row[3] else 0,
+                'value': float(row[4]) if row[4] else 0.0,
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in author_publisher_sales_report")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+    except Exception as e:
+        logger.exception("Error in author_publisher_sales_report")
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def author_wise_title_sales_report(request):
+    """Generate Author-Wise Title sales report"""
+    try:
+        branch_id = request.GET.get('branch_id')
+        date_from = request.GET.get('date_from')
+        date_to = request.GET.get('date_to')
+        author_id = request.GET.get('author_id')
+
+        if not branch_id:
+            return JsonResponse({'error': 'branch_id is required'}, status=400)
+        if not date_from:
+            return JsonResponse({'error': 'date_from is required'}, status=400)
+        if not date_to:
+            return JsonResponse({'error': 'date_to is required'}, status=400)
+        if not author_id:
+            return JsonResponse({'error': 'author_id is required'}, status=400)
+
+        try:
+            branch_id_int = int(branch_id)
+            author_id_int = int(author_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'error': f'Invalid parameter format: {str(e)}'}, status=400)
+
+        # Query the database function get_author_wise_title_sales()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    o_title,
+                    CAST(o_rate AS numeric(18,2)) AS o_rate,
+                    o_quantity
+                FROM get_author_wise_title_sales(%s, %s::date, %s::date, %s)
+                ORDER BY o_title, o_rate DESC
+                """,
+                [branch_id_int, date_from, date_to, author_id_int]
+            )
+            rows = cursor.fetchall()
+
+        # Format the data for JSON response
+        report_data = []
+        for row in rows:
+            report_data.append({
+                'title': row[0] or '',
+                'rate': float(row[1]) if row[1] else 0.0,
+                'quantity': int(row[2]) if row[2] else 0,
+            })
+
+        # Return the report data as JSON
+        return JsonResponse({
+            'report_data': report_data,
+            'parameters': {
+                'branch_id': branch_id_int,
+                'date_from': date_from,
+                'date_to': date_to,
+                'author_id': author_id_int
+            },
+            'total_records': len(report_data)
+        }, status=200)
+    except Exception as e:
+        logger.exception("Error in author_wise_title_sales_report")
+        return JsonResponse({'error': str(e)}, status=400)
+
 
 ################### REMITTANCE ENTRY ###################
 

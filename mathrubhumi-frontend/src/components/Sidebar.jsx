@@ -122,9 +122,13 @@ const Sidebar = () => {
       { label: "Credit Realisation Entry", route: "/dashboard/credit-realisation-entry" },
     ],
     Reports: [
+      { label: "Author-Wise Title Sales", route: "/dashboard/author-wise-title-sales" },
       { label: "Bill-Wise Sale Register", route: "/dashboard/bill-wise-sale-register" },
       { label: "CIAL Sale Register", route: "/dashboard/cial-sale-register" },
       { label: "ABC Sale Register", route: "/dashboard/abc-sale-register" },
+      { label: "Sales Agent-Wise", route: "/dashboard/sales-agent-wise" },
+      { label: "Sale and Stock", route: "/dashboard/sale-and-stock" },
+      { label: "Author-Publisher Sales", route: "/dashboard/author-publisher-sales" },
     ],
     Utilities: user.is_admin ? [{ label: "User Management", route: "/dashboard/users" }] : [],
     Window: [],
@@ -323,13 +327,12 @@ const Sidebar = () => {
                   <span className="truncate text-sm font-semibold text-slate-100">{user.name}</span>
                   <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-blue-100">
                     <span
-                      className={`inline-block h-1.5 w-1.5 rounded-full ${
-                        String(user.role).toLowerCase() === "admin"
-                          ? "bg-emerald-400"
-                          : String(user.role).toLowerCase() === "manager"
-                            ? "bg-sky-400"
-                            : "bg-slate-300"
-                      }`}
+                      className={`inline-block h-1.5 w-1.5 rounded-full ${String(user.role).toLowerCase() === "admin"
+                        ? "bg-emerald-400"
+                        : String(user.role).toLowerCase() === "manager"
+                          ? "bg-sky-400"
+                          : "bg-slate-300"
+                        }`}
                     />
                     {user.role}
                   </span>

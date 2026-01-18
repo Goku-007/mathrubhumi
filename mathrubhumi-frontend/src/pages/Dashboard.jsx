@@ -27,6 +27,10 @@ import UserManagement from "./Admin/UserManagement";
 import BillWiseSaleRegister from "./Reports/BillWiseSaleRegister";
 import CialSaleRegister from "./Reports/CialSaleRegister";
 import AbcSaleRegister from "./Reports/AbcSaleRegister";
+import SalesAgentWise from "./Reports/SalesAgentWise";
+import SaleAndStock from "./Reports/SaleAndStock";
+import AuthorPublisherSales from "./Reports/AuthorPublisherSales";
+import AuthorWiseTitleSales from "./Reports/AuthorWiseTitleSales";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -68,6 +72,10 @@ const Dashboard = () => {
           <Route path="bill-wise-sale-register" element={<BillWiseSaleRegister />} />
           <Route path="cial-sale-register" element={<CialSaleRegister />} />
           <Route path="abc-sale-register" element={<AbcSaleRegister />} />
+          <Route path="sales-agent-wise" element={<SalesAgentWise />} />
+          <Route path="sale-and-stock" element={<SaleAndStock />} />
+          <Route path="author-publisher-sales" element={<AuthorPublisherSales />} />
+          <Route path="author-wise-title-sales" element={<AuthorWiseTitleSales />} />
         </Routes>
       </main>
     </div>

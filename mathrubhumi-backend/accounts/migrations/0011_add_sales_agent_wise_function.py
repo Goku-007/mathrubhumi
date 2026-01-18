@@ -46,7 +46,7 @@ DROP FUNCTION IF EXISTS public.get_sales_agent_wise(integer, date, date);
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0010_mark_unmanaged_models'),
+        ('accounts', '0009_add_database_functions'),
     ]
 
     operations = [

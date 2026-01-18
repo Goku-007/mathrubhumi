@@ -5063,11 +5063,6 @@ def author_publisher_sales_report(request):
         return JsonResponse({'error': str(e)}, status=400)
 
 
-    except Exception as e:
-        logger.exception("Error in author_publisher_sales_report")
-        return JsonResponse({'error': str(e)}, status=400)
-
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def author_wise_title_sales_report(request):

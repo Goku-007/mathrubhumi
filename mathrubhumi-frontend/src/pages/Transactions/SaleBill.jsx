@@ -1082,7 +1082,7 @@ export default function SaleBillPage() {
               className={inputClasses}
             >
               <option value="" disabled>Mode</option>
-              {['Cash', 'Card', 'UPI Payment', 'N.A.'].map((opt) => (
+              {['Cash', 'Card', 'UPI', 'N.A.'].map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>

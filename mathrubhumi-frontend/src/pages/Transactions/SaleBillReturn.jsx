@@ -476,7 +476,7 @@ export default function SaleBillReturn() {
               onChange={handleHeaderChange}
               className={inputClasses}
             >
-              {['Cash','Card','UPI Payment','N.A.'].map((opt) => (
+              {['Cash', 'Money Order', 'Cheque', 'Demand Draft', 'Cr/Dr Card','Digital Payment'].map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>

@@ -9,12 +9,10 @@ const today = () => new Date().toISOString().split("T")[0];
 const A_TYPE = {
   Cash: 0,
   "Money Order": 1,
-  "Cheque (Local Cleaning)": 2,
-  "DD (Local Cleaning)": 3,
+  "Cheque": 2,
+  "Demand Draft": 3,
   "Cr/Dr Card": 4,
-  "Cheque (HO Cleaning)": 5,
-  "DD (HO Cleaning)": 6,
-  "Digital Payment": 7,
+  "Digital Payment": 5,
 };
 const A_TYPE_INV = Object.fromEntries(
   Object.entries(A_TYPE).map(([k, v]) => [v, k])

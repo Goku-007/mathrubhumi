@@ -173,7 +173,7 @@ export default function CategoriesMaster() {
   );
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6 flex flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -182,17 +182,19 @@ export default function CategoriesMaster() {
       />
 
       {/* Page Header */}
-      <PageHeader
-        icon={categoryIcon}
-        title="Categories Master"
-        subtitle="Manage product categories"
-      />
+      <div className="flex-shrink-0">
+        <PageHeader
+          icon={categoryIcon}
+          title="Categories Master"
+          subtitle="Manage product categories"
+        />
+      </div>
 
       {/* Main Content Card */}
-      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
         {/* Table Section */}
-        <div className="p-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="p-4 flex-1 min-h-0">
+          <div className="h-full overflow-y-auto overflow-x-auto rounded-lg border border-gray-200">
             <table className="w-full max-w-md">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
@@ -249,8 +251,8 @@ export default function CategoriesMaster() {
         </div>
 
         {/* Add Category Form */}
-        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
-          <div className="flex items-center gap-3 max-w-md">
+        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-md">
             <div className="flex-1">
               <input
                 type="text"
@@ -267,7 +269,7 @@ export default function CategoriesMaster() {
             </div>
             <button
               onClick={handleAddCategory}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
                          text-white text-sm font-medium shadow-lg shadow-blue-500/25
                          hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
             >
@@ -280,18 +282,6 @@ export default function CategoriesMaster() {
         </div>
       </div>
 
-      {/* Info card */}
-      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
-            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing a category name to save changes instantly.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

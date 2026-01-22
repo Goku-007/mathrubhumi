@@ -10,7 +10,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import CustomUser, Role
-from django.db import transaction, connection
+from django.db import transaction, connection, IntegrityError
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_date
@@ -2382,10 +2382,15 @@ def credit_customer_delete(request, id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def category_create(request):
+    data = request.data or {}
+    category_name = (data.get('category_nm') or '').strip()
+
+    if not category_name:
+        return JsonResponse({'error': 'Category name is required'}, status=400)
+
     try:
-        data = request.data
         logger.info(f"Creating category with data: {data}")
-        
+
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -2393,10 +2398,43 @@ def category_create(request):
                 VALUES (%s)
                 RETURNING id
                 """,
-                [data['category_nm']]
+                [category_name]
             )
             new_id = cursor.fetchone()[0]
         return JsonResponse({'message': 'Category created successfully', 'id': new_id}, status=201)
+    except IntegrityError as e:
+        error_text = str(e)
+        if 'categories_pk' in error_text:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT setval(
+                            pg_get_serial_sequence('public.categories', 'id'),
+                            COALESCE((SELECT MAX(id) FROM public.categories), 0)
+                        )
+                        """
+                    )
+                    cursor.execute(
+                        """
+                        INSERT INTO categories (category_nm)
+                        VALUES (%s)
+                        RETURNING id
+                        """,
+                        [category_name]
+                    )
+                    new_id = cursor.fetchone()[0]
+                return JsonResponse({'message': 'Category created successfully', 'id': new_id}, status=201)
+            except IntegrityError as retry_error:
+                retry_text = str(retry_error)
+                if 'categories_unique' in retry_text:
+                    return JsonResponse({'error': 'Category already exists'}, status=400)
+                logger.error(f"Error in category_create retry: {retry_text}")
+                return JsonResponse({'error': retry_text}, status=400)
+        if 'categories_unique' in error_text:
+            return JsonResponse({'error': 'Category already exists'}, status=400)
+        logger.error(f"Error in category_create: {error_text}")
+        return JsonResponse({'error': error_text}, status=400)
     except Exception as e:
         logger.error(f"Error in category_create: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)

@@ -613,6 +613,7 @@ export default function SaleBillReturn() {
               )}
             </div>
         </div>
+      </div>
 
       <div className={`${cardClasses} p-3`}>
         <div className="flex items-center justify-end px-1 pb-2 text-xs text-gray-600">

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../utils/axiosInstance';
 import { TrashIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 
 export default function GoodsInwardPage() {
   const [items, setItems] = useState([]);
@@ -27,6 +28,8 @@ export default function GoodsInwardPage() {
   const [breakupHighlightedIndex, setBreakupHighlightedIndex] = useState(-1);
   const [activeBreakupNo, setActiveBreakupNo] = useState(null);
   const [currencies, setCurrencies] = useState([]);
+  const [suggestionPosition, setSuggestionPosition] = useState(null);
+  const productInputRef = useRef(null);
   const [modal, setModal] = useState({ isOpen: false, message: '', type: 'info', buttons: [] });
   const [activeDiscountField, setActiveDiscountField] = useState(null);
   const [isMasterEntryOpen, setIsMasterEntryOpen] = useState(false);
@@ -210,6 +213,34 @@ export default function GoodsInwardPage() {
     };
     fetchCurrencies();
   }, []);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (
+        !showSuggestions ||
+        suggestions.length === 0 ||
+        !productInputRef.current ||
+        !formData.itemName.trim()
+      ) {
+        setSuggestionPosition(null);
+        return;
+      }
+      const rect = productInputRef.current.getBoundingClientRect();
+      setSuggestionPosition({
+        top: rect.bottom + window.scrollY + 6,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [showSuggestions, suggestions.length, formData.itemName]);
 
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
@@ -1096,222 +1127,246 @@ export default function GoodsInwardPage() {
 
   const totalValue = items.reduce((sum, item) => sum + (parseFloat(item.value) || 0), 0);
 
+  const cardClasses = "bg-white/90 border border-gray-200 rounded-lg shadow-sm";
+  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
+
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18M7 7l1-3h8l1 3M8 17l1 3h6l1-3" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
       <Modal isOpen={modal.isOpen} message={modal.message} type={modal.type} buttons={modal.buttons} />
       {isMasterEntryOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-[600px] max-w-[90%]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">MASTER ENTRY</h2>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={handleCloseMasterEntry} />
+          <div
+            className="relative bg-white rounded-xl shadow-xl w-[min(95vw,1000px)] max-h-[85vh] overflow-hidden mx-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b bg-gray-50">
+              <h2 className="text-sm font-semibold text-gray-800">MASTER ENTRY</h2>
               <button onClick={handleCloseMasterEntry} className="text-gray-600 hover:text-gray-800">
-                <XMarkIcon className="w-6 h-6" />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="relative">
+            <div className="p-4 overflow-auto max-h-[calc(85vh-60px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="category"
+                    value={masterEntryData.category}
+                    onChange={handleMasterEntryInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'me_category')}
+                    placeholder="Category"
+                    className={inputClasses}
+                    autoComplete="off"
+                  />
+                  {showMeCatSugs && meCatSugs.length > 0 && masterEntryData.category.trim() && (
+                    <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                      {meCatSugs.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          id={`me-cat-${idx}`}
+                          className={`px-3 py-2 cursor-pointer ${meCatHi === idx ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                          onClick={() => handleMeCatClick(row)}
+                        >
+                          {row.category_nm}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="subCategory"
+                    value={masterEntryData.subCategory}
+                    onChange={handleMasterEntryInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'me_subCategory')}
+                    placeholder="Sub Category"
+                    className={inputClasses}
+                    autoComplete="off"
+                  />
+                  {showMeSubCatSugs && meSubCatSugs.length > 0 && masterEntryData.subCategory.trim() && (
+                    <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                      {meSubCatSugs.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          id={`me-subcat-${idx}`}
+                          className={`px-3 py-2 cursor-pointer ${meSubCatHi === idx ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                          onClick={() => handleMeSubCatClick(row)}
+                        >
+                          {row.sub_category_nm}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="authorEngMal"
+                    value={masterEntryData.authorEngMal}
+                    onChange={handleMasterEntryInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'me_author')}
+                    placeholder="Author"
+                    className={inputClasses}
+                    autoComplete="off"
+                  />
+                  {showMeAuthorSugs && meAuthorSugs.length > 0 && masterEntryData.authorEngMal.trim() && (
+                    <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                      {meAuthorSugs.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          id={`me-author-${idx}`}
+                          className={`px-3 py-2 cursor-pointer ${meAuthorHi === idx ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                          onClick={() => handleMeAuthorClick(row)}
+                        >
+                          {row.author_nm}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="translatorEngMal"
+                    value={masterEntryData.translatorEngMal}
+                    onChange={handleMasterEntryInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'me_translator')}
+                    placeholder="Translator"
+                    className={inputClasses}
+                    autoComplete="off"
+                  />
+                  {showMeTranslatorSugs && meTranslatorSugs.length > 0 && masterEntryData.translatorEngMal.trim() && (
+                    <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                      {meTranslatorSugs.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          id={`me-translator-${idx}`}
+                          className={`px-3 py-2 cursor-pointer ${meTranslatorHi === idx ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                          onClick={() => handleMeTranslatorClick(row)}
+                        >
+                          {row.author_nm}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="publisherEngMal"
+                    value={masterEntryData.publisherEngMal}
+                    onChange={handleMasterEntryInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'me_publisher')}
+                    placeholder="Publisher"
+                    className={inputClasses}
+                    autoComplete="off"
+                  />
+                  {showMePublisherSugs && mePublisherSugs.length > 0 && masterEntryData.publisherEngMal.trim() && (
+                    <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                      {mePublisherSugs.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          id={`me-publisher-${idx}`}
+                          className={`px-3 py-2 cursor-pointer ${mePublisherHi === idx ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                          onClick={() => handleMePublisherClick(row)}
+                        >
+                          {row.publisher_nm}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="relative md:col-span-2">
+                  <input
+                    type="text"
+                    name="titleEng"
+                    value={masterEntryData.titleEng}
+                    onChange={handleMasterEntryInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'me_titleEng')}
+                    placeholder="Title Eng"
+                    className={inputClasses}
+                    autoComplete="off"
+                  />
+                  {showMeTitleSugs && meTitleSugs.length > 0 && masterEntryData.titleEng.trim() && (
+                    <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-64 overflow-y-auto">
+                      {meTitleSugs.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          id={`me-title-${idx}`}
+                          className={`px-3 py-2 cursor-pointer ${meTitleHi === idx ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                          onClick={() => handleMeTitleClick(row)}
+                        >
+                          <div className="font-medium">{row.title}</div>
+                          <div className="text-xs text-gray-600">
+                            {row.author_nm ? `Author: ${row.author_nm}` : ''}{row.publisher_nm ? ` · Publisher: ${row.publisher_nm}` : ''}
+                          </div>
+                          {row.title_m ? <div className="text-xs text-gray-500" style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}>{row.title_m}</div> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <input
                   type="text"
-                  name="category"
-                  value={masterEntryData.category}
+                  name="titleMal"
+                  value={masterEntryData.titleMal}
                   onChange={handleMasterEntryInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'me_category')}
-                  placeholder="Category"
-                  className="border p-2 rounded-lg text-sm w-full"
-                  autoComplete="off"
+                  placeholder="Title Mal"
+                  className={`${inputClasses} md:col-span-2`}
+                  style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
                 />
-                {showMeCatSugs && meCatSugs.length > 0 && masterEntryData.category.trim() && (
-                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                    {meCatSugs.map((row, idx) => (
-                      <li
-                        key={row.id}
-                        id={`me-cat-${idx}`}
-                        className={`px-3 py-1 cursor-pointer ${meCatHi === idx ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                        onClick={() => handleMeCatClick(row)}
-                      >
-                        {row.category_nm}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className="relative">
                 <input
-                  type="text"
-                  name="subCategory"
-                  value={masterEntryData.subCategory}
+                  type="number"
+                  name="taxPercent"
+                  value={masterEntryData.taxPercent}
                   onChange={handleMasterEntryInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'me_subCategory')}
-                  placeholder="Sub Category"
-                  className="border p-2 rounded-lg text-sm w-full"
-                  autoComplete="off"
+                  placeholder="Tax (%)"
+                  className={inputClasses}
+                  step="0.01"
                 />
-                {showMeSubCatSugs && meSubCatSugs.length > 0 && masterEntryData.subCategory.trim() && (
-                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                    {meSubCatSugs.map((row, idx) => (
-                      <li
-                        key={row.id}
-                        id={`me-subcat-${idx}`}
-                        className={`px-3 py-1 cursor-pointer ${meSubCatHi === idx ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                        onClick={() => handleMeSubCatClick(row)}
-                      >
-                        {row.sub_category_nm}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="authorEngMal"
-                  value={masterEntryData.authorEngMal}
+                <select
+                  name="Language"
+                  value={masterEntryData.currency}
                   onChange={handleMasterEntryInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'me_author')}
-                  placeholder="Author"
-                  className="border p-2 rounded-lg text-sm w-full"
-                  autoComplete="off"
-                />
-                {showMeAuthorSugs && meAuthorSugs.length > 0 && masterEntryData.authorEngMal.trim() && (
-                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                    {meAuthorSugs.map((row, idx) => (
-                      <li
-                        key={row.id}
-                        id={`me-author-${idx}`}
-                        className={`px-3 py-1 cursor-pointer ${meAuthorHi === idx ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                        onClick={() => handleMeAuthorClick(row)}
-                      >
-                        {row.author_nm}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                  className={inputClasses}
+                >
+                  <option value="" disabled>Currency</option>
+                  {currencies.map(cur => (
+                    <option key={cur.id} value={cur.name}>{cur.name}</option>
+                  ))}
+                </select>
               </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="translatorEngMal"
-                  value={masterEntryData.translatorEngMal}
-                  onChange={handleMasterEntryInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'me_translator')}
-                  placeholder="Translator"
-                  className="border p-2 rounded-lg text-sm w-full"
-                  autoComplete="off"
-                />
-                {showMeTranslatorSugs && meTranslatorSugs.length > 0 && masterEntryData.translatorEngMal.trim() && (
-                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                    {meTranslatorSugs.map((row, idx) => (
-                      <li
-                        key={row.id}
-                        id={`me-translator-${idx}`}
-                        className={`px-3 py-1 cursor-pointer ${meTranslatorHi === idx ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                        onClick={() => handleMeTranslatorClick(row)}
-                      >
-                        {row.author_nm}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="publisherEngMal"
-                  value={masterEntryData.publisherEngMal}
-                  onChange={handleMasterEntryInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'me_publisher')}
-                  placeholder="Publisher"
-                  className="border p-2 rounded-lg text-sm w-full"
-                  autoComplete="off"
-                />
-                {showMePublisherSugs && mePublisherSugs.length > 0 && masterEntryData.publisherEngMal.trim() && (
-                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                    {mePublisherSugs.map((row, idx) => (
-                      <li
-                        key={row.id}
-                        id={`me-publisher-${idx}`}
-                        className={`px-3 py-1 cursor-pointer ${mePublisherHi === idx ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                        onClick={() => handleMePublisherClick(row)}
-                      >
-                        {row.publisher_nm}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className="relative col-span-2">
-                <input
-                  type="text"
-                  name="titleEng"
-                  value={masterEntryData.titleEng}
-                  onChange={handleMasterEntryInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'me_titleEng')}
-                  placeholder="Title Eng"
-                  className="border p-2 rounded-lg text-sm w-full"
-                  autoComplete="off"
-                />
-                {showMeTitleSugs && meTitleSugs.length > 0 && masterEntryData.titleEng.trim() && (
-                  <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-64 overflow-y-auto">
-                    {meTitleSugs.map((row, idx) => (
-                      <li
-                        key={row.id}
-                        id={`me-title-${idx}`}
-                        className={`px-3 py-2 cursor-pointer ${meTitleHi === idx ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                        onClick={() => handleMeTitleClick(row)}
-                      >
-                        <div className="font-medium">{row.title}</div>
-                        <div className="text-xs text-gray-600">
-                          {row.author_nm ? `Author: ${row.author_nm}` : ''}{row.publisher_nm ? ` · Publisher: ${row.publisher_nm}` : ''}
-                        </div>
-                        {row.title_m ? <div className="text-xs text-gray-500" style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}>{row.title_m}</div> : null}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <input
-                type="text"
-                name="titleMal"
-                value={masterEntryData.titleMal}
-                onChange={handleMasterEntryInputChange}
-                placeholder="Title Mal"
-                className="border p-2 rounded-lg text-sm w-full col-span-2"
-                style={{ fontFamily: 'Noto Sans Malayalam, sans-serif' }}
-              />
-              <input
-                type="number"
-                name="taxPercent"
-                value={masterEntryData.taxPercent}
-                onChange={handleMasterEntryInputChange}
-                placeholder="Tax (%)"
-                className="border p-2 rounded-lg text-sm w-full"
-                step="0.01"
-              />
-              <select
-                name="Language"
-                value={masterEntryData.currency}
-                onChange={handleMasterEntryInputChange}
-                className="border p-2 rounded-lg text-sm w-full"
-              >
-                <option value="" disabled>Currency</option>
-                {currencies.map(cur => (
-                  <option key={cur.id} value={cur.name}>{cur.name}</option>
-                ))}
-              </select>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
+      <PageHeader
+        icon={pageIcon}
+        title="Goods Inward"
+        subtitle="Manage purchase entries"
+        compact
+      />
+
+      <div className={`${cardClasses} p-3`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
           <input
             type="text"
             name="srl_no"
             value={inwardMaster.srl_no}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, srl_no: e.target.value }))}
             placeholder="Srl No"
-            className="border p-2 rounded-lg w-[100px] max-w-full bg-gray-100"
+            className={`${inputClasses} bg-gray-50 font-semibold`}
             readOnly
             step="0.01"
           />
@@ -1321,7 +1376,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.entry_date}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, entry_date: e.target.value }))}
             placeholder="Entry Date"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
+            className={inputClasses}
           />
           <input
             type="text"
@@ -1329,7 +1384,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.bill_no}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, bill_no: e.target.value }))}
             placeholder="Bill No"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-sm"
+            className={inputClasses}
           />
           <input
             type="date"
@@ -1337,7 +1392,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.bill_date}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, bill_date: e.target.value }))}
             placeholder="Bill Date"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-sm"
+            className={inputClasses}
           />
           <div className="relative">
             <input
@@ -1347,16 +1402,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'user_nm')}
               placeholder="User"
-              className="border p-2 rounded-lg w-[210px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showUserSuggestions && userSuggestions.length > 0 && inwardMaster.user_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {userSuggestions.map((user, index) => (
                   <li
                     key={user.id}
                     id={`user-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${userHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${userHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleUserSuggestionClick(user)}
                   >
                     {user.user_nm}
@@ -1371,7 +1426,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.gross}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, gross: e.target.value }))}
             placeholder="Gross"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
+            className={`${inputClasses} bg-gray-50 text-right font-semibold`}
             readOnly
             step="0.01"
           />
@@ -1381,7 +1436,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.nett}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, nett: e.target.value }))}
             placeholder="Nett"
-            className="border p-2 rounded-lg w-[150px] max-w-full text-right bg-gray-100"
+            className={`${inputClasses} bg-gray-50 text-right font-semibold`}
             readOnly
             step="0.01"
           />
@@ -1389,7 +1444,7 @@ export default function GoodsInwardPage() {
             name="is_cash"
             value={inwardMaster.is_cash}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, is_cash: e.target.value }))}
-            className="border p-2 rounded-lg w-[100px] max-w-full text-sm"
+            className={inputClasses}
           >
             <option value="No">No</option>
             <option value="Yes">Yes</option>
@@ -1398,7 +1453,7 @@ export default function GoodsInwardPage() {
             name="type"
             value={inwardMaster.type}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, type: e.target.value }))}
-            className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
+            className={inputClasses}
           >
             <option value="" disabled>Type</option>
             {["Purchase", "Sale Or Return", "Consignment", "Own Titles", "Own Periodicals", "Other`s Periodicals", "Stock Transfer"].map((opt) => (
@@ -1413,16 +1468,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
               placeholder="Supplier"
-              className="border p-2 rounded-lg w-[400px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {supplierSuggestions.map((supplier, index) => (
                   <li
                     key={supplier.id}
                     id={`supplier-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleSupplierSuggestionClick(supplier)}
                   >
                     {supplier.supplier_nm}
@@ -1437,7 +1492,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.notes}
             onChange={(e) => setInwardMaster(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Notes"
-            className="border p-2 rounded-lg w-[360px] max-w-full text-sm"
+            className={inputClasses}
           />
           <div className="relative">
             <input
@@ -1447,16 +1502,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'branches_nm')}
               placeholder="Branch"
-              className="border p-2 rounded-lg w-[250px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showBranchesSuggestions && branchesSuggestions.length > 0 && inwardMaster.branches_nm.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {branchesSuggestions.map((branches, index) => (
                   <li
                     key={branches.id}
                     id={`branches-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${branchesHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${branchesHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleBranchesSuggestionClick(branches)}
                   >
                     {branches.branches_nm}
@@ -1473,16 +1528,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'breakup_nm1')}
               placeholder="Breakup 1"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showBreakupSuggestions && activeBreakupNo === 1 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm1.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {breakupSuggestions.map((breakup, index) => (
                   <li
                     key={breakup.id}
                     id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleBreakupSuggestionClick(breakup, 1)}
                   >
                     {breakup.breakup_nm}
@@ -1497,7 +1552,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.breakup_amt1}
             onChange={handleInwardMasterChange}
             placeholder="Amount 1"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
+            className={`${inputClasses} text-right`}
             step="0.01"
           />
           <div className="relative">
@@ -1508,16 +1563,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'breakup_nm2')}
               placeholder="Breakup 2"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showBreakupSuggestions && activeBreakupNo === 2 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm2.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {breakupSuggestions.map((breakup, index) => (
                   <li
                     key={breakup.id}
                     id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleBreakupSuggestionClick(breakup, 2)}
                   >
                     {breakup.breakup_nm}
@@ -1532,7 +1587,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.breakup_amt2}
             onChange={handleInwardMasterChange}
             placeholder="Amount 2"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
+            className={`${inputClasses} text-right`}
             step="0.01"
           />
           <div className="relative">
@@ -1543,16 +1598,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'breakup_nm3')}
               placeholder="Breakup 3"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showBreakupSuggestions && activeBreakupNo === 3 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm3.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {breakupSuggestions.map((breakup, index) => (
                   <li
                     key={breakup.id}
                     id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleBreakupSuggestionClick(breakup, 3)}
                   >
                     {breakup.breakup_nm}
@@ -1567,7 +1622,7 @@ export default function GoodsInwardPage() {
             value={inwardMaster.breakup_amt3}
             onChange={handleInwardMasterChange}
             placeholder="Amount 3"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
+            className={`${inputClasses} text-right`}
             step="0.01"
           />
           <div className="relative">
@@ -1578,16 +1633,16 @@ export default function GoodsInwardPage() {
               onChange={handleInwardMasterChange}
               onKeyDown={(e) => handleKeyDown(e, 'breakup_nm4')}
               placeholder="Breakup 4"
-              className="border p-2 rounded-lg w-[160px] max-w-full text-sm"
+              className={inputClasses}
               autoComplete="off"
             />
             {showBreakupSuggestions && activeBreakupNo === 4 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm4.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {breakupSuggestions.map((breakup, index) => (
                   <li
                     key={breakup.id}
                     id={`breakup-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                    className={`px-3 py-2 cursor-pointer ${breakupHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
                     onClick={() => handleBreakupSuggestionClick(breakup, 4)}
                   >
                     {breakup.breakup_nm}
@@ -1602,142 +1657,151 @@ export default function GoodsInwardPage() {
             value={inwardMaster.breakup_amt4}
             onChange={handleInwardMasterChange}
             placeholder="Amount 4"
-            className="border p-2 rounded-lg w-[120px] max-w-full text-right"
+            className={`${inputClasses} text-right`}
             step="0.01"
           />
         </div>
       </div>
 
-      <div className="flex-1 bg-white shadow-md rounded-xl p-3 overflow-y-auto">
-        <table className="w-full table-auto border border-gray-300 border-collapse">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              <th className="w-[330px] text-left p-2 text-sm font-semibold border border-gray-300">Product</th>
-              <th className="w-[110px] text-left p-2 text-sm font-semibold border border-gray-300">I S B N</th>
-              <th className="w-[60px] text-right p-2 text-sm font-semibold border border-gray-300">Qty</th>
-              <th className="w-[60px] text-left p-2 text-sm font-semibold border border-gray-300">Curr</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">ExRt</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">F. Value</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">Tax%</th>
-              <th className="w-[70px] text-right p-2 text-sm font-semibold border border-gray-300">Dis%</th>
-              <th className="w-[80px] text-right p-2 text-sm font-semibold border border-gray-300">-/+Adj</th>
-              <th className="w-[100px] text-right p-2 text-sm font-semibold border border-gray-300">Nett</th>
-              <th className="w-[10px] text-left p-2 text-sm font-semibold border border-gray-300"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index} className="border-t">
-                <td className="p-1 text-sm">
-                  <input
-                    type="text"
-                    value={item.itemName}
-                    onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                    className={`border p-1 rounded w-full ${item.isMalayalam ? 'font-malayalam' : ''}`}
-                    style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="text"
-                    value={item.isbn}
-                    onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
-                    className="border p-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <select
-                    value={item.currency}
-                    onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
-                    className="border p-1 rounded w-full text-sm"
-                  >
-                    <option value="" disabled>Currency</option>
-                    {currencies.map(cur => (
-                      <option key={cur.id} value={cur.name}>{cur.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.exchangeRate}
-                    onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.purchaseRate}
-                    onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.tax}
-                    onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.discount}
-                    onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm">
-                  <input
-                    type="number"
-                    value={item.discountAmount}
-                    onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
-                    className="border p-1 rounded w-full text-right"
-                    step="0.01"
-                  />
-                </td>
-                <td className="p-1 text-sm text-right">
-                  {(item.value || 0).toFixed(2)}
-                </td>
-                <td className="p-2 text-sm text-center">
-                  <button
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete item"
-                    onClick={() => setItems(items.filter((_, i) => i !== index))}
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {items.length > 0 && (
-          <div className="mt-3 border-t bg-gray-50 p-2 rounded">
-            <div className="text-right font-semibold text-sm">
-              Total: {totalValue.toFixed(2)}
-            </div>
+      <div className={`${cardClasses} p-3 flex flex-col gap-2`}>
+        <div className="flex items-center justify-between px-1 text-xs text-gray-600">
+          <span className="font-medium text-gray-700">Line items</span>
+          <span className="font-semibold text-gray-800">Total: {totalValue.toFixed(2)}</span>
+        </div>
+        <div className="relative rounded-md border border-gray-100 overflow-hidden">
+          <div className="overflow-auto max-h-[42vh] min-h-[260px]">
+            <table className="w-full min-w-[1120px] text-xs">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
+                  <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Product</th>
+                  <th className="px-2.5 py-2 text-left font-semibold w-[120px]">I S B N</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[70px]">Qty</th>
+                  <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Curr</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">ExRt</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">F Val</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[70px]">Tax%</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[70px]">Dis%</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">-/+Adj</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Nett</th>
+                  <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-[13px]">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan="11" className="px-4 py-10 text-center text-gray-400">
+                      No items added yet. Use the form below to add lines.
+                    </td>
+                  </tr>
+                ) : (
+                  items.map((item, index) => (
+                    <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="text"
+                          value={item.itemName}
+                          onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                          className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                          style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="text"
+                          value={item.isbn}
+                          onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
+                          className={tableInputClasses}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <select
+                          value={item.currency}
+                          onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                          className={tableInputClasses}
+                        >
+                          <option value="" disabled>Currency</option>
+                          {currencies.map(cur => (
+                            <option key={cur.id} value={cur.name}>{cur.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.exchangeRate}
+                          onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.purchaseRate}
+                          onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.tax}
+                          onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.discount}
+                          onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={item.discountAmount}
+                          onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                          step="0.01"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right text-sm font-semibold text-gray-700">
+                        {(item.value || 0).toFixed(2)}
+                      </td>
+                      <td className="px-2.5 py-1.5 text-center">
+                        <button
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Delete item"
+                          onClick={() => setItems(items.filter((_, i) => i !== index))}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-xl p-3 w-full">
-        <div className="grid grid-cols-[380px_130px_70px_80px_80px_90px_80px_80px_80px_1fr] gap-0.5 w-full">
+      <div className={`${cardClasses} p-3 overflow-visible`}>
+        <div className="text-[11px] text-gray-500 mb-2">Tip: prefix with "." for Malayalam titles</div>
+        <div className="grid grid-cols-[280px_110px_70px_90px_80px_90px_70px_70px_80px_1fr] gap-2 w-full overflow-x-auto relative z-0">
           <div className="relative">
             <input
               type="text"
@@ -1745,33 +1809,20 @@ export default function GoodsInwardPage() {
               value={formData.itemName}
               onChange={handleInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-              placeholder="Item Name"
-              className={`border p-2 rounded-lg w-full text-sm ${isMalayalam ? 'font-malayalam' : ''}`}
+              placeholder="Product"
+              className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
               style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
               autoComplete="off"
+              ref={productInputRef}
             />
-            {showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto font-malayalam" style={{ fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit' }}>
-                {suggestions.map((product, index) => (
-                  <li
-                    key={product.id}
-                    id={`suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleItemSuggestionClick(product)}
-                  >
-                    {isDotPrefixed ? product.title_m : product.title}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
           <input
             type="text"
             name="isbn"
             value={formData.isbn}
             onChange={handleInputChange}
-            placeholder="Isbn"
-            className="border p-2 rounded-lg text-sm w-full"
+            placeholder="I S B N"
+            className={tableInputClasses}
           />
           <input
             type="number"
@@ -1779,13 +1830,13 @@ export default function GoodsInwardPage() {
             value={formData.quantity}
             onChange={handleInputChange}
             placeholder="Qty"
-            className="border p-2 rounded-lg text-sm w-full"
+            className={tableInputClasses}
           />
           <select
             name="currency"
             value={formData.currency}
             onChange={handleInputChange}
-            className="border p-2 rounded-lg text-sm w-full"
+            className={tableInputClasses}
           >
             <option value="" disabled>Currency</option>
             {currencies.map(cur => (
@@ -1797,24 +1848,24 @@ export default function GoodsInwardPage() {
             name="exchangeRate"
             value={formData.exchangeRate}
             onChange={handleInputChange}
-            placeholder="Exchange Rate"
-            className="border p-2 rounded-lg text-sm w-full"
+            placeholder="ExRt"
+            className={tableInputClasses}
           />
           <input
             type="number"
             name="purchaseRate"
             value={formData.purchaseRate}
             onChange={handleInputChange}
-            placeholder="Purchase Rate"
-            className="border p-2 rounded-lg text-sm w-full"
+            placeholder="F Val"
+            className={tableInputClasses}
           />
           <input
             type="number"
             name="tax"
             value={formData.tax}
             onChange={handleInputChange}
-            placeholder="Tax %"
-            className="border p-2 rounded-lg text-sm w-full"
+            placeholder="Tax%"
+            className={tableInputClasses}
             step="0.01"
           />
           <input
@@ -1822,8 +1873,8 @@ export default function GoodsInwardPage() {
             name="discount"
             value={formData.discount}
             onChange={handleInputChange}
-            placeholder="Disc %"
-            className="border p-2 rounded-lg text-sm w-full"
+            placeholder="Dis%"
+            className={tableInputClasses}
             step="0.01"
           />
           <input
@@ -1831,45 +1882,77 @@ export default function GoodsInwardPage() {
             name="discountAmount"
             value={formData.discountAmount}
             onChange={handleInputChange}
-            placeholder="Disc Amt"
-            className="border p-2 rounded-lg text-sm w-full"
+            placeholder="-/+Adj"
+            className={tableInputClasses}
             step="0.01"
           />
           <button
             onClick={handleAddItem}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full"
+            className={`${actionButtonClasses} w-full justify-center`}
           >
-            ADD ITEM
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Item
           </button>
         </div>
       </div>
 
-      <div className="flex justify-start mt-4 gap-x-3">
-        <input
-          type="text"
-          value={goodsInwardIdToLoad}
-          onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
-          placeholder="Enter Goods Inward ID"
-          className="border p-2 rounded-lg w-[200px] text-sm"
-        />
-        <button
-          onClick={handleLoadGoodsInward}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
+      {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
+        <ul
+          className="fixed z-[1200] bg-white border border-gray-200 shadow-xl rounded-lg text-xs max-h-60 overflow-y-auto font-malayalam"
+          style={{
+            top: suggestionPosition.top,
+            left: suggestionPosition.left,
+            width: suggestionPosition.width,
+            fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
+          }}
         >
-          LOAD INWARD
-        </button>
-        <button
-          onClick={handleSubmitGoodsInward}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          {isEditMode ? 'UPDATE INWARD' : 'SUBMIT INWARD'}
-        </button>
-        <button
-          onClick={handleOpenMasterEntry}
-          className="bg-green-600 text-white rounded-lg px-8 py-3 hover:bg-green-700 text-sm font-medium min-w-[200px]"
-        >
-          MASTER ENTRY
-        </button>
+          {suggestions.map((product, index) => (
+            <li
+              key={product.id}
+              id={`suggestion-${index}`}
+              className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+              onClick={() => handleItemSuggestionClick(product)}
+            >
+              {isDotPrefixed ? product.title_m : product.title}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={goodsInwardIdToLoad}
+              onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
+              placeholder="Enter Goods Inward ID"
+              className={`${inputClasses} w-full sm:w-60`}
+            />
+            <button
+              onClick={handleLoadGoodsInward}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+            >
+              Load Inward
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleSubmitGoodsInward}
+              className={`${actionButtonClasses} min-w-[150px]`}
+            >
+              {isEditMode ? 'Update Inward' : 'Submit Inward'}
+            </button>
+            <button
+              onClick={handleOpenMasterEntry}
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+            >
+              Master Entry
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

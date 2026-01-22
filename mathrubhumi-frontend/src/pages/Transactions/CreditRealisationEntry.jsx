@@ -2,6 +2,7 @@
 import React, { useRef, useState } from "react";
 import api from "../../utils/axiosInstance";
 import Modal from "../../components/Modal";
+import PageHeader from "../../components/PageHeader";
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -37,10 +38,10 @@ export default function CreditRealisationEntry() {
   // Activate for these codes
   const MODES_ACTIVATE_BANK = new Set([2, 3, 5, 6]);
   const bankFieldsActive = MODES_ACTIVATE_BANK.has(modeCode);
-  // Styles/props for inactive state
-  const baseInputClass = "border p-2 rounded-lg w-full text-sm";
-  const inactiveClass = " bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none";
-  const commonInactiveProps = bankFieldsActive ? {} : { readOnly: true, tabIndex: -1, "aria-readonly": "true" };
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
+  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const subduedInputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200/60 focus:border-blue-300 transition-all duration-200";
 
   // Keep selected customer id (from suggestions)
   const [customerId, setCustomerId] = useState(null);
@@ -217,8 +218,14 @@ export default function CreditRealisationEntry() {
 
   const handleReset = () => window.location.reload();
 
+  const pageIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen w-[99%] mx-auto p-3 space-y-3">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
       {/* Modal */}
       <Modal
         isOpen={modal.isOpen}
@@ -227,71 +234,79 @@ export default function CreditRealisationEntry() {
         buttons={modal.buttons}
       />
 
-      {/* Main Form */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-          {/* Receipt No */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Receipt No</label>
-            <input
-              name="receiptNo"
-              value={form.receiptNo}
-              readOnly
-              tabIndex={-1}                 // not focusable via keyboard
-              aria-readonly="true"
-              className="border p-2 rounded-lg w-full text-sm bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none"
-            />
-          </div>
+      <PageHeader
+        icon={pageIcon}
+        title="Credit Realisation Entry"
+        subtitle="Record and manage credit realisations"
+        compact
+      />
 
-          {/* Cancelled */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
-            <select
-              name="cancelled"
-              value={form.cancelled}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              <option value="0">No</option>
-              <option value="1">Yes</option>
-            </select>
-          </div>
+      <div className={`${cardClasses} p-3 space-y-3`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
+          <input
+            name="receiptNo"
+            value={form.receiptNo}
+            readOnly
+            tabIndex={-1}
+            aria-readonly="true"
+            placeholder="Receipt No"
+            className={`${subduedInputClasses} font-semibold select-none pointer-events-none`}
+          />
+          <input
+            type="date"
+            name="date"
+            value={form.date}
+            onChange={handleChange}
+            className={inputClasses}
+          />
+          <select
+            name="modeOfPay"
+            value={form.modeOfPay}
+            onChange={handleChange}
+            className={inputClasses}
+          >
+            <option value="" disabled>Mode of Pay</option>
+            {Object.keys(A_TYPE).map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          <select
+            name="cancelled"
+            value={form.cancelled}
+            onChange={handleChange}
+            className={inputClasses}
+          >
+            <option value="" disabled>Cancelled</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
+        </div>
 
-          {/* Date */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Date</label>
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            />
-          </div>
-
-          {/* spacer */}
-          <div className="invisible pointer-events-none select-none" aria-hidden="true" />
-
-          {/* Name + suggestions */}
-          <div className="flex flex-col lg:col-span-2 relative">
-            <label className="text-xs text-gray-600 mb-1">Name</label>
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-2">
+          <div className="relative">
             <input
               name="name"
               value={form.name}
               onChange={handleNameChange}
               onBlur={closeAfterBlur(() => setShowNameSug(false))}
-              className="border p-2 rounded-lg w-full text-sm"
-              placeholder="Start typing customer name…"
+              className={inputClasses}
+              placeholder="Customer Name"
               autoComplete="off"
             />
             {showNameSug && nameSug.length > 0 && (
-              <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white border border-gray-200 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
                 {nameSug.map((c) => (
                   <li
                     key={c.id}
-                    className="px-3 py-1 cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100"
                     onMouseDown={() => {
-                      setForm((p) => ({...p, name: c.customer_nm || "", address: [c.address_1, c.address_2, c.city].filter(Boolean).join(", "),}));
+                      setForm((p) => ({
+                        ...p,
+                        name: c.customer_nm || "",
+                        address: [c.address_1, c.address_2, c.city].filter(Boolean).join(", "),
+                      }));
                       setCustomerId(c.id ?? null);
                       setShowNameSug(false);
                     }}
@@ -303,140 +318,104 @@ export default function CreditRealisationEntry() {
             )}
           </div>
 
-          {/* Address (display-only) */}
-          <div className="flex flex-col lg:col-span-2">
-            <label className="text-xs text-gray-600 mb-1">Address</label>
-            <textarea
-              name="address"
-              value={form.address}
-              rows={2}
-              readOnly
-              tabIndex={-1}                 // not focusable via keyboard
-              aria-readonly="true"
-              className="border p-2 rounded-lg w-full text-sm bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none"
-            />
-          </div>
-
-          {/* Mode of Pay */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Mode of Pay</label>
-            <select
-              name="modeOfPay"
-              value={form.modeOfPay}
-              onChange={handleChange}
-              className="border p-2 rounded-lg w-full text-sm"
-            >
-              {Object.keys(A_TYPE).map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Amount */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Amount</label>
-            <input
-              type="number"
-              step="0.01"
-              name="amount"
-              value={form.amount}
-              onChange={handleChange}
-              placeholder="0.00"
-              className="border p-2 rounded-lg w-full text-sm text-right"
-              onWheel={(e) => e.currentTarget.blur()}
-            />
-          </div>
-
-          {/* Bank */}
-          <div className="flex flex-col lg:col-span-2">
-            <label className="text-xs text-gray-600 mb-1">Bank</label>
-            <input
-              name="bank"
-              value={form.bank}
-              onChange={handleChange}
-              className={baseInputClass + (bankFieldsActive ? "" : inactiveClass)}
-              {...commonInactiveProps}
-            />
-          </div>
-
-          {/* Chq/DD No */}
-          <div className="flex flex-col">
-            <label className="text-xs text-gray-600 mb-1">Chq/DD No</label>
-            <input
-              name="chqdd"
-              value={form.chqdd}
-              onChange={handleChange}
-              className={baseInputClass + (bankFieldsActive ? "" : inactiveClass)}
-              {...commonInactiveProps}
-            />
-          </div>
-
-          {/* Notes */}
-          <div className="flex flex-col lg:col-span-3">
-            <label className="text-xs text-gray-600 mb-1">Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={2}
-              className="border p-2 rounded-lg w-full text-sm"
-            />
-          </div>
+          <textarea
+            name="address"
+            value={form.address}
+            rows={2}
+            readOnly
+            tabIndex={-1}
+            aria-readonly="true"
+            placeholder="Address"
+            className={`${subduedInputClasses} min-h-[60px] select-none pointer-events-none`}
+          />
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_160px] gap-2">
+          <input
+            name="bank"
+            value={form.bank}
+            onChange={handleChange}
+            placeholder="Bank"
+            className={`${bankFieldsActive ? inputClasses : subduedInputClasses} ${bankFieldsActive ? "" : "pointer-events-none"}`}
+            readOnly={!bankFieldsActive}
+            tabIndex={bankFieldsActive ? 0 : -1}
+            aria-readonly={!bankFieldsActive}
+          />
+          <input
+            name="chqdd"
+            value={form.chqdd}
+            onChange={handleChange}
+            placeholder="Chq/DD No"
+            className={`${bankFieldsActive ? inputClasses : subduedInputClasses} ${bankFieldsActive ? "" : "pointer-events-none"}`}
+            readOnly={!bankFieldsActive}
+            tabIndex={bankFieldsActive ? 0 : -1}
+            aria-readonly={!bankFieldsActive}
+          />
+          <input
+            type="number"
+            step="0.01"
+            name="amount"
+            value={form.amount}
+            onChange={handleChange}
+            placeholder="Amount"
+            className={`${inputClasses} text-right`}
+            onWheel={(e) => e.currentTarget.blur()}
+          />
+        </div>
+
+        <textarea
+          name="notes"
+          value={form.notes}
+          onChange={handleChange}
+          rows={2}
+          placeholder="Notes"
+          className={`${inputClasses} min-h-[60px]`}
+        />
       </div>
 
-      {/* Bottom actions */}
-      <div className="bg-white shadow-md rounded-xl p-3">
-        <div className="flex flex-wrap items-center gap-2 w-full">
-          {/* LEFT: Save / New / Reset */}
-          <button
-            type="button"
-            disabled={saving}
-            className={`rounded-lg px-6 py-2 text-sm font-medium text-white ${
-              saving ? "bg-green-400" : "bg-green-600 hover:bg-green-700"
-            }`}
-            onClick={handleSave}
-          >
-            {saving ? "SAVING…" : "SAVE CREDIT REALSATION"}
-          </button>
-
-          <button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-2 text-sm font-medium"
-            onClick={resetForm}
-          >
-            NEW
-          </button>
-
-          <button
-            type="button"
-            className="bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-6 py-2 text-sm font-medium"
-            onClick={handleReset}
-          >
-            RESET
-          </button>
-
-          {/* RIGHT: Load by Receipt No */}
-          <div className="ml-auto flex items-center gap-2">
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-2">
             <input
               type="number"
               value={loadCreditNo}
               onChange={(e) => setLoadCreditNo(e.target.value)}
               placeholder="Receipt No"
-              className="border p-2 rounded-lg w-[160px] text-sm text-right"
+              className={`${inputClasses} w-full sm:w-60 text-right`}
             />
             <button
               type="button"
-              className={`text-white rounded-lg px-5 py-2 text-sm font-medium ${
-                loading ? "bg-emerald-400" : "bg-emerald-600 hover:bg-emerald-700"
-              }`}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
               onClick={handleLoad}
               title="Load credit by receipt no"
               disabled={loading}
             >
-              {loading ? "LOADING…" : "LOAD CREDIT REALISATION"}
+              {loading ? "Loading…" : "Load Credit Realisation"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={saving}
+              className={`${actionButtonClasses} min-w-[190px]`}
+              onClick={handleSave}
+            >
+              {saving ? "Saving…" : "Save Credit Realisation"}
+            </button>
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[110px]`}
+              onClick={resetForm}
+            >
+              New
+            </button>
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[110px]`}
+              onClick={handleReset}
+            >
+              Reset
             </button>
           </div>
         </div>

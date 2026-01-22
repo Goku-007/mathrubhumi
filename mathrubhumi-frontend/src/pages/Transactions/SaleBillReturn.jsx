@@ -104,10 +104,9 @@ export default function SaleBillReturn() {
     setHeader(prev => ({ ...prev, nett: money(total) }));
   }, [total]);
 
-  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
-  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
-  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
+  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
   const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
   const pageIcon = (
@@ -458,7 +457,7 @@ export default function SaleBillReturn() {
 
   /* ---------- render ---------- */
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -476,17 +475,18 @@ export default function SaleBillReturn() {
         icon={pageIcon}
         title="Sale Bill Return"
         subtitle="Process and manage sales returns"
+        compact
       />
 
       <div className={`${cardClasses} p-3`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
           <input
             name="no"
             value={header.no}
-              onChange={handleHeaderChange}
-              placeholder="No."
-              className={`${inputClasses} bg-gray-50 font-semibold`}
-            />
+            onChange={handleHeaderChange}
+            placeholder="No."
+            className={`${inputClasses} bg-gray-50 font-semibold`}
+          />
             <input
               type="date"
               name="date"
@@ -612,35 +612,33 @@ export default function SaleBillReturn() {
                 </ul>
               )}
             </div>
-          </div>
         </div>
 
-      <div className={`${cardClasses} p-3 flex flex-col gap-2`}>
-        <div className="flex items-center justify-between px-1 text-xs text-gray-600">
-          <span className="font-medium text-gray-700">Line items</span>
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex items-center justify-end px-1 pb-2 text-xs text-gray-600">
           <span className="font-semibold text-gray-800">Total: {money(total)}</span>
         </div>
 
         <div className="relative rounded-md border border-gray-100 overflow-hidden">
-          <div className="overflow-auto max-h-[42vh] min-h-[260px]">
+          <div className="overflow-auto max-h-[55vh] min-h-[320px]">
             <table className="w-full min-w-[980px] text-xs">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
                   <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Product</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[70px]">Qty</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[95px]">Rate</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Qty</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Rate</th>
                   <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Curr</th>
                   <th className="px-2.5 py-2 text-right font-semibold w-[80px]">ExRt</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Tax</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Tax</th>
                   <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Dis A</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Value</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[110px]">Value</th>
                   <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-[13px]">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-4 py-10 text-center text-gray-400">
+                    <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-xs">
                       No items added yet. Load a bill and pick items.
                     </td>
                   </tr>
@@ -704,7 +702,7 @@ export default function SaleBillReturn() {
                           className={`${tableInputClasses} text-right`}
                         />
                       </td>
-                      <td className="px-2.5 py-1.5 text-right text-sm font-semibold text-gray-700">
+                      <td className="px-2.5 py-1.5 text-right text-xs font-semibold text-gray-700">
                         {money(it.value)}
                       </td>
                       <td className="px-2.5 py-1.5 text-center">
@@ -725,15 +723,15 @@ export default function SaleBillReturn() {
         </div>
       </div>
 
-      <div className={`${cardClasses} overflow-hidden`}>
-        <div className="p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
-          <div className="flex flex-1 flex-col sm:flex-row gap-3">
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={saleRtIdToLoad}
               onChange={(e) => setSaleRtIdToLoad(e.target.value)}
               placeholder="Sale Return ID"
-              className={`${inputClasses} w-full sm:w-64`}
+              className={`${inputClasses} w-full sm:w-60`}
             />
             <button
               onClick={handleLoadClick}
@@ -743,10 +741,10 @@ export default function SaleBillReturn() {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={submitSaleReturn}
-              className={`${actionButtonClasses} min-w-[180px]`}
+              className={`${actionButtonClasses} min-w-[160px]`}
             >
               {isEditMode ? 'Update Sale Return' : 'Submit Sale Return'}
             </button>

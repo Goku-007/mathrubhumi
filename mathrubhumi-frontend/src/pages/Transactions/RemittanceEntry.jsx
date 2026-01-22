@@ -116,16 +116,10 @@ export default function RemittanceEntry() {
     return chequeTypes.includes(form.type);
   }, [form.type]);
 
-  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm";
-  const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
-  const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
-  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
-  const subduedInputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
-
-  const baseInputClass = "border p-2 rounded-lg w-full text-sm";
-  const inactiveClass = " bg-gray-100 text-gray-600 border-gray-200 select-none pointer-events-none";
-  const commonInactiveProps = isCheque ? {} : { readOnly: true, tabIndex: -1, "aria-readonly": "true" };
+  const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
+  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const subduedInputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200/60 focus:border-blue-300 transition-all duration-200";
   
   /* ---------- API fetchers ---------- */
   const fetchCustomers = (q) => {
@@ -356,7 +350,7 @@ export default function RemittanceEntry() {
 
   /* ---------- render ---------- */
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 md:p-6 space-y-6">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
       {/* Modal */}
       <Modal
         isOpen={modal.isOpen}
@@ -373,227 +367,188 @@ export default function RemittanceEntry() {
         }
         title="Remittance Entry"
         subtitle="Record cash, cheque, and digital remittances"
+        compact
       />
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Remittance details</span>
-            <p className="text-xs text-gray-500">Type, status, customer, and branch</p>
-          </div>
-          <p className="text-xs text-gray-500">Amounts update as you pick receipts</p>
+      <div className={`${cardClasses} p-3 space-y-3`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
+          <input
+            name="remittanceNo"
+            value={form.remittanceNo}
+            readOnly
+            tabIndex={-1}
+            aria-readonly="true"
+            placeholder="Remittance No"
+            className={`${subduedInputClasses} font-semibold select-none pointer-events-none`}
+          />
+          <input
+            type="date"
+            name="date"
+            value={form.date}
+            onChange={handleChange}
+            className={inputClasses}
+          />
+          <select
+            name="type"
+            value={form.type}
+            onChange={handleChange}
+            className={inputClasses}
+          >
+            <option value="" disabled>Type</option>
+            {A_TYPE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          <select
+            name="cancelled"
+            value={form.cancelled}
+            onChange={handleChange}
+            className={inputClasses}
+          >
+            <option value="" disabled>Cancelled</option>
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+          </select>
         </div>
 
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Remittance No</label>
-              <input
-                name="remittanceNo"
-                value={form.remittanceNo}
-                readOnly
-                tabIndex={-1}
-                aria-readonly="true"
-                className={`${subduedInputClasses} select-none pointer-events-none font-semibold`}
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Cancelled ?</label>
-              <select
-                name="cancelled"
-                value={form.cancelled}
-                onChange={handleChange}
-                className={inputClasses}
-              >
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Date</label>
-              <input
-                type="date"
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-                className={inputClasses}
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Type</label>
-              <select
-                name="type"
-                value={form.type}
-                onChange={handleChange}
-                className={inputClasses}
-              >
-                {A_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div className="relative">
-              <label className="text-xs text-gray-600 mb-1">Customer</label>
-              <input
-                name="customer"
-                value={isChqType ? form.customer : "CASH/CARD/DIGITAL"}
-                onChange={handleCustomerChange}
-                onBlur={closeAfterBlur(() => setShowCustomerSug(false))}
-                onKeyDown={async (e) => {
-                  if (e.key === "Enter" && isChqType) {
-                    if (!customerId) {
-                      showModal("Please pick a Customer from the list first.", "error");
-                      return;
-                    }
-                    setLoadingReceipts(true);
-                    const data = await fetchReceiptsByCustomer(customerId);
-                    setReceipts(data);
-                    setLoadingReceipts(false);
-                    if (data.length === 0) {
-                      showModal("No eligible receipts found for this customer.", "info");
-                    } else {
-                      setShowReceiptPicker(true);
-                    }
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+          <div className="relative">
+            <input
+              name="customer"
+              value={isChqType ? form.customer : "CASH/CARD/DIGITAL"}
+              onChange={handleCustomerChange}
+              onBlur={closeAfterBlur(() => setShowCustomerSug(false))}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && isChqType) {
+                  if (!customerId) {
+                    showModal("Please pick a Customer from the list first.", "error");
+                    return;
                   }
-                }}
-                placeholder={isChqType ? "Start typing customer…" : "CASH/CARD/DIGITAL"}
-                className={`${inputClasses} ${
-                  isChqType ? "" : "bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed"
-                }`}
-                autoComplete="off"
-                readOnly={!isChqType}
-                aria-readonly={!isChqType}
-              />
-              {isChqType && showCustomerSug && customerSug.length > 0 && (
-                <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                  {customerSug.map((c) => {
-                    const name =
-                      form.type === "P P Chq/DD"
-                        ? c.pp_customer_nm
-                        : c.customer_nm;
+                  setLoadingReceipts(true);
+                  const data = await fetchReceiptsByCustomer(customerId);
+                  setReceipts(data);
+                  setLoadingReceipts(false);
+                  if (data.length === 0) {
+                    showModal("No eligible receipts found for this customer.", "info");
+                  } else {
+                    setShowReceiptPicker(true);
+                  }
+                }
+              }}
+              placeholder={isChqType ? "Customer" : "CASH/CARD/DIGITAL"}
+              className={`${inputClasses} ${
+                isChqType ? "" : "bg-gray-50 text-gray-600 border-gray-200 cursor-not-allowed"
+              }`}
+              autoComplete="off"
+              readOnly={!isChqType}
+              aria-readonly={!isChqType}
+            />
+            {isChqType && showCustomerSug && customerSug.length > 0 && (
+              <ul className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white border border-gray-200 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                {customerSug.map((c) => {
+                  const name =
+                    form.type === "P P Chq/DD"
+                      ? c.pp_customer_nm
+                      : c.customer_nm;
 
-                    return (
-                      <li
-                        key={c.id}
-                        className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                        onMouseDown={() => {
-                          setForm((p) => ({ ...p, customer: name || "" }));
-                          setCustomerId(c.id || 0);
-                          setShowCustomerSug(false);
-                        }}
-                      >
-                        {name}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-600 mb-1">Remitted at</label>
-              <div className="relative">
-                <input
-                  name="remittedAt"
-                  value={form.remittedAt}
-                  onChange={handleBranchChange}
-                  onBlur={closeAfterBlur(() => setShowBranchSug(false))}
-                  placeholder="Start typing branch…"
-                  className={inputClasses}
-                  autoComplete="off"
-                />
-                {showBranchSug && branchSug.length > 0 && (
-                  <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                    {branchSug.map((b) => (
-                      <li
-                        key={b.id}
-                        className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                        onMouseDown={() => {
-                          setForm((p) => ({ ...p, remittedAt: b.branches_nm || "" }));
-                          setBranchId(b.id || 0);
-                          setShowBranchSug(false);
-                        }}
-                      >
-                        {b.branches_nm}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+                  return (
+                    <li
+                      key={c.id}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                      onMouseDown={() => {
+                        setForm((p) => ({ ...p, customer: name || "" }));
+                        setCustomerId(c.id || 0);
+                        setShowCustomerSug(false);
+                      }}
+                    >
+                      {name}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-gray-600 mb-1">Bank</label>
-              <input
-                name="bank"
-                value={form.bank}
-                onChange={handleChange}
-                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
-                readOnly={!isCheque}
-                tabIndex={isCheque ? 0 : -1}
-                aria-readonly={!isCheque}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1">Receipt No</label>
-              <input
-                name="receiptNo"
-                value={form.receiptNo}
-                onChange={handleChange}
-                className={inputClasses}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1">Chq/DD No</label>
-              <input
-                name="chqdd"
-                value={form.chqdd}
-                onChange={handleChange}
-                className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
-                readOnly={!isCheque}
-                tabIndex={isCheque ? 0 : -1}
-                aria-readonly={!isCheque}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-gray-600 mb-1">Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                name="amount"
-                value={form.amount}
-                onChange={handleChange}
-                placeholder="0.00"
-                className={`${inputClasses} text-right`}
-                onWheel={(e) => e.currentTarget.blur()}
-              />
-            </div>
-            <div className="lg:col-span-2">
-              <label className="text-xs text-gray-600 mb-1">Notes</label>
-              <textarea
-                name="notes"
-                value={form.notes}
-                onChange={handleChange}
-                rows={2}
-                placeholder="Key in narration"
-                className={`${inputClasses} min-h-[60px]`}
-              />
-            </div>
+          <div className="relative">
+            <input
+              name="remittedAt"
+              value={form.remittedAt}
+              onChange={handleBranchChange}
+              onBlur={closeAfterBlur(() => setShowBranchSug(false))}
+              placeholder="Remitted at"
+              className={inputClasses}
+              autoComplete="off"
+            />
+            {showBranchSug && branchSug.length > 0 && (
+              <ul className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white border border-gray-200 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                {branchSug.map((b) => (
+                  <li
+                    key={b.id}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                    onMouseDown={() => {
+                      setForm((p) => ({ ...p, remittedAt: b.branches_nm || "" }));
+                      setBranchId(b.id || 0);
+                      setShowBranchSug(false);
+                    }}
+                  >
+                    {b.branches_nm}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1fr_160px] gap-2">
+          <input
+            name="bank"
+            value={form.bank}
+            onChange={handleChange}
+            placeholder="Bank"
+            className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+            readOnly={!isCheque}
+            tabIndex={isCheque ? 0 : -1}
+            aria-readonly={!isCheque}
+          />
+          <input
+            name="receiptNo"
+            value={form.receiptNo}
+            onChange={handleChange}
+            placeholder="Receipt No"
+            className={inputClasses}
+          />
+          <input
+            name="chqdd"
+            value={form.chqdd}
+            onChange={handleChange}
+            placeholder="Chq/DD No"
+            className={`${isCheque ? inputClasses : subduedInputClasses} ${isCheque ? '' : 'pointer-events-none'}`}
+            readOnly={!isCheque}
+            tabIndex={isCheque ? 0 : -1}
+            aria-readonly={!isCheque}
+          />
+          <input
+            type="number"
+            step="0.01"
+            name="amount"
+            value={form.amount}
+            onChange={handleChange}
+            placeholder="Amount"
+            className={`${inputClasses} text-right`}
+            onWheel={(e) => e.currentTarget.blur()}
+          />
+        </div>
+
+        <textarea
+          name="notes"
+          value={form.notes}
+          onChange={handleChange}
+          rows={2}
+          placeholder="Notes"
+          className={`${inputClasses} min-h-[60px]`}
+        />
 
         {/* RECEIPT PICKER (table) */}
         {showReceiptPicker && (
@@ -609,8 +564,9 @@ export default function RemittanceEntry() {
                 <button
                   className="px-3 py-1 text-xs rounded-md bg-gray-200 hover:bg-gray-300"
                   onClick={() => setShowReceiptPicker(false)}
+                  aria-label="Close"
                 >
-                  ?
+                  Close
                 </button>
               </div>
 
@@ -673,58 +629,49 @@ export default function RemittanceEntry() {
         )}
       </div>
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Actions</span>
-            <p className="text-xs text-gray-500">Save, reset, or load a remittance</p>
-          </div>
-        </div>
-
-        <div className="p-4 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              disabled={saving}
-              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[180px]`}
-              onClick={handleSave}
-            >
-              {saving ? "Saving…" : "Save Remittance"}
-            </button>
-
-            <button
-              type="button"
-              className={`${actionButtonClasses} from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 min-w-[120px]`}
-              onClick={resetForm}
-            >
-              New
-            </button>
-
-            <button
-              type="button"
-              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[120px]`}
-              onClick={() => window.location.reload()}
-            >
-              Reset
-            </button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
+      <div className={`${cardClasses} p-3`}>
+        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+          <div className="flex flex-1 flex-col sm:flex-row gap-2">
             <input
               type="number"
               value={loadRemitNo}
               onChange={(e) => setLoadRemitNo(e.target.value)}
               placeholder="Remittance No"
-              className={`${inputClasses} w-full sm:w-64 text-right`}
+              className={`${inputClasses} w-full sm:w-60 text-right`}
             />
             <button
               type="button"
-              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[160px]`}
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
               onClick={loadRemittance}
               disabled={loadingRemit}
               title="Load remittance by number"
             >
               {loadingRemit ? "Loading…" : "Load Remittance"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={saving}
+              className={`${actionButtonClasses} min-w-[160px]`}
+              onClick={handleSave}
+            >
+              {saving ? "Saving…" : "Save Remittance"}
+            </button>
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[110px]`}
+              onClick={resetForm}
+            >
+              New
+            </button>
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 min-w-[110px]`}
+              onClick={() => window.location.reload()}
+            >
+              Reset
             </button>
           </div>
         </div>

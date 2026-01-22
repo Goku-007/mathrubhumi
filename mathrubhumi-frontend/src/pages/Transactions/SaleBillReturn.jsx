@@ -108,7 +108,7 @@ export default function SaleBillReturn() {
   const inputClasses = "px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200";
   const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200";
   const badgeClasses = "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100";
-  const tableInputClasses = "w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200";
+  const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +120,6 @@ export default function SaleBillReturn() {
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
   useEffect(() => {
     const q = header.customer?.trim();
@@ -144,7 +143,6 @@ export default function SaleBillReturn() {
   const handleCustomerPick = (row) => {
     setHeader((prev) => ({ ...prev, customer: row.customer_nm }));
     setSelectedCustomer(row.customer_nm);
-    setSelectedCustomerId(row.id ?? null);
     setShowCustomerSuggestions(false);
     setHeader((prev) => ({ ...prev, billNo: '' }));
     setBillSuggestions([]);
@@ -284,6 +282,8 @@ export default function SaleBillReturn() {
 
   /* ---------- load/submit/reset ---------- */
   const [saleRtIdToLoad, setSaleRtIdToLoad] = useState('');
+  const [saleRtId, setSaleRtId] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const loadSaleReturnById = async (id) => {
     if (!id) return;
@@ -322,6 +322,9 @@ export default function SaleBillReturn() {
         purchase_det_id: asNum(r.purchase_det_id),
       }));
       setItems(loaded);
+      setSaleRtId(data.id);
+      setIsEditMode(true);
+      setSaleRtIdToLoad('');
 
       showModal('Sale Return loaded successfully', 'success');
     } catch (e) {
@@ -374,18 +377,57 @@ export default function SaleBillReturn() {
 
     try {
       setLoading(true);
-      const res = await api.post('/auth/sales-rt/', payload);
+      const isUpdate = isEditMode && saleRtId;
+      const endpoint = isUpdate ? `/auth/sales-rt/${saleRtId}/` : '/auth/sales-rt/';
+      const method = isUpdate ? api.put : api.post;
+      const res = await method(endpoint, payload);
 
-      showModal(`Sales return saved successfully. ID: ${res.data.id}`, 'success');
-
-      setSaleRtIdToLoad(String(res.data.id));
-      await loadSaleReturnById(String(res.data.id));
+      if (isUpdate) {
+        showModal('Sales return updated successfully', 'success');
+        await loadSaleReturnById(String(saleRtId));
+      } else {
+        showModal(`Sales return saved successfully. ID: ${res.data.id}`, 'success');
+        setSaleRtIdToLoad(String(res.data.id));
+        await loadSaleReturnById(String(res.data.id));
+      }
     } catch (e) {
       console.error(e);
       showModal(`Failed to submit: ${e?.response?.data?.error || e.message}`, 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteSaleReturn = () => {
+    if (!isEditMode || !saleRtId) {
+      showModal('Load a Sale Return to delete', 'error');
+      return;
+    }
+
+    showModal(`Delete Sale Return ID ${saleRtId}?`, 'error', [
+      {
+        label: 'Cancel',
+        onClick: () => closeModal(),
+        className: 'bg-gray-600 hover:bg-gray-700',
+      },
+      {
+        label: 'Delete',
+        onClick: async () => {
+          closeModal();
+          try {
+            setLoading(true);
+            await api.delete(`/auth/sales-rt/${saleRtId}/`);
+            showModal('Sales return deleted successfully', 'success');
+            resetForm();
+          } catch (e) {
+            showModal(`Failed to delete: ${e?.response?.data?.error || e.message}`, 'error');
+          } finally {
+            setLoading(false);
+          }
+        },
+        className: 'bg-red-600 hover:bg-red-700',
+      },
+    ]);
   };
 
   const resetForm = () => {
@@ -405,12 +447,13 @@ export default function SaleBillReturn() {
     setCustomerSuggestions([]);
     setShowCustomerSuggestions(false);
     setSelectedCustomer('');
-    setSelectedCustomerId(null);
     setBillSuggestions([]);
     setShowBillSuggestions(false);
     setSaleModal({ isOpen: false, saleId: null, billNo: '', saleDate: '', items: [] });
     setItems([]);
     setSaleRtIdToLoad('');
+    setSaleRtId(null);
+    setIsEditMode(false);
   };
 
   /* ---------- render ---------- */
@@ -435,20 +478,11 @@ export default function SaleBillReturn() {
         subtitle="Process and manage sales returns"
       />
 
-      <div className={cardClasses}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Return details</span>
-            <p className="text-xs text-gray-500">Customer, bill, and summary</p>
-          </div>
-          <p className="text-xs text-gray-500">Nett updates automatically</p>
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-            <input
-              name="no"
-              value={header.no}
+      <div className={`${cardClasses} p-3`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+          <input
+            name="no"
+            value={header.no}
               onChange={handleHeaderChange}
               placeholder="No."
               className={`${inputClasses} bg-gray-50 font-semibold`}
@@ -580,130 +614,119 @@ export default function SaleBillReturn() {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className={`${cardClasses} overflow-hidden`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Line items</span>
-            <p className="text-xs text-gray-500">Products included in this return</p>
-          </div>
-          <div className="text-sm font-semibold text-gray-700">
-            Total: {money(total)}
-          </div>
+      <div className={`${cardClasses} p-3 flex flex-col gap-2`}>
+        <div className="flex items-center justify-between px-1 text-xs text-gray-600">
+          <span className="font-medium text-gray-700">Line items</span>
+          <span className="font-semibold text-gray-800">Total: {money(total)}</span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px]">
-            <thead>
-              <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs uppercase tracking-wide">
-                <th className="px-3 py-2 text-left font-semibold w-[300px]">Product</th>
-                <th className="px-3 py-2 text-right font-semibold w-[90px]">Qty</th>
-                <th className="px-3 py-2 text-right font-semibold w-[110px]">Rate</th>
-                <th className="px-3 py-2 text-left font-semibold w-[100px]">Curr</th>
-                <th className="px-3 py-2 text-right font-semibold w-[100px]">ExRt</th>
-                <th className="px-3 py-2 text-right font-semibold w-[100px]">Tax</th>
-                <th className="px-3 py-2 text-right font-semibold w-[110px]">Dis A</th>
-                <th className="px-3 py-2 text-right font-semibold w-[120px]">Value</th>
-                <th className="px-3 py-2 text-center font-semibold w-[48px]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-sm">
-                    No items added yet. Load a bill and pick items.
-                  </td>
+        <div className="relative rounded-md border border-gray-100 overflow-hidden">
+          <div className="overflow-auto max-h-[42vh] min-h-[260px]">
+            <table className="w-full min-w-[980px] text-xs">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
+                  <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Product</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[70px]">Qty</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[95px]">Rate</th>
+                  <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Curr</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">ExRt</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Tax</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Dis A</th>
+                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Value</th>
+                  <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
                 </tr>
-              ) : (
-                items.map((it, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
-                    <td className="px-3 py-2">
-                      <input
-                        value={it.product}
-                        onChange={(e) => handleItemChange(idx, 'product', e.target.value)}
-                        className={tableInputClasses}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={it.qty}
-                        onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={it.rate}
-                        onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        value={it.curr}
-                        onChange={(e) => handleItemChange(idx, 'curr', e.target.value)}
-                        className={tableInputClasses}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        value={it.exrt}
-                        onChange={(e) => handleItemChange(idx, 'exrt', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={it.tax}
-                        onChange={(e) => handleItemChange(idx, 'tax', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={it.disA}
-                        onChange={(e) => handleItemChange(idx, 'disA', e.target.value)}
-                        className={`${tableInputClasses} text-right`}
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right text-sm font-semibold text-gray-700">
-                      {money(it.value)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <button
-                        onClick={() => removeItem(idx)}
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Delete item"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-[13px]">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="px-4 py-10 text-center text-gray-400">
+                      No items added yet. Load a bill and pick items.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  items.map((it, idx) => (
+                    <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          value={it.product}
+                          onChange={(e) => handleItemChange(idx, 'product', e.target.value)}
+                          className={tableInputClasses}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={it.qty}
+                          onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={it.rate}
+                          onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          value={it.curr}
+                          onChange={(e) => handleItemChange(idx, 'curr', e.target.value)}
+                          className={tableInputClasses}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          value={it.exrt}
+                          onChange={(e) => handleItemChange(idx, 'exrt', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={it.tax}
+                          onChange={(e) => handleItemChange(idx, 'tax', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={it.disA}
+                          onChange={(e) => handleItemChange(idx, 'disA', e.target.value)}
+                          className={`${tableInputClasses} text-right`}
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right text-sm font-semibold text-gray-700">
+                        {money(it.value)}
+                      </td>
+                      <td className="px-2.5 py-1.5 text-center">
+                        <button
+                          onClick={() => removeItem(idx)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Delete item"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       <div className={`${cardClasses} overflow-hidden`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <span className={badgeClasses}>Actions</span>
-            <p className="text-xs text-gray-500">Load an existing return or submit a new one</p>
-          </div>
-        </div>
-
-        <div className="p-4 flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
           <div className="flex flex-1 flex-col sm:flex-row gap-3">
             <input
               type="text"
@@ -725,8 +748,16 @@ export default function SaleBillReturn() {
               onClick={submitSaleReturn}
               className={`${actionButtonClasses} min-w-[180px]`}
             >
-              Submit Sale Return
+              {isEditMode ? 'Update Sale Return' : 'Submit Sale Return'}
             </button>
+            {isEditMode && saleRtId ? (
+              <button
+                onClick={handleDeleteSaleReturn}
+                className={`${actionButtonClasses} from-red-500 to-red-600 hover:from-red-600 hover:to-red-700`}
+              >
+                Delete Sale Return
+              </button>
+            ) : null}
             <button
               onClick={resetForm}
               className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}

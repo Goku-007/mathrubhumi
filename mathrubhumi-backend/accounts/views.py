@@ -1884,6 +1884,17 @@ def author_master_search(request):
         if len(query) < 2:
             return JsonResponse({'error': 'Query must be at least 2 characters'}, status=400)
 
+        try:
+            page = max(int(request.GET.get('page', 1)), 1)
+        except (TypeError, ValueError):
+            page = 1
+        try:
+            page_size = int(request.GET.get('page_size', 50))
+        except (TypeError, ValueError):
+            page_size = 50
+        page_size = min(max(page_size, 1), 100)
+        offset = (page - 1) * page_size
+
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -1891,9 +1902,10 @@ def author_master_search(request):
                   FROM authors
                  WHERE author_nm ILIKE %s
               ORDER BY author_nm
-                 LIMIT 50
+                 LIMIT %s
+                OFFSET %s
                 """,
-                [f'%{query}%']
+                [f'%{query}%', page_size, offset]
             )
             results = cursor.fetchall()
 
@@ -3919,85 +3931,92 @@ def goods_inward_detail(request, id):
                     )
                     existing_ids = {row[0] for row in cur.fetchall()}
                     payload_ids = set()
+                    next_id = max(existing_ids) if existing_ids else 0
 
-                for item in rows:
-                    row_id = _int(item.get('id') or item.get('row_id') or 0, 0)
-                    title_id = resolve_title_id(cur, item)
-                    currency_id = _int(item.get('currency_id', 0), 0)
-                    purchase_company_id = _int(item.get('purchase_company_id', 0), 0)
-                    purchase_id = _int(item.get('purchase_id', 0), 0)
-                    purchase_det_id = _int(item.get('purchase_det_id', 0), 0)
+                    for item in rows:
+                        row_id = _int(item.get('id') or item.get('row_id') or 0, 0)
+                        title_id = resolve_title_id(cur, item)
+                        currency_id = _int(item.get('currency_id', 0), 0)
+                        purchase_company_id = _int(item.get('purchase_company_id', 0), 0)
+                        purchase_id = _int(item.get('purchase_id', 0), 0)
+                        purchase_det_id = _int(item.get('purchase_det_id', 0), 0)
 
-                    if row_id in existing_ids:
-                        payload_ids.add(row_id)
-                        cur.execute(
-                            """
+                        if row_id in existing_ids:
+                            payload_ids.add(row_id)
+                            cur.execute(
+                                """
                                 UPDATE purchase_rt_items
                                    SET title_id = %s,
                                        quantity = %s,
                                        rate = %s,
-                                   exchange_rate = %s,
-                                   adjusted_amount = %s,
-                                   discount = %s,
-                                   line_value = %s,
-                                   purchase_det_id = %s,
-                                   currency_id = %s,
-                                   purchase_company_id = %s,
-                                   purchase_id = %s
-                             WHERE parent_id = %s AND id = %s
-                            """,
-                            [
-                                title_id,
-                                float(item.get('quantity', 0.0)),
-                                float(item.get('rate', 0.0)),
-                                float(item.get('exchange_rate', 0.0)),
-                                float(item.get('adjusted_amount', 0.0)),
-                                float(item.get('discount', 0.0)),
-                                float(item.get('line_value', 0.0)),
-                                purchase_det_id,
-                                currency_id,
-                                purchase_company_id,
-                                purchase_id,
-                                int(id),
-                                row_id,
-                            ],
-                        )
-                    else:
+                                       exchange_rate = %s,
+                                       adjusted_amount = %s,
+                                       discount = %s,
+                                       line_value = %s,
+                                       purchase_det_id = %s,
+                                       currency_id = %s,
+                                       purchase_company_id = %s,
+                                       purchase_id = %s
+                                 WHERE parent_id = %s AND id = %s
+                                """,
+                                [
+                                    title_id,
+                                    float(item.get('quantity', 0.0)),
+                                    float(item.get('rate', 0.0)),
+                                    float(item.get('exchange_rate', 0.0)),
+                                    float(item.get('adjusted_amount', 0.0)),
+                                    float(item.get('discount', 0.0)),
+                                    float(item.get('line_value', 0.0)),
+                                    purchase_det_id,
+                                    currency_id,
+                                    purchase_company_id,
+                                    purchase_id,
+                                    int(id),
+                                    row_id,
+                                ],
+                            )
+                        else:
+                            if row_id <= 0:
+                                next_id += 1
+                                row_id = next_id
+                            payload_ids.add(row_id)
                             cur.execute(
                                 """
                                 INSERT INTO purchase_rt_items (
                                     company_id,
                                     parent_id,
+                                    id,
                                     title_id,
                                     quantity,
                                     rate,
-                                exchange_rate,
-                                adjusted_amount,
-                                discount,
-                                line_value,
-                                purchase_det_id,
-                                currency_id,
-                                purchase_company_id,
-                                purchase_id
+                                    exchange_rate,
+                                    adjusted_amount,
+                                    discount,
+                                    line_value,
+                                    purchase_det_id,
+                                    currency_id,
+                                    purchase_company_id,
+                                    purchase_id
+                                )
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                """,
+                                [
+                                    company_id,
+                                    int(id),
+                                    row_id,
+                                    title_id,
+                                    float(item.get('quantity', 0.0)),
+                                    float(item.get('rate', 0.0)),
+                                    float(item.get('exchange_rate', 0.0)),
+                                    float(item.get('adjusted_amount', 0.0)),
+                                    float(item.get('discount', 0.0)),
+                                    float(item.get('line_value', 0.0)),
+                                    purchase_det_id,
+                                    currency_id,
+                                    purchase_company_id,
+                                    purchase_id,
+                                ],
                             )
-                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                            """,
-                            [
-                                company_id,
-                                int(id),
-                                title_id,
-                                float(item.get('quantity', 0.0)),
-                                float(item.get('rate', 0.0)),
-                                float(item.get('exchange_rate', 0.0)),
-                                float(item.get('adjusted_amount', 0.0)),
-                                float(item.get('discount', 0.0)),
-                                float(item.get('line_value', 0.0)),
-                                purchase_det_id,
-                                currency_id,
-                                purchase_company_id,
-                                purchase_id,
-                            ],
-                        )
 
                     # delete only rows that were removed
                     to_delete = existing_ids - payload_ids
@@ -4269,96 +4288,236 @@ def sales_rt_create(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def sales_rt_detail(request, id: int):
-    """Load a sales return with items; map codes back to labels using your mappings."""
+    """Load/update/delete a sales return with items; map codes back to labels using your mappings."""
     from .views import sale_type_mapping, payment_type_mapping  # already declared in your module
-    try:
-        with connection.cursor() as cur:
-            cur.execute(
-                """
-                SELECT id, company_id, sales_rt_no, entry_date, s_type, cash, cash_customer, narration, nett, gross, discount_a, discount_p,
-                       rounded_off, user_id, cr_customer_id
-                FROM sales_rt
-                WHERE id = %s
-                """,
-                [id],
-            )
-            hdr = cur.fetchone()
-            if not hdr:
-                return JsonResponse({'error': 'Sales return not found'}, status=404)
 
-            cur.execute(
-                """
-                SELECT
-                    sri.title_id,
-                    COALESCE(t.title, '') AS title,
-                    sri.quantity,
-                    sri.rate,
-                    sri.tax,
-                    sri.exchange_rate,
-                    sri.discount_a,
-                    sri.line_value,
-                    sri.sale_det_id,
-                    sri.purchase_company_id,
-                    sri.purchase_id,
-                    sri.purchase_det_id,
-                    COALESCE(c.currency_name, 'Indian Rupees') AS currency_name
-                FROM sale_rt_items sri
-                LEFT JOIN titles t ON t.id = sri.title_id
-                LEFT JOIN sale_items si ON si.id = sri.sale_det_id
-                LEFT JOIN currencies c ON c.id = si.currency_id
-                WHERE sri.parent_id = %s
-                ORDER BY sri.id
-                """,
-                [id],
-            )
-            rows = cur.fetchall()
+    if request.method == 'GET':
+        try:
+            with connection.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT id, company_id, sales_rt_no, entry_date, s_type, cash, cash_customer, narration, nett, gross, discount_a, discount_p,
+                           rounded_off, user_id, cr_customer_id
+                    FROM sales_rt
+                    WHERE id = %s
+                    """,
+                    [id],
+                )
+                hdr = cur.fetchone()
+                if not hdr:
+                    return JsonResponse({'error': 'Sales return not found'}, status=404)
 
-        s_type_label = sale_type_mapping.get(hdr[4], 'Credit Sale')
-        cash_label = payment_type_mapping.get(hdr[5], 'Cash')
+                cur.execute(
+                    """
+                    SELECT
+                        sri.title_id,
+                        COALESCE(t.title, '') AS title,
+                        sri.quantity,
+                        sri.rate,
+                        sri.tax,
+                        sri.exchange_rate,
+                        sri.discount_a,
+                        sri.line_value,
+                        sri.sale_det_id,
+                        sri.purchase_company_id,
+                        sri.purchase_id,
+                        sri.purchase_det_id,
+                        COALESCE(c.currency_name, 'Indian Rupees') AS currency_name
+                    FROM sale_rt_items sri
+                    LEFT JOIN titles t ON t.id = sri.title_id
+                    LEFT JOIN sale_items si ON si.id = sri.sale_det_id
+                    LEFT JOIN currencies c ON c.id = si.currency_id
+                    WHERE sri.parent_id = %s
+                    ORDER BY sri.id
+                    """,
+                    [id],
+                )
+                rows = cur.fetchall()
 
-        data = {
-            'id': hdr[0],
-            'company_id': hdr[1],
-            'sales_rt_no': hdr[2],
-            'entry_date': hdr[3].isoformat() if hdr[3] else None,
-            's_type': hdr[4],
-            's_type_label': s_type_label,
-            'cash': hdr[5],
-            'cash_label': cash_label,
-            'cash_customer': hdr[6] or '.',
-            'narration': hdr[7],
-            'nett': float(hdr[8] or 0),
-            'gross': float(hdr[9] or 0),
-            'discount_a': float(hdr[10] or 0),
-            'discount_p': float(hdr[11] or 0),
-            'rounded_off': float(hdr[12] or 0),
-            'user_id': hdr[13],
-            'cr_customer_id': hdr[14],
-            'items': [
-                {
-                    'title_id': r[0],
-                    'title': r[1],
-                    'quantity': float(r[2] or 0),
-                    'rate': float(r[3] or 0),
-                    'tax': float(r[4] or 0),
-                    'exchange_rate': float(r[5] or 1),
-                    'discount_a': float(r[6] or 0),
-                    'line_value': float(r[7] or 0),
-                    'sale_det_id': int(r[8] or 0),
-                    'purchase_company_id': int(r[9] or 0),
-                    'purchase_id': int(r[10] or 0),
-                    'purchase_det_id': int(r[11] or 0),
-                    'currency_name': r[12] or 'Indian Rupees',
-                }
-                for r in rows
-            ],
-        }
-        return JsonResponse(data, safe=False)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+            s_type_label = sale_type_mapping.get(hdr[4], 'Credit Sale')
+            cash_label = payment_type_mapping.get(hdr[5], 'Cash')
+
+            data = {
+                'id': hdr[0],
+                'company_id': hdr[1],
+                'sales_rt_no': hdr[2],
+                'entry_date': hdr[3].isoformat() if hdr[3] else None,
+                's_type': hdr[4],
+                's_type_label': s_type_label,
+                'cash': hdr[5],
+                'cash_label': cash_label,
+                'cash_customer': hdr[6] or '.',
+                'narration': hdr[7],
+                'nett': float(hdr[8] or 0),
+                'gross': float(hdr[9] or 0),
+                'discount_a': float(hdr[10] or 0),
+                'discount_p': float(hdr[11] or 0),
+                'rounded_off': float(hdr[12] or 0),
+                'user_id': hdr[13],
+                'cr_customer_id': hdr[14],
+                'items': [
+                    {
+                        'title_id': r[0],
+                        'title': r[1],
+                        'quantity': float(r[2] or 0),
+                        'rate': float(r[3] or 0),
+                        'tax': float(r[4] or 0),
+                        'exchange_rate': float(r[5] or 1),
+                        'discount_a': float(r[6] or 0),
+                        'line_value': float(r[7] or 0),
+                        'sale_det_id': int(r[8] or 0),
+                        'purchase_company_id': int(r[9] or 0),
+                        'purchase_id': int(r[10] or 0),
+                        'purchase_det_id': int(r[11] or 0),
+                        'currency_name': r[12] or 'Indian Rupees',
+                    }
+                    for r in rows
+                ],
+            }
+            return JsonResponse(data, safe=False)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    if request.method == 'PUT':
+        data = request.data or {}
+        header = data.get('header') or {}
+        rows = data.get('items') or []
+
+        if not header.get('date'):
+            return JsonResponse({'error': 'entry_date is required'}, status=400)
+        if not header.get('customer'):
+            return JsonResponse({'error': 'customer is required'}, status=400)
+        if not rows:
+            return JsonResponse({'error': 'At least one item is required'}, status=400)
+
+        entry_date = header.get('date')
+        s_type = sale_type_reverse_mapping.get(header.get('type'), 0)
+        cash = payment_type_reverse_mapping.get(header.get('pay'), 0)
+        customer_nm = header.get('customer')
+        narration = header.get('notes') or None
+        nett = _num(header.get('nett'), 0.0)
+        discount_a = _num(header.get('amt'), 0.0)
+        discount_p = _num(header.get('disP'), 0.0)
+        header_no = header.get('no')
+
+        # cr_customer_id lookup
+        def _get_cr_customer_id():
+            try:
+                with connection.cursor() as cur:
+                    cur.execute("SELECT id FROM cr_customers WHERE customer_nm = %s LIMIT 1", [customer_nm])
+                    r = cur.fetchone()
+                    return int(r[0]) if r else 0
+            except Exception:
+                return 0
+
+        cr_customer_id = _get_cr_customer_id()
+
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cur:
+                    cur.execute("SELECT sales_rt_no FROM sales_rt WHERE id = %s", [id])
+                    row = cur.fetchone()
+                    if not row:
+                        return JsonResponse({'error': 'Sales return not found'}, status=404)
+
+                    existing_no = int(row[0] or 0)
+                    sales_rt_no = existing_no
+                    if header_no not in (None, ''):
+                        sales_rt_no = _int(header_no, existing_no)
+
+                    cur.execute(
+                        """
+                        UPDATE sales_rt
+                           SET sales_rt_no   = %s,
+                               entry_date    = %s,
+                               s_type        = %s,
+                               cash          = %s,
+                               cash_customer = %s,
+                               narration     = %s,
+                               nett          = %s,
+                               discount_a    = %s,
+                               discount_p    = %s,
+                               cr_customer_id = %s
+                         WHERE id = %s
+                        """,
+                        [
+                            sales_rt_no,
+                            entry_date,
+                            s_type,
+                            cash,
+                            customer_nm or '.',
+                            narration,
+                            float(nett),
+                            float(discount_a),
+                            float(discount_p),
+                            cr_customer_id or None,
+                            int(id),
+                        ],
+                    )
+
+                    cur.execute("DELETE FROM sale_rt_items WHERE parent_id = %s", [int(id)])
+
+                    for it in rows:
+                        cur.execute(
+                            """
+                            INSERT INTO sale_rt_items (
+                                company_id,
+                                parent_id,
+                                title_id,
+                                quantity,
+                                rate,
+                                tax,
+                                exchange_rate,
+                                discount_p,
+                                discount_a,
+                                discount,
+                                sale_det_id,
+                                line_value,
+                                purchase_company_id,
+                                purchase_id,
+                                purchase_det_id
+                            )
+                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                            """,
+                            [
+                                0,
+                                int(id),
+                                _int(it.get('title_id'), 0),
+                                float(_num(it.get('qty'), 0.0)),
+                                float(_num(it.get('rate'), 0.0)),
+                                float(_num(it.get('tax'), 0.0)),
+                                float(_num(it.get('exchange_rate'), 1.0)),
+                                0.0,
+                                float(_num(it.get('discount_a'), 0.0)),
+                                0.0,
+                                _int(it.get('sale_det_id'), 0),
+                                float(_num(it.get('line_value'), 0.0)),
+                                _int(it.get('purchase_company_id'), 0),
+                                _int(it.get('purchase_id'), 0),
+                                _int(it.get('purchase_det_id'), 0),
+                            ],
+                        )
+
+            return JsonResponse({'id': int(id), 'message': 'Sales return updated successfully'}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    if request.method == 'DELETE':
+        try:
+            with transaction.atomic():
+                with connection.cursor() as cur:
+                    cur.execute("DELETE FROM sale_rt_items WHERE parent_id = %s", [int(id)])
+                    cur.execute("DELETE FROM sales_rt WHERE id = %s", [int(id)])
+                    if cur.rowcount == 0:
+                        return JsonResponse({'error': 'Sales return not found'}, status=404)
+            return JsonResponse({'message': 'Sales return deleted successfully'}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
     
 ################### P P RECEIPT ENTRY ###################
 

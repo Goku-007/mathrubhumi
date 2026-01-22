@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../../utils/axiosInstance';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
@@ -14,8 +14,15 @@ export default function AuthorWiseTitleSales() {
         date_to: '',
         author_id: '',
     });
-    const [authors, setAuthors] = useState([]);
+    const [authorQuery, setAuthorQuery] = useState('');
+    const [authorSuggestions, setAuthorSuggestions] = useState([]);
+    const [showAuthorSuggestions, setShowAuthorSuggestions] = useState(false);
     const [loadingAuthors, setLoadingAuthors] = useState(false);
+    const [authorPage, setAuthorPage] = useState(1);
+    const [authorHasMore, setAuthorHasMore] = useState(false);
+    const [selectedAuthorName, setSelectedAuthorName] = useState('');
+    const authorSearchTimer = useRef(null);
+    const authorRequestId = useRef(0);
 
     const [modal, setModal] = useState({
         isOpen: false,
@@ -27,6 +34,7 @@ export default function AuthorWiseTitleSales() {
     const [reportData, setReportData] = useState(null);
     const [reportParams, setReportParams] = useState(null);
     const reportRef = useRef(null);
+    const [reportPage, setReportPage] = useState(1);
 
     useEffect(() => {
         // Set default dates (current month)
@@ -38,23 +46,9 @@ export default function AuthorWiseTitleSales() {
             date_from: firstDay.toISOString().split('T')[0],
             date_to: lastDay.toISOString().split('T')[0],
         }));
-
-        // Fetch authors for dropdown
-        fetchAuthors();
     }, []);
 
-    const fetchAuthors = async () => {
-        try {
-            setLoadingAuthors(true);
-            const response = await api.get('/auth/authors-list/');
-            setAuthors(response.data);
-        } catch (error) {
-            console.error('Error fetching authors:', error);
-            showModal('Failed to load authors list.', 'error');
-        } finally {
-            setLoadingAuthors(false);
-        }
-    };
+    const AUTHOR_PAGE_SIZE = 50;
 
     const showModal = (message, type = 'info', buttons) => {
         setModal({
@@ -74,6 +68,82 @@ export default function AuthorWiseTitleSales() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const fetchAuthorSuggestions = async ({ query, page, append }) => {
+        const requestId = ++authorRequestId.current;
+        setLoadingAuthors(true);
+        try {
+            const response = await api.get('/auth/author-master-search/', {
+                params: {
+                    q: query,
+                    page,
+                    page_size: AUTHOR_PAGE_SIZE,
+                },
+            });
+            if (requestId !== authorRequestId.current) return;
+            const results = Array.isArray(response.data) ? response.data : [];
+            setAuthorSuggestions((prev) => (append ? [...prev, ...results] : results));
+            setAuthorHasMore(results.length === AUTHOR_PAGE_SIZE);
+        } catch (error) {
+            if (requestId !== authorRequestId.current) return;
+            if (!append) {
+                setAuthorSuggestions([]);
+            }
+            setAuthorHasMore(false);
+        } finally {
+            if (requestId === authorRequestId.current) {
+                setLoadingAuthors(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (!showAuthorSuggestions) return;
+        const query = authorQuery.trim();
+        if (query.length < 2) {
+            setAuthorSuggestions([]);
+            setAuthorHasMore(false);
+            return;
+        }
+        if (authorSearchTimer.current) {
+            clearTimeout(authorSearchTimer.current);
+        }
+        authorSearchTimer.current = setTimeout(() => {
+            setAuthorPage(1);
+            fetchAuthorSuggestions({ query, page: 1, append: false });
+        }, 250);
+        return () => {
+            if (authorSearchTimer.current) {
+                clearTimeout(authorSearchTimer.current);
+            }
+        };
+    }, [authorQuery, showAuthorSuggestions]);
+
+    const handleAuthorInputChange = (e) => {
+        const value = e.target.value;
+        setAuthorQuery(value);
+        if (value.trim() !== selectedAuthorName) {
+            setFormData((prev) => ({ ...prev, author_id: '' }));
+            setSelectedAuthorName('');
+        }
+        setShowAuthorSuggestions(true);
+    };
+
+    const handleAuthorSelect = (author) => {
+        setFormData((prev) => ({ ...prev, author_id: author.id }));
+        setAuthorQuery(author.author_nm || '');
+        setSelectedAuthorName(author.author_nm || '');
+        setShowAuthorSuggestions(false);
+        setAuthorSuggestions([]);
+    };
+
+    const handleLoadMoreAuthors = () => {
+        const query = authorQuery.trim();
+        if (!query || loadingAuthors || !authorHasMore) return;
+        const nextPage = authorPage + 1;
+        setAuthorPage(nextPage);
+        fetchAuthorSuggestions({ query, page: nextPage, append: true });
     };
 
     // Format number with Indian locale
@@ -104,8 +174,7 @@ export default function AuthorWiseTitleSales() {
 
     // Get selected author name
     const getSelectedAuthorName = () => {
-        const author = authors.find(a => String(a.id) === String(formData.author_id));
-        return author?.author_nm || '';
+        return selectedAuthorName || authorQuery.trim();
     };
 
     const handleSubmit = async (e) => {
@@ -282,11 +351,32 @@ export default function AuthorWiseTitleSales() {
     const inputClasses = "w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm";
     const labelClasses = "block text-sm font-medium text-gray-700 mb-1.5";
 
+    useEffect(() => {
+        if (reportData) {
+            setReportPage(1);
+        }
+    }, [reportData]);
+
+    const reportPageSize = 50;
+    const reportTotal = reportData?.length || 0;
+    const reportTotalPages = reportTotal > 0 ? Math.ceil(reportTotal / reportPageSize) : 1;
+    const reportStart = reportTotal === 0 ? 0 : (reportPage - 1) * reportPageSize + 1;
+    const reportEnd = reportTotal === 0 ? 0 : Math.min(reportTotal, reportPage * reportPageSize);
+
+    const pagedReportData = useMemo(() => {
+        if (!reportData || reportData.length === 0) return [];
+        const start = (reportPage - 1) * reportPageSize;
+        return reportData.slice(start, start + reportPageSize);
+    }, [reportData, reportPage]);
+
+    const grandQtyTotal = useMemo(() => {
+        if (!reportData || reportData.length === 0) return 0;
+        return reportData.reduce((sum, row) => sum + (row.quantity || 0), 0);
+    }, [reportData]);
+
     // Render the report table
     const renderReport = () => {
         if (!reportData || reportData.length === 0) return null;
-
-        let grandQtyTotal = 0;
 
         return (
             <div ref={reportRef} className="bg-white">
@@ -312,17 +402,13 @@ export default function AuthorWiseTitleSales() {
                         </tr>
                     </thead>
                     <tbody>
-                        {reportData.map((row, index) => {
-                            grandQtyTotal += row.quantity || 0;
-
-                            return (
-                                <tr key={index} className="hover:bg-gray-50">
-                                    <td className="py-1 px-1 font-serif">{row.title || ''}</td>
-                                    <td className="py-1 px-1 text-right">{formatNumber(row.rate)}</td>
-                                    <td className="py-1 px-1 text-right">{formatInteger(row.quantity)}</td>
-                                </tr>
-                            );
-                        })}
+                        {pagedReportData.map((row, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                                <td className="py-1 px-1 font-serif">{row.title || ''}</td>
+                                <td className="py-1 px-1 text-right">{formatNumber(row.rate)}</td>
+                                <td className="py-1 px-1 text-right">{formatInteger(row.quantity)}</td>
+                            </tr>
+                        ))}
 
                         {/* Grand Total Row */}
                         <tr className="grand-total border-t-2 border-b-2 border-gray-400">
@@ -396,24 +482,65 @@ export default function AuthorWiseTitleSales() {
                                 <label htmlFor="author_id" className={labelClasses}>
                                     Author Name <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    id="author_id"
-                                    name="author_id"
-                                    value={formData.author_id}
-                                    onChange={handleInputChange}
-                                    className={inputClasses}
-                                    required
-                                    disabled={loadingAuthors}
-                                >
-                                    <option value="">
-                                        {loadingAuthors ? 'Loading authors...' : '-- Select Author --'}
-                                    </option>
-                                    {authors.map((author) => (
-                                        <option key={author.id} value={author.id}>
-                                            {author.author_nm}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        id="author_id"
+                                        name="author_id"
+                                        value={authorQuery}
+                                        onChange={handleAuthorInputChange}
+                                        onFocus={() => setShowAuthorSuggestions(true)}
+                                        onBlur={() => setTimeout(() => setShowAuthorSuggestions(false), 150)}
+                                        className={inputClasses}
+                                        placeholder="Type author name"
+                                        autoComplete="off"
+                                        required
+                                    />
+                                    {showAuthorSuggestions && (
+                                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+                                            {authorQuery.trim().length < 2 && (
+                                                <div className="px-3 py-2 text-sm text-gray-500">
+                                                    Type at least 2 characters to search.
+                                                </div>
+                                            )}
+                                            {authorQuery.trim().length >= 2 && authorSuggestions.length === 0 && loadingAuthors && (
+                                                <div className="px-3 py-2 text-sm text-gray-500">
+                                                    Loading authors...
+                                                </div>
+                                            )}
+                                            {authorQuery.trim().length >= 2 && authorSuggestions.length === 0 && !loadingAuthors && (
+                                                <div className="px-3 py-2 text-sm text-gray-500">
+                                                    No authors found.
+                                                </div>
+                                            )}
+                                            {authorSuggestions.map((author) => (
+                                                <button
+                                                    type="button"
+                                                    key={author.id}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        handleAuthorSelect(author);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50"
+                                                >
+                                                    {author.author_nm}
+                                                </button>
+                                            ))}
+                                            {authorHasMore && (
+                                                <button
+                                                    type="button"
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        handleLoadMoreAuthors();
+                                                    }}
+                                                    className="w-full text-center px-3 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                                                >
+                                                    {loadingAuthors ? 'Loading...' : 'Load more'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Generate Button */}
@@ -481,8 +608,33 @@ export default function AuthorWiseTitleSales() {
                         </div>
 
                         {/* Records Count */}
-                        <div className="mb-4 text-sm text-gray-600">
-                            Total Records: {reportData.length}
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 text-sm text-gray-600">
+                            <div>
+                                Showing {reportStart}-{reportEnd} of {reportTotal} records
+                            </div>
+                            {reportTotalPages > 1 && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setReportPage((prev) => Math.max(1, prev - 1))}
+                                        disabled={reportPage === 1}
+                                        className="px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Prev
+                                    </button>
+                                    <span className="text-sm text-gray-600">
+                                        Page {reportPage} of {reportTotalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setReportPage((prev) => Math.min(reportTotalPages, prev + 1))}
+                                        disabled={reportPage === reportTotalPages}
+                                        className="px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Report Content */}

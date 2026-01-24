@@ -127,6 +127,8 @@ urlpatterns = [
     # Reports routes
     path('sale-types/', views.sale_types_list, name='sale_types_list'),
     path('reports/bill-wise-sale-register/', views.bill_wise_sale_register_report, name='bill_wise_sale_register_report'),
+    path('reports/date-wise-sale-register/', views.date_wise_sale_register_report, name='date_wise_sale_register_report'),
+    path('reports/credit-customer-wise-sales/', views.credit_customer_wise_sales_report, name='credit_customer_wise_sales_report'),
     path('reports/type-wise-sale-register/', views.type_wise_sale_register_report, name='type_wise_sale_register_report'),
     path('reports/cial-sale-register/', views.cial_sale_register_report, name='cial_sale_register_report'),
     path('reports/abc-sale-register/', views.abc_sale_register_report, name='abc_sale_register_report'),

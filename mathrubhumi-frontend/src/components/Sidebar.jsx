@@ -123,7 +123,9 @@ const Sidebar = () => {
     ],
     Reports: [
       { label: "Author-Wise Title Sales", route: "/dashboard/author-wise-title-sales" },
+      { label: "Credit-Customer Wise Sales", route: "/dashboard/credit-customer-wise-sales" },
       { label: "Bill-Wise Sale Register", route: "/dashboard/bill-wise-sale-register" },
+      { label: "Date-Wise Sale Register", route: "/dashboard/date-wise-sale-register" },
       { label: "Type-Wise Sale Register", route: "/dashboard/type-wise-sale-register" },
       { label: "CIAL Sale Register", route: "/dashboard/cial-sale-register" },
       { label: "ABC Sale Register", route: "/dashboard/abc-sale-register" },

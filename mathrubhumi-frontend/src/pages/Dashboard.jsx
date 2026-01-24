@@ -31,6 +31,12 @@ import SalesAgentWise from "./Reports/SalesAgentWise";
 import SaleAndStock from "./Reports/SaleAndStock";
 import AuthorPublisherSales from "./Reports/AuthorPublisherSales";
 import AuthorWiseTitleSales from "./Reports/AuthorWiseTitleSales";
+import CategoryPublisherAuthorWiseSales from "./Reports/CategoryPublisherAuthorWiseSales";
+import CategoryWiseSales from "./Reports/CategoryWiseSales";
+import SaleClassRatio from "./Reports/SaleClassRatio";
+import PublisherAuthorWiseSales from "./Reports/PublisherAuthorWiseSales";
+import TypeWiseSaleRegister from "./Reports/TypeWiseSaleRegister";
+import SubCategoryModeProductWiseSales from "./Reports/SubCategoryModeProductWiseSales";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -76,6 +82,12 @@ const Dashboard = () => {
           <Route path="sale-and-stock" element={<SaleAndStock />} />
           <Route path="author-publisher-sales" element={<AuthorPublisherSales />} />
           <Route path="author-wise-title-sales" element={<AuthorWiseTitleSales />} />
+          <Route path="category-publisher-author-wise-sales" element={<CategoryPublisherAuthorWiseSales />} />
+          <Route path="category-wise-sales" element={<CategoryWiseSales />} />
+          <Route path="sale-class-ratio" element={<SaleClassRatio />} />
+          <Route path="publisher-author-wise-sales" element={<PublisherAuthorWiseSales />} />
+          <Route path="type-wise-sale-register" element={<TypeWiseSaleRegister />} />
+          <Route path="sub-category-mode-product-wise-sales" element={<SubCategoryModeProductWiseSales />} />
         </Routes>
       </main>
     </div>

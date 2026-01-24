@@ -2037,15 +2037,63 @@ def publisher_create(request):
 @permission_classes([IsAuthenticated])
 def publisher_master_search(request):
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, publisher_nm, contact, own, email, address1, address2, telephone, city, max_discount_p
-                  FROM publishers
-              ORDER BY publisher_nm
-                """
-            )
-            results = cursor.fetchall()
+        query = (request.GET.get('q') or '').strip()
+        page_param = request.GET.get('page')
+        page_size_param = request.GET.get('page_size')
+        paginate = page_param is not None or page_size_param is not None
+        where_clause = ""
+        where_params = []
+
+        if query:
+            where_clause = "WHERE publisher_nm ILIKE %s"
+            where_params.append(f"{query}%")
+
+        if paginate:
+            try:
+                page = int(page_param or 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                page_size = int(page_size_param or 100)
+            except (TypeError, ValueError):
+                page_size = 100
+
+            page = max(page, 1)
+            page_size = min(max(page_size, 1), 500)
+            offset = (page - 1) * page_size
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT COUNT(*) FROM publishers {where_clause}",
+                    where_params
+                )
+                total = cursor.fetchone()[0] or 0
+                cursor.execute(
+                    f"""
+                    SELECT id, publisher_nm, contact, own, email, address1, address2, telephone, city, max_discount_p
+                      FROM publishers
+                      {where_clause}
+                  ORDER BY publisher_nm
+                     LIMIT %s OFFSET %s
+                    """,
+                    [*where_params, page_size, offset]
+                )
+                results = cursor.fetchall()
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT id, publisher_nm, contact, own, email, address1, address2, telephone, city, max_discount_p
+                      FROM publishers
+                      {where_clause}
+                  ORDER BY publisher_nm
+                    """,
+                    where_params
+                )
+                results = cursor.fetchall()
+            total = len(results)
+            page = 1
+            page_size = total
 
         suggestions = [
             {
@@ -2058,12 +2106,24 @@ def publisher_master_search(request):
                 'address2': row[6] or '',
                 'telephone': row[7] or '',
                 'city': row[8] or '',
-                'max_discount_p': float(row[9])
+                'max_discount_p': float(row[9] or 0)
             }
             for row in results
         ]
         logger.info(f"Publisher search query.")
-        return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        if not paginate:
+            return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        return JsonResponse(
+            {
+                'results': suggestions,
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            },
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         logger.error(f"Error in publisher_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
@@ -2270,15 +2330,63 @@ def credit_customer_create(request):
 @permission_classes([IsAuthenticated])
 def credit_customer_master_search(request):
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, customer_nm, address_1, address_2, city, telephone, email_id, debit, credit, credit_days, credit_limit, gstin, class
-                  FROM cr_customers
-              ORDER BY customer_nm
-                """
-            )
-            results = cursor.fetchall()
+        query = (request.GET.get('q') or '').strip()
+        page_param = request.GET.get('page')
+        page_size_param = request.GET.get('page_size')
+        paginate = page_param is not None or page_size_param is not None
+        where_clause = ""
+        where_params = []
+
+        if query:
+            where_clause = "WHERE customer_nm ILIKE %s"
+            where_params.append(f"{query}%")
+
+        if paginate:
+            try:
+                page = int(page_param or 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                page_size = int(page_size_param or 100)
+            except (TypeError, ValueError):
+                page_size = 100
+
+            page = max(page, 1)
+            page_size = min(max(page_size, 1), 500)
+            offset = (page - 1) * page_size
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT COUNT(*) FROM cr_customers {where_clause}",
+                    where_params
+                )
+                total = cursor.fetchone()[0] or 0
+                cursor.execute(
+                    f"""
+                    SELECT id, customer_nm, address_1, address_2, city, telephone, email_id, debit, credit, credit_days, credit_limit, gstin, class
+                      FROM cr_customers
+                      {where_clause}
+                  ORDER BY customer_nm
+                     LIMIT %s OFFSET %s
+                    """,
+                    [*where_params, page_size, offset]
+                )
+                results = cursor.fetchall()
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT id, customer_nm, address_1, address_2, city, telephone, email_id, debit, credit, credit_days, credit_limit, gstin, class
+                      FROM cr_customers
+                      {where_clause}
+                  ORDER BY customer_nm
+                    """,
+                    where_params
+                )
+                results = cursor.fetchall()
+            total = len(results)
+            page = 1
+            page_size = total
 
         suggestions = [
             {
@@ -2289,17 +2397,29 @@ def credit_customer_master_search(request):
                 'city': row[4] or '',
                 'telephone': row[5] or '',
                 'email_id': row[6] or '',
-                'debit': float(row[7]),
-                'credit': float(row[8]),
+                'debit': float(row[7] or 0),
+                'credit': float(row[8] or 0),
                 'credit_days': row[9],
-                'credit_limit': float(row[10]),
+                'credit_limit': float(row[10] or 0),
                 'gstin': row[11] or '',
                 'class': row[12]
             }
             for row in results
         ]
         logger.info(f"Credit customer search query.")
-        return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        if not paginate:
+            return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        return JsonResponse(
+            {
+                'results': suggestions,
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            },
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         logger.error(f"Error in credit_customer_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
@@ -2443,15 +2563,63 @@ def category_create(request):
 @permission_classes([IsAuthenticated])
 def categories_master_search(request):
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, category_nm
-                  FROM categories
-              ORDER BY category_nm
-                """
-            )
-            results = cursor.fetchall()
+        query = (request.GET.get('q') or '').strip()
+        page_param = request.GET.get('page')
+        page_size_param = request.GET.get('page_size')
+        paginate = page_param is not None or page_size_param is not None
+        where_clause = ""
+        where_params = []
+
+        if query:
+            where_clause = "WHERE category_nm ILIKE %s"
+            where_params.append(f"{query}%")
+
+        if paginate:
+            try:
+                page = int(page_param or 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                page_size = int(page_size_param or 100)
+            except (TypeError, ValueError):
+                page_size = 100
+
+            page = max(page, 1)
+            page_size = min(max(page_size, 1), 500)
+            offset = (page - 1) * page_size
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT COUNT(*) FROM categories {where_clause}",
+                    where_params
+                )
+                total = cursor.fetchone()[0] or 0
+                cursor.execute(
+                    f"""
+                    SELECT id, category_nm
+                      FROM categories
+                      {where_clause}
+                  ORDER BY category_nm
+                     LIMIT %s OFFSET %s
+                    """,
+                    [*where_params, page_size, offset]
+                )
+                results = cursor.fetchall()
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT id, category_nm
+                      FROM categories
+                      {where_clause}
+                  ORDER BY category_nm
+                    """,
+                    where_params
+                )
+                results = cursor.fetchall()
+            total = len(results)
+            page = 1
+            page_size = total
 
         suggestions = [
             {
@@ -2461,7 +2629,19 @@ def categories_master_search(request):
             for row in results
         ]
         logger.info(f"Category load query")
-        return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        if not paginate:
+            return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        return JsonResponse(
+            {
+                'results': suggestions,
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            },
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         logger.error(f"Error in categories_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
@@ -2543,15 +2723,63 @@ def sub_category_create(request):
 @permission_classes([IsAuthenticated])
 def sub_categories_master_search(request):
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, sub_category_nm
-                  FROM sub_categories
-              ORDER BY sub_category_nm    
-                """
-            )
-            results = cursor.fetchall()
+        query = (request.GET.get('q') or '').strip()
+        page_param = request.GET.get('page')
+        page_size_param = request.GET.get('page_size')
+        paginate = page_param is not None or page_size_param is not None
+        where_clause = ""
+        where_params = []
+
+        if query:
+            where_clause = "WHERE sub_category_nm ILIKE %s"
+            where_params.append(f"{query}%")
+
+        if paginate:
+            try:
+                page = int(page_param or 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                page_size = int(page_size_param or 100)
+            except (TypeError, ValueError):
+                page_size = 100
+
+            page = max(page, 1)
+            page_size = min(max(page_size, 1), 500)
+            offset = (page - 1) * page_size
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT COUNT(*) FROM sub_categories {where_clause}",
+                    where_params
+                )
+                total = cursor.fetchone()[0] or 0
+                cursor.execute(
+                    f"""
+                    SELECT id, sub_category_nm
+                      FROM sub_categories
+                      {where_clause}
+                  ORDER BY sub_category_nm
+                     LIMIT %s OFFSET %s
+                    """,
+                    [*where_params, page_size, offset]
+                )
+                results = cursor.fetchall()
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT id, sub_category_nm
+                      FROM sub_categories
+                      {where_clause}
+                  ORDER BY sub_category_nm    
+                    """,
+                    where_params
+                )
+                results = cursor.fetchall()
+            total = len(results)
+            page = 1
+            page_size = total
 
         suggestions = [
             {
@@ -2561,7 +2789,19 @@ def sub_categories_master_search(request):
             for row in results
         ]
         logger.info(f"Sub-category search query.")
-        return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        if not paginate:
+            return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        return JsonResponse(
+            {
+                'results': suggestions,
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            },
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         logger.error(f"Error in sub_categories_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
@@ -2651,15 +2891,63 @@ def pp_customer_create(request):
 @permission_classes([IsAuthenticated])
 def pp_customers_master_search(request):
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, pp_customer_nm, address1, address2, city, telephone, contact, email
-                  FROM pp_customers
-              ORDER BY pp_customer_nm
-                """
-            )
-            results = cursor.fetchall()
+        query = (request.GET.get('q') or '').strip()
+        page_param = request.GET.get('page')
+        page_size_param = request.GET.get('page_size')
+        paginate = page_param is not None or page_size_param is not None
+        where_clause = ""
+        where_params = []
+
+        if query:
+            where_clause = "WHERE pp_customer_nm ILIKE %s"
+            where_params.append(f"{query}%")
+
+        if paginate:
+            try:
+                page = int(page_param or 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                page_size = int(page_size_param or 100)
+            except (TypeError, ValueError):
+                page_size = 100
+
+            page = max(page, 1)
+            page_size = min(max(page_size, 1), 500)
+            offset = (page - 1) * page_size
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT COUNT(*) FROM pp_customers {where_clause}",
+                    where_params
+                )
+                total = cursor.fetchone()[0] or 0
+                cursor.execute(
+                    f"""
+                    SELECT id, pp_customer_nm, address1, address2, city, telephone, contact, email
+                      FROM pp_customers
+                      {where_clause}
+                  ORDER BY pp_customer_nm
+                     LIMIT %s OFFSET %s
+                    """,
+                    [*where_params, page_size, offset]
+                )
+                results = cursor.fetchall()
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT id, pp_customer_nm, address1, address2, city, telephone, contact, email
+                      FROM pp_customers
+                      {where_clause}
+                  ORDER BY pp_customer_nm
+                    """,
+                    where_params
+                )
+                results = cursor.fetchall()
+            total = len(results)
+            page = 1
+            page_size = total
 
         suggestions = [
             {
@@ -2675,7 +2963,19 @@ def pp_customers_master_search(request):
             for row in results
         ]
         logger.info(f"PP customer search query.")
-        return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        if not paginate:
+            return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        return JsonResponse(
+            {
+                'results': suggestions,
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            },
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         logger.error(f"Error in pp_customers_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
@@ -3312,15 +3612,63 @@ def purchase_breakup_create(request):
 @permission_classes([IsAuthenticated])
 def purchase_breakups_master_search(request):
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, breakup_nm
-                  FROM purchase_breakups
-              ORDER BY breakup_nm
-                """
-            )
-            results = cursor.fetchall()
+        query = (request.GET.get('q') or '').strip()
+        page_param = request.GET.get('page')
+        page_size_param = request.GET.get('page_size')
+        paginate = page_param is not None or page_size_param is not None
+        where_clause = ""
+        where_params = []
+
+        if query:
+            where_clause = "WHERE breakup_nm ILIKE %s"
+            where_params.append(f"{query}%")
+
+        if paginate:
+            try:
+                page = int(page_param or 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                page_size = int(page_size_param or 100)
+            except (TypeError, ValueError):
+                page_size = 100
+
+            page = max(page, 1)
+            page_size = min(max(page_size, 1), 500)
+            offset = (page - 1) * page_size
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT COUNT(*) FROM purchase_breakups {where_clause}",
+                    where_params
+                )
+                total = cursor.fetchone()[0] or 0
+                cursor.execute(
+                    f"""
+                    SELECT id, breakup_nm
+                      FROM purchase_breakups
+                      {where_clause}
+                  ORDER BY breakup_nm
+                     LIMIT %s OFFSET %s
+                    """,
+                    [*where_params, page_size, offset]
+                )
+                results = cursor.fetchall()
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT id, breakup_nm
+                      FROM purchase_breakups
+                      {where_clause}
+                  ORDER BY breakup_nm
+                    """,
+                    where_params
+                )
+                results = cursor.fetchall()
+            total = len(results)
+            page = 1
+            page_size = total
 
         suggestions = [
             {
@@ -3330,7 +3678,19 @@ def purchase_breakups_master_search(request):
             for row in results
         ]
         logger.info(f"Purchase breakup search query.")
-        return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        if not paginate:
+            return JsonResponse(suggestions, safe=False, json_dumps_params={'ensure_ascii': False})
+
+        return JsonResponse(
+            {
+                'results': suggestions,
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            },
+            json_dumps_params={'ensure_ascii': False}
+        )
     except Exception as e:
         logger.error(f"Error in purchase_breakups_master_search: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)

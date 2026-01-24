@@ -15,6 +15,12 @@ export default function PrivilegersMaster() {
     contact: '',
     email: ''
   });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   // Icon for header
   const privilegerIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,7 +36,18 @@ export default function PrivilegersMaster() {
 
   useEffect(() => {
     fetchAllPrivilegers();
-  }, []);
+  }, [page, pageSize, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const nextQuery = trimmed.length >= 2 ? trimmed : '';
+      setPage((prev) => (prev === 1 ? prev : 1));
+      setSearchQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -110,25 +127,17 @@ export default function PrivilegersMaster() {
     try {
       const response = await api.post('/auth/privileger-create/', payload);
       console.log('Privileger created:', response.data);
-      const newItem = {
-        id: response.data.id,
-        privilegerName: formData.privilegerName,
-        address1: formData.address1 || '',
-        address2: formData.address2 || '',
-        city: formData.city || '',
-        telephone: formData.telephone || '',
-        contact: formData.contact || '',
-        email: formData.email || ''
-      };
-      console.log('Adding privileger:', newItem);
-      setItems((prev) => [...prev, newItem]);
-      console.log('Current items state:', [...items, newItem]);
       setModal({
         isOpen: true,
         message: 'Privileger added successfully!',
         type: 'success',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+      if (page === 1) {
+        fetchAllPrivilegers({ page: 1, pageSize });
+      } else {
+        setPage(1);
+      }
       setFormData({
         privilegerName: '',
         address1: '',
@@ -163,7 +172,7 @@ export default function PrivilegersMaster() {
             try {
               const response = await api.delete(`/auth/privileger-delete/${id}/`);
               console.log('Privileger deleted:', response.data);
-              setItems((prev) => prev.filter((item) => item.id !== id));
+              await fetchAllPrivilegers({ page, pageSize });
               setModal({
                 isOpen: true,
                 message: 'Privileger deleted successfully!',
@@ -193,11 +202,34 @@ export default function PrivilegersMaster() {
     });
   };
 
-  const fetchAllPrivilegers = async () => {
+  const fetchAllPrivilegers = async (options = {}) => {
+    const pageToUse = options.page ?? page;
+    const pageSizeToUse = options.pageSize ?? pageSize;
+    const queryToUse = options.query ?? searchQuery;
+    const trimmedQuery = (queryToUse || '').trim();
+
+    setIsLoading(true);
     try {
-      const response = await api.get(`/auth/privilegers-master-search/`);
+      const response = await api.get(`/auth/privilegers-master-search/`, {
+        params: {
+          page: pageToUse,
+          page_size: pageSizeToUse,
+          ...(trimmedQuery.length >= 2 ? { q: trimmedQuery } : {})
+        }
+      });
       console.log('Privilegers fetched:', response.data);
-      const fetchedItems = response.data.map((item) => ({
+      const payload = response.data || {};
+      const results = Array.isArray(payload) ? payload : (payload.results || []);
+      const total = Array.isArray(payload) ? results.length : (payload.total ?? results.length);
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSizeToUse));
+
+      if (pageToUse > nextTotalPages) {
+        setTotalCount(total);
+        setPage(nextTotalPages);
+        return;
+      }
+
+      const fetchedItems = results.map((item) => ({
         id: item.id,
         privilegerName: item.privileger_nm || '',
         address1: item.address1 || '',
@@ -209,12 +241,7 @@ export default function PrivilegersMaster() {
       }));
       setItems(fetchedItems);
       console.log('Updated items state:', fetchedItems);
-      setModal({
-        isOpen: true,
-        message: `Loaded ${fetchedItems.length} privileger(s)`,
-        type: 'success',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
+      setTotalCount(total);
     } catch (error) {
       console.error('Error fetching privilegers:', error);
       setModal({
@@ -223,11 +250,35 @@ export default function PrivilegersMaster() {
         type: 'error',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const pageSizeOptions = [50, 100, 200];
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(totalCount, page * pageSize);
+  const isFiltering = searchQuery.trim().length >= 2;
+  const showSearchHint = searchInput.trim().length === 1;
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.min(Math.max(nextPage, 1), totalPages);
+    if (clamped !== page) {
+      setPage(clamped);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const nextSize = parseInt(e.target.value, 10) || 100;
+    if (nextSize !== pageSize) {
+      setPage(1);
+      setPageSize(nextSize);
     }
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6 flex flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -235,30 +286,93 @@ export default function PrivilegersMaster() {
         buttons={modal.buttons}
       />
 
-      <PageHeader icon={privilegerIcon} title="Privilegers Master" subtitle="Manage privileger records" />
+      <div className="flex-shrink-0">
+        <PageHeader
+          icon={privilegerIcon}
+          title="Privilegers Master"
+          subtitle="Manage privileger records"
+          compact
+        />
+      </div>
 
-      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 space-y-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+        <div className="p-3 flex-1 min-h-0 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700">Privilegers</span>
+              <span>
+                {totalCount === 0 ? 'No records' : `Showing ${startIndex}-${endIndex} of ${totalCount}`}
+              </span>
+              {isFiltering && <span className="text-gray-500">Filter: "{searchQuery}"</span>}
+              {isLoading && <span className="text-blue-600">Loading...</span>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-gray-500">Search</label>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Privileger name"
+                  className="h-7 w-48 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  disabled={isLoading}
+                />
+              </div>
+              {showSearchHint && <span className="text-gray-400">Type at least 2 letters</span>}
+              <label className="text-gray-500">Rows</label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700"
+                disabled={isLoading}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1 || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200">
             <div className="min-w-[900px]">
               <table className="w-full table-fixed border-collapse">
                 <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
                   <tr>
-                    <th className="w-[240px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Privileger Name</th>
-                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Address 1</th>
-                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Address 2</th>
-                    <th className="w-[110px] px-4 py-3 text-left text-sm font-semibold tracking-wide">City</th>
-                    <th className="w-[130px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Telephone</th>
-                    <th className="w-[130px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Contact</th>
-                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Email</th>
-                    <th className="w-[60px] px-4 py-3 text-center text-sm font-semibold">Action</th>
+                    <th className="w-[240px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Privileger Name</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Address 1</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Address 2</th>
+                    <th className="w-[110px] px-3 py-2 text-left text-sm font-semibold tracking-wide">City</th>
+                    <th className="w-[130px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Telephone</th>
+                    <th className="w-[130px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Contact</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Email</th>
+                    <th className="w-[60px] px-3 py-2 text-center text-sm font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {items.length === 0 ? (
                     <tr>
                       <td colSpan="8" className="px-4 py-8 text-center text-gray-400">
-                        No privilegers found. Add one below.
+                        {isLoading ? 'Loading privilegers...' : 'No privilegers found. Add one below.'}
                       </td>
                     </tr>
                   ) : (
@@ -268,84 +382,84 @@ export default function PrivilegersMaster() {
                         className="hover:bg-blue-50/50 transition-colors animate-fade-in"
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.privilegerName || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'privilegerName', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, privilegerName: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.address1 || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'address1', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address1: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.address2 || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'address2', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address2: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.city || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'city', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, city: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.telephone || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'telephone', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, telephone: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.contact || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'contact', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, contact: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-3 py-2">
                           <input
                             type="text"
                             value={item.email || ''}
                             onChange={(e) => handleTableInputChange(item.id, 'email', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, email: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                        transition-all duration-200"
                           />
                         </td>
-                        <td className="px-4 py-2 text-center">
+                        <td className="px-3 py-2 text-center">
                           <button
                             onClick={() => handleDeletePrivileger(item.id)}
                             className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -362,8 +476,8 @@ export default function PrivilegersMaster() {
             </div>
           </div>
 
-          <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="border-t border-gray-200 bg-gray-50/50 px-3 py-2 flex-shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
               <div className="md:col-span-2">
                 <input
                   type="text"
@@ -371,7 +485,7 @@ export default function PrivilegersMaster() {
                   value={formData.privilegerName}
                   onChange={handleInputChange}
                   placeholder="Privileger Name"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -384,7 +498,7 @@ export default function PrivilegersMaster() {
                   value={formData.address1}
                   onChange={handleInputChange}
                   placeholder="Address 1"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -397,7 +511,7 @@ export default function PrivilegersMaster() {
                   value={formData.address2}
                   onChange={handleInputChange}
                   placeholder="Address 2"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -410,7 +524,7 @@ export default function PrivilegersMaster() {
                   value={formData.city}
                   onChange={handleInputChange}
                   placeholder="City"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -423,7 +537,7 @@ export default function PrivilegersMaster() {
                   value={formData.telephone}
                   onChange={handleInputChange}
                   placeholder="Telephone"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -436,7 +550,7 @@ export default function PrivilegersMaster() {
                   value={formData.contact}
                   onChange={handleInputChange}
                   placeholder="Contact"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -449,7 +563,7 @@ export default function PrivilegersMaster() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Email"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                              transition-all duration-200 input-premium"
                   autoComplete="off"
@@ -458,7 +572,7 @@ export default function PrivilegersMaster() {
               <div className="flex justify-end">
                 <button
                   onClick={handleAddPrivileger}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+                  className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
                              text-white text-sm font-medium shadow-lg shadow-blue-500/25
                              hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
                 >
@@ -473,17 +587,6 @@ export default function PrivilegersMaster() {
         </div>
       </div>
 
-      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
-            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing a field to save changes instantly.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

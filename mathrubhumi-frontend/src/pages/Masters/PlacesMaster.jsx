@@ -9,7 +9,12 @@ export default function PlacesMaster() {
   const [formData, setFormData] = useState({
     placeName: ''
   });
-  const [loadPlaces, setLoadPlaces] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState({
     isOpen: false,
     message: '',
@@ -19,8 +24,19 @@ export default function PlacesMaster() {
   const [deletePlaceId, setDeletePlaceId] = useState(null);
 
   useEffect(() => {
-      fetchAllPlaces();
-    }, []);
+    fetchAllPlaces();
+  }, [page, pageSize, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const nextQuery = trimmed.length >= 2 ? trimmed : '';
+      setPage((prev) => (prev === 1 ? prev : 1));
+      setSearchQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -88,19 +104,17 @@ export default function PlacesMaster() {
     try {
       const response = await api.post('/auth/place-create/', payload);
       console.log('Place created:', response.data);
-      const newItem = {
-        id: response.data.id,
-        placeName: formData.placeName
-      };
-      console.log('Adding place:', newItem);
-      setItems((prev) => [...prev, newItem]);
-      console.log('Current items state:', [...items, newItem]);
       setModal({
         isOpen: true,
         message: 'Place added successfully!',
         type: 'success',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+      if (page === 1) {
+        fetchAllPlaces({ page: 1, pageSize });
+      } else {
+        setPage(1);
+      }
       setFormData({
         placeName: ''
       });
@@ -130,7 +144,7 @@ export default function PlacesMaster() {
             try {
               const response = await api.delete(`/auth/place-delete/${id}/`);
               console.log('Place deleted:', response.data);
-              setItems((prev) => prev.filter((item) => item.id !== id));
+              await fetchAllPlaces({ page, pageSize });
               setModal({
                 isOpen: true,
                 message: 'Place deleted successfully!',
@@ -162,22 +176,40 @@ export default function PlacesMaster() {
     });
   };
 
-  const fetchAllPlaces = async () => {
+  const fetchAllPlaces = async (options = {}) => {
+    const pageToUse = options.page ?? page;
+    const pageSizeToUse = options.pageSize ?? pageSize;
+    const queryToUse = options.query ?? searchQuery;
+    const trimmedQuery = (queryToUse || '').trim();
+
+    setIsLoading(true);
     try {
-      const response = await api.get(`/auth/places-master-search/`);
+      const response = await api.get(`/auth/places-master-search/`, {
+        params: {
+          page: pageToUse,
+          page_size: pageSizeToUse,
+          ...(trimmedQuery.length >= 2 ? { q: trimmedQuery } : {})
+        }
+      });
       console.log('Places fetched:', response.data);
-      const fetchedItems = response.data.map((item) => ({
+      const payload = response.data || {};
+      const results = Array.isArray(payload) ? payload : (payload.results || []);
+      const total = Array.isArray(payload) ? results.length : (payload.total ?? results.length);
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSizeToUse));
+
+      if (pageToUse > nextTotalPages) {
+        setTotalCount(total);
+        setPage(nextTotalPages);
+        return;
+      }
+
+      const fetchedItems = results.map((item) => ({
         id: item.id,
         placeName: item.place_nm || ''
       }));
       setItems(fetchedItems);
+      setTotalCount(total);
       console.log('Updated items state:', fetchedItems);
-      setModal({
-        isOpen: true,
-        message: `Loaded ${fetchedItems.length} place(s)`,
-        type: 'success',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
     } catch (error) {
       console.error('Error fetching places:', error);
       setModal({
@@ -186,6 +218,8 @@ export default function PlacesMaster() {
         type: 'error',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -197,8 +231,30 @@ export default function PlacesMaster() {
     </svg>
   );
 
+  const pageSizeOptions = [50, 100, 200];
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(totalCount, page * pageSize);
+  const isFiltering = searchQuery.trim().length >= 2;
+  const showSearchHint = searchInput.trim().length === 1;
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.min(Math.max(nextPage, 1), totalPages);
+    if (clamped !== page) {
+      setPage(clamped);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const nextSize = parseInt(e.target.value, 10) || 100;
+    if (nextSize !== pageSize) {
+      setPage(1);
+      setPageSize(nextSize);
+    }
+  };
+
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6 flex flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -206,25 +262,81 @@ export default function PlacesMaster() {
         buttons={modal.buttons}
       />
 
-      {/* Page Header */}
-      <PageHeader
-        icon={placeIcon}
-        title="Places Master"
-        subtitle="Manage geographic locations and places"
-      />
+      <div className="flex-shrink-0">
+        <PageHeader
+          icon={placeIcon}
+          title="Places Master"
+          subtitle="Manage geographic locations and places"
+          compact
+        />
+      </div>
 
-      {/* Main Content Card */}
-      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
-        {/* Table Section */}
-        <div className="p-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+        <div className="p-4 flex-1 min-h-0 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700">Places</span>
+              <span>
+                {totalCount === 0 ? 'No records' : `Showing ${startIndex}-${endIndex} of ${totalCount}`}
+              </span>
+              {isFiltering && <span className="text-gray-500">Filter: "{searchQuery}"</span>}
+              {isLoading && <span className="text-blue-600">Loading...</span>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-gray-500">Search</label>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Place name"
+                  className="h-7 w-40 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  disabled={isLoading}
+                />
+              </div>
+              {showSearchHint && <span className="text-gray-400">Type at least 2 letters</span>}
+              <label className="text-gray-500">Rows</label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700"
+                disabled={isLoading}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1 || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200">
             <table className="w-full max-w-md">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide">
                     Place Name
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold w-16">
+                  <th className="px-3 py-2 text-center text-sm font-semibold w-16">
                     Action
                   </th>
                 </tr>
@@ -233,7 +345,7 @@ export default function PlacesMaster() {
                 {items.length === 0 ? (
                   <tr>
                     <td colSpan="2" className="px-4 py-8 text-center text-gray-400">
-                      No places found. Add one below.
+                      {isLoading ? 'Loading places...' : 'No places found. Add one below.'}
                     </td>
                   </tr>
                 ) : (
@@ -243,7 +355,7 @@ export default function PlacesMaster() {
                       className="hover:bg-blue-50/50 transition-colors animate-fade-in"
                       style={{ animationDelay: `${index * 30}ms` }}
                     >
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.placeName || ''}
@@ -255,7 +367,7 @@ export default function PlacesMaster() {
                           placeholder="Enter place name"
                         />
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-3 py-2 text-center">
                         <button
                           onClick={() => handleDeletePlace(item.id)}
                           className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500
@@ -274,8 +386,8 @@ export default function PlacesMaster() {
         </div>
 
         {/* Add Place Form */}
-        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
-          <div className="flex items-center gap-3 max-w-md">
+        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-3 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-md">
             <div className="flex-1">
               <input
                 type="text"
@@ -283,7 +395,7 @@ export default function PlacesMaster() {
                 value={formData.placeName}
                 onChange={handleInputChange}
                 placeholder="Enter new place name"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -292,7 +404,7 @@ export default function PlacesMaster() {
             </div>
             <button
               onClick={handleAddPlace}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
                          text-white text-sm font-medium shadow-lg shadow-blue-500/25
                          hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
             >
@@ -301,19 +413,6 @@ export default function PlacesMaster() {
               </svg>
               Add Place
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Info card */}
-      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
-            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing a place name to save changes instantly.</p>
           </div>
         </div>
       </div>

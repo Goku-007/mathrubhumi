@@ -1,5 +1,5 @@
-// src/pages/Masters/TitleMaster.jsx
-import React, { useState } from 'react';
+﻿// src/pages/Masters/TitleMaster.jsx
+import React, { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
@@ -25,7 +25,12 @@ export default function TitleMaster() {
     translator: '',
     mrp: ''
   });
-  const [loadItem, setLoadItem] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // --- Suggestions for the TOP FORM ---
   const [suggestions, setSuggestions] = useState({
@@ -79,6 +84,21 @@ export default function TitleMaster() {
     buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
   });
 
+  useEffect(() => {
+    fetchAllTitles();
+  }, [page, pageSize, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const nextQuery = trimmed.length >= 2 ? trimmed : '';
+      setPage((prev) => (prev === 1 ? prev : 1));
+      setSearchQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   /* ---------------- TOP FORM handlers ---------------- */
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
@@ -119,12 +139,6 @@ export default function TitleMaster() {
         }
       }
     }
-  };
-
-  const handleLoadItemChange = (e) => {
-    const value = e.target.value;
-    console.log(`Load item input changed: ${value}`);
-    setLoadItem(value);
   };
 
   const handleSuggestionClick = (field, suggestion) => {
@@ -430,34 +444,17 @@ export default function TitleMaster() {
     try {
       const response = await api.post('/auth/title-create/', payload);
       console.log('Title created:', response.data);
-      const newItem = {
-        id: parseInt(formData.code),
-        code: formData.code,
-        title: formData.title,
-        sapCode: formData.sapCode,
-        tax: formData.tax,
-        titleMal: formData.titleMal,
-        location: formData.location,
-        language: formData.language,
-        isbnNo: formData.isbnNo,
-        roLevel: formData.roLevel,
-        dnLevel: formData.dnLevel,
-        category: formData.category,
-        subCategory: formData.subCategory,
-        author: formData.author,
-        publisher: formData.publisher,
-        translator: formData.translator,
-        mrp: formData.mrp
-      };
-      console.log('Adding item:', newItem);
-      setItems((prev) => [...prev, newItem]);
-      console.log('Current items state:', [...items, newItem]);
       setModal({
         isOpen: true,
         message: 'Title added successfully!',
         type: 'success',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+      if (page === 1) {
+        fetchAllTitles({ page: 1, pageSize });
+      } else {
+        setPage(1);
+      }
     } catch (error) {
       console.error('Error creating title:', error);
       setModal({
@@ -492,48 +489,60 @@ export default function TitleMaster() {
     setHighlightedIndex({ author: -1, publisher: -1, translator: -1, category: -1, subCategory: -1 });
   };
 
-  const handleLoadItem = async () => {
-    if (loadItem.length < 2) {
-      console.log('Validation failed: loadItem less than 2 characters');
-      setModal({
-        isOpen: true,
-        message: 'Please enter at least 2 characters to search',
-        type: 'error',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
-      return;
-    }
+  const fetchAllTitles = async (options = {}) => {
+    const pageToUse = options.page ?? page;
+    const pageSizeToUse = options.pageSize ?? pageSize;
+    const queryToUse = options.query ?? searchQuery;
+    const trimmedQuery = (queryToUse || '').trim();
 
+    setIsLoading(true);
     try {
-      const response = await api.get(`/auth/title-search/?q=${encodeURIComponent(loadItem)}`);
+      const response = await api.get('/auth/title-search/', {
+        params: {
+          page: pageToUse,
+          page_size: pageSizeToUse,
+          ...(trimmedQuery.length >= 2 ? { q: trimmedQuery } : {})
+        }
+      });
       console.log('Titles fetched:', response.data);
-      const fetchedItems = response.data.map((item) => ({
+      const payload = response.data || {};
+      const results = Array.isArray(payload) ? payload : (payload.results || []);
+      const total = Array.isArray(payload) ? results.length : (payload.total ?? results.length);
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSizeToUse));
+
+      if (pageToUse > nextTotalPages) {
+        setTotalCount(total);
+        setPage(nextTotalPages);
+        return;
+      }
+
+      const fetchedItems = results.map((item) => ({
         id: item.id,
-        code: item.id.toString(),
-        title: item.title,
+        code: item.id?.toString() || '',
+        title: item.title || '',
         sapCode: item.sap_code || '',
-        tax: item.tax.toString(),
+        tax: item.tax != null ? item.tax.toString() : '',
         titleMal: item.title_m || '',
-        location: item.location_id === 0 ? 'Location1' : item.location_id === 1 ? 'Location2' : 'Location3',
-        language: item.language_id === 0 ? 'English' : 'Malayalam',
+        location:
+          item.location_id === 0 ? 'Location1' :
+          item.location_id === 1 ? 'Location2' :
+          item.location_id === 2 ? 'Location3' : '',
+        language:
+          item.language_id === 0 ? 'English' :
+          item.language_id === 1 ? 'Malayalam' : '',
         isbnNo: item.isbn || '',
-        roLevel: item.ro_level.toString(),
-        dnLevel: item.dn_level.toString(),
+        roLevel: item.ro_level != null ? item.ro_level.toString() : '',
+        dnLevel: item.dn_level != null ? item.dn_level.toString() : '',
         category: item.category_nm || '',
         subCategory: item.sub_category_nm || '',
         author: item.author_nm || '',
         publisher: item.publisher_nm || '',
         translator: item.translator_nm || '',
-        mrp: item.rate.toString()
+        mrp: item.rate != null ? item.rate.toString() : ''
       }));
       setItems(fetchedItems);
+      setTotalCount(total);
       console.log('Updated items state:', fetchedItems);
-      setModal({
-        isOpen: true,
-        message: `Loaded ${fetchedItems.length} title(s)`,
-        type: 'success',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
     } catch (error) {
       console.error('Error fetching titles:', error);
       setModal({
@@ -542,12 +551,15 @@ export default function TitleMaster() {
         type: 'error',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDeleteItem = (id) => {
     console.log(`Deleting item: id=${id}`);
     setItems((prev) => prev.filter((item) => item.id !== id));
+    setTotalCount((prev) => Math.max(0, prev - 1));
   };
 
   const titleIcon = (
@@ -556,8 +568,30 @@ export default function TitleMaster() {
     </svg>
   );
 
+  const pageSizeOptions = [50, 100, 200];
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(totalCount, page * pageSize);
+  const isFiltering = searchQuery.trim().length >= 2;
+  const showSearchHint = searchInput.trim().length === 1;
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.min(Math.max(nextPage, 1), totalPages);
+    if (clamped !== page) {
+      setPage(clamped);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const nextSize = parseInt(e.target.value, 10) || 100;
+    if (nextSize !== pageSize) {
+      setPage(1);
+      setPageSize(nextSize);
+    }
+  };
+
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6 flex flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -565,78 +599,143 @@ export default function TitleMaster() {
         buttons={modal.buttons}
       />
 
-      {/* Page Header */}
-      <PageHeader
-        icon={titleIcon}
-        title="Title Master"
-        subtitle="Manage titles and metadata"
-      />
+      <div className="flex-shrink-0">
+        <PageHeader
+          icon={titleIcon}
+          title="Title Master"
+          subtitle="Manage titles and metadata"
+          compact
+        />
+      </div>
 
-      {/* Main Content Card */}
-      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 space-y-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <div className="w-[1610px]">
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+        <div className="p-3 flex-1 min-h-0 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700">Titles</span>
+              <span>
+                {totalCount === 0 ? 'No records' : `Showing ${startIndex}-${endIndex} of ${totalCount}`}
+              </span>
+              {isFiltering && <span className="text-gray-500">Filter: "{searchQuery}"</span>}
+              {isLoading && <span className="text-blue-600">Loading...</span>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-gray-500">Search</label>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Title"
+                  className="h-7 w-48 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  disabled={isLoading}
+                />
+              </div>
+              {showSearchHint && <span className="text-gray-400">Type at least 2 letters</span>}
+              <label className="text-gray-500">Rows</label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700"
+                disabled={isLoading}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1 || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200">
+            <div className="min-w-[1610px]">
               <table className="w-full table-fixed border-collapse">
                 <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
                   <tr>
-                    <th className="w-[100px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Code</th>
-                    <th className="w-[350px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Title</th>
-                    <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Language</th>
-                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Author</th>
-                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Publisher</th>
-                    <th className="w-[200px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Translator</th>
-                    <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Category</th>
-                    <th className="w-[175px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Sub-Category</th>
-                    <th className="w-[120px] px-4 py-3 text-left text-sm font-semibold tracking-wide">ISBN No.</th>
-                    <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold tracking-wide">R O Level</th>
-                    <th className="w-[80px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Dn Level</th>
-                    <th className="w-[300px] px-4 py-3 text-left text-sm font-semibold tracking-wide">Title (Mal)</th>
-                    <th className="w-[40px] px-4 py-3 text-center text-sm font-semibold">Action</th>
+                    <th className="w-[100px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Code</th>
+                    <th className="w-[350px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Title</th>
+                    <th className="w-[120px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Language</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Author</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Publisher</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Translator</th>
+                    <th className="w-[120px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Category</th>
+                    <th className="w-[175px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Sub-Category</th>
+                    <th className="w-[120px] px-3 py-2 text-left text-sm font-semibold tracking-wide">ISBN No.</th>
+                    <th className="w-[80px] px-3 py-2 text-left text-sm font-semibold tracking-wide">R O Level</th>
+                    <th className="w-[80px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Dn Level</th>
+                    <th className="w-[300px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Title (Mal)</th>
+                    <th className="w-[40px] px-3 py-2 text-center text-sm font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {items.map((item, index) => {
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan="13" className="px-4 py-8 text-center text-gray-400">
+                        {isLoading ? 'Loading titles...' : 'No titles found. Add one below.'}
+                      </td>
+                    </tr>
+                  ) : (
+                  items.map((item, index) => {
                 const keyFor = (field) => `${item.id}:${field}`;
                 return (
                   <tr key={item.id} className="hover:bg-blue-50/50 transition-colors animate-fade-in" style={{ animationDelay: `${index * 30}ms` }}>
-                    <td className="p-1 text-sm border border-gray-300 w-[100px] bg-gray-50">
+                    <td className="px-3 py-2 w-[100px]">
                       <input
                         type="text"
                         value={item.code || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'code', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, code: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[300px] bg-gray-50">
+                    <td className="px-3 py-2 w-[300px]">
                       <input
                         type="text"
                         value={item.title || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'title', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, title: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[120px] bg-gray-50">
+                    <td className="px-3 py-2 w-[120px]">
                       <input
                         type="text"
                         value={item.language || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'language', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, language: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
 
                     {/* Author (suggestion) */}
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
+                    <td className="px-3 py-2 w-[150px]">
                       <div className="relative">
                         <input
                           type="text"
                           value={item.author || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'author', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'author')}
-                          className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
                         {rowShowSuggestions[keyFor('author')] &&
@@ -661,14 +760,14 @@ export default function TitleMaster() {
                     </td>
 
                     {/* Publisher (suggestion) */}
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
+                    <td className="px-3 py-2 w-[150px]">
                       <div className="relative">
                         <input
                           type="text"
                           value={item.publisher || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'publisher', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'publisher')}
-                          className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
                         {rowShowSuggestions[keyFor('publisher')] &&
@@ -693,14 +792,14 @@ export default function TitleMaster() {
                     </td>
 
                     {/* Translator (suggestion) */}
-                    <td className="p-1 text-sm border border-gray-300 w-[150px] bg-gray-50">
+                    <td className="px-3 py-2 w-[150px]">
                       <div className="relative">
                         <input
                           type="text"
                           value={item.translator || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'translator', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'translator')}
-                          className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
                         {rowShowSuggestions[keyFor('translator')] &&
@@ -725,14 +824,14 @@ export default function TitleMaster() {
                     </td>
 
                     {/* Category (suggestion) */}
-                    <td className="p-1 text-sm border border-gray-300 w-[120px] bg-gray-50">
+                    <td className="px-3 py-2 w-[120px]">
                       <div className="relative">
                         <input
                           type="text"
                           value={item.category || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'category', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'category')}
-                          className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
                         {rowShowSuggestions[keyFor('category')] &&
@@ -757,14 +856,14 @@ export default function TitleMaster() {
                     </td>
 
                     {/* Sub-Category (suggestion) */}
-                    <td className="p-1 text-sm border border-gray-300 w-[120px] bg-gray-50">
+                    <td className="px-3 py-2 w-[120px]">
                       <div className="relative">
                         <input
                           type="text"
                           value={item.subCategory || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'subCategory', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'subCategory')}
-                          className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
                         {rowShowSuggestions[keyFor('subCategory')] &&
@@ -788,43 +887,43 @@ export default function TitleMaster() {
                       </div>
                     </td>
 
-                    <td className="p-1 text-sm border border-gray-300 w-[120px] bg-gray-50">
+                    <td className="px-3 py-2 w-[120px]">
                       <input
                         type="text"
                         value={item.isbnNo || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'isbnNo', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, isbnNo: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[80px] bg-gray-50">
+                    <td className="px-3 py-2 w-[80px]">
                       <input
                         type="number"
                         value={item.roLevel || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'roLevel', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, roLevel: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[80px] bg-gray-50">
+                    <td className="px-3 py-2 w-[80px]">
                       <input
                         type="number"
                         value={item.dnLevel || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'dnLevel', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, dnLevel: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
-                    <td className="p-1 text-sm border border-gray-300 w-[200px] bg-gray-50">
+                    <td className="px-3 py-2 w-[200px]">
                       <input
                         type="text"
                         value={item.titleMal || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'titleMal', e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, titleMal: e.target.value })}
-                        className="border p-1 rounded w-full text-sm focus:ring-2 focus:ring-blue-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
-                    <td className="p-2 text-sm text-center border border-gray-300 w-[40px] bg-red-50">
+                    <td className="px-3 py-2 text-center w-[40px]">
                       <button
                         onClick={() => handleDeleteItem(item.id)}
                         className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -835,65 +934,77 @@ export default function TitleMaster() {
                     </td>
                   </tr>
                 );
-              })}
+              })
+            )}
             </tbody>
           </table>
         </div>
       </div>
+        </div>
 
-      <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="relative">
+      <div className="border-t border-gray-200 bg-gray-50/50 px-3 py-2 flex-shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
+          <div>
             <input
               type="text"
               name="code"
               value={formData.code}
               onChange={handleInputChange}
               placeholder="Code"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
-          <div className="relative col-span-3">
+          <div className="md:col-span-2 lg:col-span-2">
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
               placeholder="Title"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
-          <div className="relative">
+          <div>
             <input
               type="text"
               name="sapCode"
               value={formData.sapCode}
               onChange={handleInputChange}
               placeholder="SAP Code"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
-          <div className="relative">
+          <div>
             <input
               type="number"
               name="tax"
               value={formData.tax}
               onChange={handleInputChange}
               placeholder="Tax %"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               step="0.01"
               autoComplete="off"
             />
           </div>
-          <div className="relative">
+          <div>
             <select
               name="location"
               value={formData.location}
               onChange={handleInputChange}
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
             >
               <option value="" disabled>Location</option>
               <option value="Location1">Location1</option>
@@ -901,64 +1012,73 @@ export default function TitleMaster() {
               <option value="Location3">Location3</option>
             </select>
           </div>
-          <div className="relative">
+          <div>
             <select
               name="language"
               value={formData.language}
               onChange={handleInputChange}
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
             >
               <option value="" disabled>Language</option>
               <option value="English">English</option>
               <option value="Malayalam">Malayalam</option>
             </select>
           </div>
-          <div className="relative col-span-3">
+          <div className="md:col-span-2 lg:col-span-2">
             <input
               type="text"
               name="titleMal"
               value={formData.titleMal}
               onChange={handleInputChange}
               placeholder="Title (Mal)"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
-          <div className="relative">
+          <div>
             <input
               type="text"
               name="isbnNo"
               value={formData.isbnNo}
               onChange={handleInputChange}
               placeholder="ISBN No."
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
-          <div className="relative">
+          <div>
             <input
               type="number"
               name="roLevel"
               value={formData.roLevel}
               onChange={handleInputChange}
               placeholder="R O Level"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
-          <div className="relative">
+          <div>
             <input
               type="number"
               name="dnLevel"
               value={formData.dnLevel}
               onChange={handleInputChange}
               placeholder="Dn Level"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
           </div>
 
-          {/* Form suggestion inputs */}
           <div className="relative">
             <input
               type="text"
@@ -967,11 +1087,13 @@ export default function TitleMaster() {
               onChange={handleInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'category')}
               placeholder="Category"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
             {showSuggestions.category && suggestions.category.length > 0 && formData.category.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full max-w-[150px] shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                 {suggestions.category.map((suggestion, index) => (
                   <li
                     key={suggestion.id}
@@ -986,7 +1108,7 @@ export default function TitleMaster() {
             )}
           </div>
 
-          <div className="relative col-span-2">
+          <div className="relative md:col-span-2 lg:col-span-2">
             <input
               type="text"
               name="subCategory"
@@ -994,11 +1116,13 @@ export default function TitleMaster() {
               onChange={handleInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'subCategory')}
               placeholder="Sub-Category"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
             {showSuggestions.subCategory && suggestions.subCategory.length > 0 && formData.subCategory.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full max-w-[150px] shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                 {suggestions.subCategory.map((suggestion, index) => (
                   <li
                     key={suggestion.id}
@@ -1013,7 +1137,7 @@ export default function TitleMaster() {
             )}
           </div>
 
-          <div className="relative col-span-2">
+          <div className="relative md:col-span-2 lg:col-span-2">
             <input
               type="text"
               name="author"
@@ -1021,11 +1145,13 @@ export default function TitleMaster() {
               onChange={handleInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'author')}
               placeholder="Author"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
             {showSuggestions.author && suggestions.author.length > 0 && formData.author.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full max-w-[150px] shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                 {suggestions.author.map((suggestion, index) => (
                   <li
                     key={suggestion.id}
@@ -1040,7 +1166,7 @@ export default function TitleMaster() {
             )}
           </div>
 
-          <div className="relative col-span-2">
+          <div className="relative md:col-span-2 lg:col-span-2">
             <input
               type="text"
               name="publisher"
@@ -1048,11 +1174,13 @@ export default function TitleMaster() {
               onChange={handleInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'publisher')}
               placeholder="Publisher"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
             {showSuggestions.publisher && suggestions.publisher.length > 0 && formData.publisher.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full max-w-[150px] shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                 {suggestions.publisher.map((suggestion, index) => (
                   <li
                     key={suggestion.id}
@@ -1067,7 +1195,7 @@ export default function TitleMaster() {
             )}
           </div>
 
-          <div className="relative col-span-2">
+          <div className="relative md:col-span-2 lg:col-span-2">
             <input
               type="text"
               name="translator"
@@ -1075,11 +1203,13 @@ export default function TitleMaster() {
               onChange={handleInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'translator')}
               placeholder="Translator"
-              className="border p-2 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               autoComplete="off"
             />
             {showSuggestions.translator && suggestions.translator.length > 0 && formData.translator.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full max-w-[150px] shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
                 {suggestions.translator.map((suggestion, index) => (
                   <li
                     key={suggestion.id}
@@ -1094,56 +1224,34 @@ export default function TitleMaster() {
             )}
           </div>
 
-          <div className="relative">
+          <div>
             <input
               type="number"
               name="mrp"
               value={formData.mrp}
               onChange={handleInputChange}
               placeholder="MRP"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
+                         transition-all duration-200 input-premium"
               step="0.01"
               autoComplete="off"
             />
           </div>
 
-          <button
-            onClick={handleAddItem}
-            className="bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 text-sm font-medium w-full max-w-[150px]"
-          >
-            ADD TITLE
-          </button>
-
-          <div className="relative">
-            <input
-              type="text"
-              value={loadItem}
-              onChange={handleLoadItemChange}
-              placeholder="Titles starting with"
-              className="border p-2 rounded-lg text-sm w-full max-w-[150px] focus:ring-2 focus:ring-blue-300"
-              autoComplete="off"
-            />
+          <div className="flex justify-end md:col-span-2 lg:col-span-1">
+            <button
+              onClick={handleAddItem}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
+                         text-white text-sm font-medium shadow-lg shadow-blue-500/25
+                         hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Title
+            </button>
           </div>
-          <button
-            onClick={handleLoadItem}
-            className="bg-green-600 text-white rounded-lg p-2 hover:bg-green-700 text-sm font-medium w-full max-w-[150px]"
-          >
-            LOAD TITLE
-          </button>
-        </div>
-      </div>
-      </div>
-    </div>
-
-    {/* Info card */}
-    <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
-      <div className="flex items-start gap-3">
-        <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
-          <p className="text-xs text-blue-600 mt-0.5">Press Enter to save inline edits instantly.</p>
         </div>
       </div>
     </div>

@@ -15,7 +15,12 @@ export default function AgentsMaster() {
     contact: '',
     email: ''
   });
-  const [loadAgents, setLoadAgents] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState({
     isOpen: false,
     message: '',
@@ -24,9 +29,20 @@ export default function AgentsMaster() {
   });
   const [deleteAgentId, setDeleteAgentId] = useState(null);
 
-    useEffect(() => {
+  useEffect(() => {
     fetchAllAgents();
-  }, []);
+  }, [page, pageSize, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const nextQuery = trimmed.length >= 2 ? trimmed : '';
+      setPage((prev) => (prev === 1 ? prev : 1));
+      setSearchQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -106,25 +122,17 @@ export default function AgentsMaster() {
     try {
       const response = await api.post('/auth/agent-create/', payload);
       console.log('Agent created:', response.data);
-      const newItem = {
-        id: response.data.id,
-        agentName: formData.agentName,
-        address1: formData.address1 || '',
-        address2: formData.address2 || '',
-        city: formData.city || '',
-        telephone: formData.telephone || '',
-        contact: formData.contact || '',
-        email: formData.email || ''
-      };
-      console.log('Adding agent:', newItem);
-      setItems((prev) => [...prev, newItem]);
-      console.log('Current items state:', [...items, newItem]);
       setModal({
         isOpen: true,
         message: 'Agent added successfully!',
         type: 'success',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+      if (page === 1) {
+        fetchAllAgents({ page: 1, pageSize });
+      } else {
+        setPage(1);
+      }
       setFormData({
         agentName: '',
         address1: '',
@@ -160,7 +168,7 @@ export default function AgentsMaster() {
             try {
               const response = await api.delete(`/auth/agent-delete/${id}/`);
               console.log('Agent deleted:', response.data);
-              setItems((prev) => prev.filter((item) => item.id !== id));
+              await fetchAllAgents({ page, pageSize });
               setModal({
                 isOpen: true,
                 message: 'Agent deleted successfully!',
@@ -192,11 +200,34 @@ export default function AgentsMaster() {
     });
   };
 
-  const fetchAllAgents = async () => {
+  const fetchAllAgents = async (options = {}) => {
+    const pageToUse = options.page ?? page;
+    const pageSizeToUse = options.pageSize ?? pageSize;
+    const queryToUse = options.query ?? searchQuery;
+    const trimmedQuery = (queryToUse || '').trim();
+
+    setIsLoading(true);
     try {
-      const response = await api.get(`/auth/agents-master-search/`);
+      const response = await api.get(`/auth/agents-master-search/`, {
+        params: {
+          page: pageToUse,
+          page_size: pageSizeToUse,
+          ...(trimmedQuery.length >= 2 ? { q: trimmedQuery } : {})
+        }
+      });
       console.log('Agents fetched:', response.data);
-      const fetchedItems = response.data.map((item) => ({
+      const payload = response.data || {};
+      const results = Array.isArray(payload) ? payload : (payload.results || []);
+      const total = Array.isArray(payload) ? results.length : (payload.total ?? results.length);
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSizeToUse));
+
+      if (pageToUse > nextTotalPages) {
+        setTotalCount(total);
+        setPage(nextTotalPages);
+        return;
+      }
+
+      const fetchedItems = results.map((item) => ({
         id: item.id,
         agentName: item.agent_nm || '',
         address1: item.address1 || '',
@@ -208,12 +239,7 @@ export default function AgentsMaster() {
       }));
       setItems(fetchedItems);
       console.log('Updated items state:', fetchedItems);
-      setModal({
-        isOpen: true,
-        message: `Loaded ${fetchedItems.length} agent(s)`,
-        type: 'success',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
+      setTotalCount(total);
     } catch (error) {
       console.error('Error fetching agents:', error);
       setModal({
@@ -222,6 +248,8 @@ export default function AgentsMaster() {
         type: 'error',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -232,8 +260,30 @@ export default function AgentsMaster() {
     </svg>
   );
 
+  const pageSizeOptions = [50, 100, 200];
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(totalCount, page * pageSize);
+  const isFiltering = searchQuery.trim().length >= 2;
+  const showSearchHint = searchInput.trim().length === 1;
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.min(Math.max(nextPage, 1), totalPages);
+    if (clamped !== page) {
+      setPage(clamped);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const nextSize = parseInt(e.target.value, 10) || 100;
+    if (nextSize !== pageSize) {
+      setPage(1);
+      setPageSize(nextSize);
+    }
+  };
+
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6 flex flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -241,166 +291,210 @@ export default function AgentsMaster() {
         buttons={modal.buttons}
       />
 
-      {/* Page Header */}
-      <PageHeader
-        icon={agentIcon}
-        title="Agents Master"
-        subtitle="Manage agent information and contacts"
-      />
+      <div className="flex-shrink-0">
+        <PageHeader
+          icon={agentIcon}
+          title="Agents Master"
+          subtitle="Manage agent information and contacts"
+          compact
+        />
+      </div>
 
       {/* Main Content Card */}
-      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
         {/* Table Section */}
-        <div className="p-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="w-full min-w-[800px]">
-              <thead>
-                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[200px]">
-                    Agent Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
-                    Address 1
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
-                    Address 2
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[100px]">
-                    City
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[120px]">
-                    Telephone
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[120px]">
-                    Contact
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[200px]">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold w-16">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {items.length === 0 ? (
+        <div className="p-3 flex-1 min-h-0 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700">Agents</span>
+              <span>
+                {totalCount === 0 ? 'No records' : `Showing ${startIndex}-${endIndex} of ${totalCount}`}
+              </span>
+              {isFiltering && <span className="text-gray-500">Filter: "{searchQuery}"</span>}
+              {isLoading && <span className="text-blue-600">Loading...</span>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-gray-500">Search</label>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Agent name"
+                  className="h-7 w-48 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  disabled={isLoading}
+                />
+              </div>
+              {showSearchHint && <span className="text-gray-400">Type at least 2 letters</span>}
+              <label className="text-gray-500">Rows</label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700"
+                disabled={isLoading}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1 || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200">
+            <div className="min-w-[900px]">
+              <table className="w-full table-fixed border-collapse">
+                <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
                   <tr>
-                    <td colSpan="8" className="px-4 py-8 text-center text-gray-400">
-                      No agents found. Add one below.
-                    </td>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Agent Name</th>
+                    <th className="w-[150px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Address 1</th>
+                    <th className="w-[150px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Address 2</th>
+                    <th className="w-[100px] px-3 py-2 text-left text-sm font-semibold tracking-wide">City</th>
+                    <th className="w-[120px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Telephone</th>
+                    <th className="w-[120px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Contact</th>
+                    <th className="w-[200px] px-3 py-2 text-left text-sm font-semibold tracking-wide">Email</th>
+                    <th className="w-[60px] px-3 py-2 text-center text-sm font-semibold">Action</th>
                   </tr>
-                ) : (
-                  items.map((item, index) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-blue-50/50 transition-colors animate-fade-in"
-                      style={{ animationDelay: `${index * 30}ms` }}
-                    >
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.agentName || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'agentName', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, agentName: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="Enter agent name"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.address1 || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'address1', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address1: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="Address 1"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.address2 || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'address2', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address2: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="Address 2"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.city || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'city', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, city: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="City"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.telephone || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'telephone', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, telephone: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="Telephone"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.contact || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'contact', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, contact: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="Contact"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.email || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'email', e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, email: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
-                                     focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
-                                     transition-all duration-200"
-                          placeholder="Email"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() => handleDeleteAgent(item.id)}
-                          className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500
-                                     hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="Delete agent"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="px-4 py-8 text-center text-gray-400">
+                        {isLoading ? 'Loading agents...' : 'No agents found. Add one below.'}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    items.map((item, index) => (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-blue-50/50 transition-colors animate-fade-in"
+                        style={{ animationDelay: `${index * 30}ms` }}
+                      >
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.agentName || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'agentName', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, agentName: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="Agent name"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.address1 || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'address1', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address1: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="Address 1"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.address2 || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'address2', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address2: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="Address 2"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.city || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'city', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, city: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="City"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.telephone || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'telephone', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, telephone: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="Telephone"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.contact || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'contact', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, contact: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="Contact"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.email || ''}
+                            onChange={(e) => handleTableInputChange(item.id, 'email', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, email: e.target.value })}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
+                                       transition-all duration-200"
+                            placeholder="Email"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            onClick={() => handleDeleteAgent(item.id)}
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500
+                                       hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Delete agent"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
         {/* Add Agent Form */}
-        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="border-t border-gray-200 bg-gray-50/50 px-3 py-2 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             <div className="md:col-span-2">
               <input
                 type="text"
@@ -408,7 +502,7 @@ export default function AgentsMaster() {
                 value={formData.agentName}
                 onChange={handleInputChange}
                 placeholder="Enter agent name"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -422,7 +516,7 @@ export default function AgentsMaster() {
                 value={formData.address1}
                 onChange={handleInputChange}
                 placeholder="Address 1"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -435,7 +529,7 @@ export default function AgentsMaster() {
                 value={formData.address2}
                 onChange={handleInputChange}
                 placeholder="Address 2"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -448,7 +542,7 @@ export default function AgentsMaster() {
                 value={formData.city}
                 onChange={handleInputChange}
                 placeholder="City"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -461,7 +555,7 @@ export default function AgentsMaster() {
                 value={formData.telephone}
                 onChange={handleInputChange}
                 placeholder="Telephone"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -474,7 +568,7 @@ export default function AgentsMaster() {
                 value={formData.contact}
                 onChange={handleInputChange}
                 placeholder="Contact"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -487,7 +581,7 @@ export default function AgentsMaster() {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Email address"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -496,7 +590,7 @@ export default function AgentsMaster() {
             <div className="flex justify-end">
               <button
                 onClick={handleAddAgent}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+                className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
                            text-white text-sm font-medium shadow-lg shadow-blue-500/25
                            hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
               >
@@ -510,18 +604,6 @@ export default function AgentsMaster() {
         </div>
       </div>
 
-      {/* Info card */}
-      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
-            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing agent details to save changes instantly.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

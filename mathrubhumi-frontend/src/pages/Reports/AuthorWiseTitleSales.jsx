@@ -82,9 +82,11 @@ export default function AuthorWiseTitleSales() {
                 },
             });
             if (requestId !== authorRequestId.current) return;
-            const results = Array.isArray(response.data) ? response.data : [];
+            const payload = response.data || {};
+            const results = Array.isArray(payload) ? payload : (payload.results || []);
+            const total = Array.isArray(payload) ? results.length : (payload.total ?? results.length);
             setAuthorSuggestions((prev) => (append ? [...prev, ...results] : results));
-            setAuthorHasMore(results.length === AUTHOR_PAGE_SIZE);
+            setAuthorHasMore(page * AUTHOR_PAGE_SIZE < total);
         } catch (error) {
             if (requestId !== authorRequestId.current) return;
             if (!append) {

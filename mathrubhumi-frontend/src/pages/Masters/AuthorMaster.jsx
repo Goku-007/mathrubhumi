@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
@@ -16,7 +16,12 @@ export default function AuthorMaster() {
     phone: '',
     city: ''
   });
-  const [loadAuthor, setLoadAuthor] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState({
     isOpen: false,
     message: '',
@@ -27,18 +32,23 @@ export default function AuthorMaster() {
 
   useEffect(() => {
     fetchAllAuthors();
-  }, []);
+  }, [page, pageSize, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const nextQuery = trimmed.length >= 2 ? trimmed : '';
+      setPage((prev) => (prev === 1 ? prev : 1));
+      setSearchQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     console.log(`Input changed: ${name} = ${value}`);
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleLoadAuthorChange = (e) => {
-    const value = e.target.value;
-    console.log(`Load author input changed: ${value}`);
-    setLoadAuthor(value);
   };
 
   const handleTableInputChange = (id, field, value) => {
@@ -115,26 +125,17 @@ export default function AuthorMaster() {
     try {
       const response = await api.post('/auth/author-create/', payload);
       console.log('Author created:', response.data);
-      const newItem = {
-        id: parseInt(formData.code),
-        code: formData.code,
-        name: formData.name,
-        contact: formData.contact,
-        email: formData.email,
-        address1: formData.address1,
-        address2: formData.address2,
-        phone: formData.phone,
-        city: formData.city
-      };
-      console.log('Adding author:', newItem);
-      setItems((prev) => [...prev, newItem]);
-      console.log('Current items state:', [...items, newItem]);
       setModal({
         isOpen: true,
         message: 'Author added successfully!',
         type: 'success',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+      if (page === 1) {
+        fetchAllAuthors({ page: 1, pageSize });
+      } else {
+        setPage(1);
+      }
     } catch (error) {
       console.error('Error creating author:', error);
       setModal({
@@ -158,37 +159,36 @@ export default function AuthorMaster() {
     });
   };
 
-  const handleLoadAuthor = async () => {
-    if (loadAuthor.length < 3) {
-      console.log('Validation failed: loadAuthor less than 3 characters');
-      setModal({
-        isOpen: true,
-        message: 'Please enter at least 3 characters to search',
-        type: 'error',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
-      return;
-    }
+  const fetchAllAuthors = async (options = {}) => {
+    const pageToUse = options.page ?? page;
+    const pageSizeToUse = options.pageSize ?? pageSize;
+    const queryToUse = options.query ?? searchQuery;
+    const trimmedQuery = (queryToUse || '').trim();
 
-    const fetchCandidates = async () => {
-      // Primary endpoint; uses q param only when user typed >=2 chars
-      try {
-        return await api.get(`/auth/author-master-search/?q=${encodeURIComponent(loadAuthor)}`);
-      } catch (err) {
-        // Fallback to legacy/plural route if available
-        if (err?.response?.status === 404 || err?.response?.status === 400) {
-          return await api.get(`/auth/authors-master-search/?q=${encodeURIComponent(loadAuthor)}`);
-        }
-        throw err;
-      }
-    };
-
+    setIsLoading(true);
     try {
-      const response = await fetchCandidates();
+      const response = await api.get(`/auth/author-master-search/`, {
+        params: {
+          page: pageToUse,
+          page_size: pageSizeToUse,
+          ...(trimmedQuery.length >= 2 ? { q: trimmedQuery } : {})
+        }
+      });
       console.log('Authors fetched:', response.data);
-      const fetchedItems = response.data.map((item) => ({
+      const payload = response.data || {};
+      const results = Array.isArray(payload) ? payload : (payload.results || []);
+      const total = Array.isArray(payload) ? results.length : (payload.total ?? results.length);
+      const nextTotalPages = Math.max(1, Math.ceil(total / pageSizeToUse));
+
+      if (pageToUse > nextTotalPages) {
+        setTotalCount(total);
+        setPage(nextTotalPages);
+        return;
+      }
+
+      const fetchedItems = results.map((item) => ({
         id: item.id,
-        code: item.id.toString(),
+        code: item.id?.toString() || '',
         name: item.author_nm || '',
         contact: item.contact || '',
         email: item.mail_id || '',
@@ -198,13 +198,8 @@ export default function AuthorMaster() {
         city: item.city || ''
       }));
       setItems(fetchedItems);
+      setTotalCount(total);
       console.log('Updated items state:', fetchedItems);
-      setModal({
-        isOpen: true,
-        message: `Loaded ${fetchedItems.length} author(s)`,
-        type: 'success',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
     } catch (error) {
       console.error('Error fetching authors:', error);
       setModal({
@@ -213,6 +208,8 @@ export default function AuthorMaster() {
         type: 'error',
         buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -228,7 +225,7 @@ export default function AuthorMaster() {
           onClick: async () => {
             try {
               await api.delete(`/auth/author-delete/${id}/`);
-              setItems((prev) => prev.filter((item) => item.id !== id));
+              await fetchAllAuthors({ page, pageSize });
               setModal({
                 isOpen: true,
                 message: 'Author deleted successfully!',
@@ -259,48 +256,6 @@ export default function AuthorMaster() {
     });
   };
 
-  const fetchAllAuthors = async () => {
-    try {
-      let response;
-      try {
-        // Some backends enforce a minimum search length; use a 3-char seed
-        response = await api.get(`/auth/author-master-search/?q=aaa`);
-      } catch (err) {
-        if (err?.response?.status === 404 || err?.response?.status === 400) {
-          // Fallback to legacy/plural route
-          response = await api.get(`/auth/authors-master-search/?q=aaa`);
-        } else {
-          throw err;
-        }
-      }
-      const fetchedItems = response.data.map((item) => ({
-        id: item.id,
-        code: item.id.toString(),
-        name: item.author_nm || '',
-        contact: item.contact || '',
-        email: item.mail_id || '',
-        address1: item.address1 || '',
-        address2: item.address2 || '',
-        phone: item.telephone || '',
-        city: item.city || ''
-      }));
-      setItems(fetchedItems);
-      setModal({
-        isOpen: true,
-        message: `Loaded ${fetchedItems.length} author(s)`,
-        type: 'success',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
-    } catch (error) {
-      setModal({
-        isOpen: true,
-        message: `Failed to load authors: ${error.response?.data?.error || error.message}`,
-        type: 'error',
-        buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
-      });
-    }
-  };
-
   // Author icon for header
   const authorIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,8 +263,30 @@ export default function AuthorMaster() {
     </svg>
   );
 
+  const pageSizeOptions = [50, 100, 200];
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(totalCount, page * pageSize);
+  const isFiltering = searchQuery.trim().length >= 2;
+  const showSearchHint = searchInput.trim().length === 1;
+
+  const handlePageChange = (nextPage) => {
+    const clamped = Math.min(Math.max(nextPage, 1), totalPages);
+    if (clamped !== page) {
+      setPage(clamped);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    const nextSize = parseInt(e.target.value, 10) || 100;
+    if (nextSize !== pageSize) {
+      setPage(1);
+      setPageSize(nextSize);
+    }
+  };
+
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-4 sm:p-6 flex flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -318,45 +295,104 @@ export default function AuthorMaster() {
       />
 
       {/* Page Header */}
-      <PageHeader
-        icon={authorIcon}
-        title="Authors Master"
-        subtitle="Manage author information and contact details"
-      />
+      <div className="flex-shrink-0">
+        <PageHeader
+          icon={authorIcon}
+          title="Authors Master"
+          subtitle="Manage author information and contact details"
+          compact
+        />
+      </div>
 
       {/* Main Content Card */}
-      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
         {/* Table Section */}
-        <div className="p-4">
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="w-full min-w-[1000px]">
+        <div className="p-3 flex-1 min-h-0 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700">Authors</span>
+              <span>
+                {totalCount === 0 ? 'No records' : `Showing ${startIndex}-${endIndex} of ${totalCount}`}
+              </span>
+              {isFiltering && <span className="text-gray-500">Filter: "{searchQuery}"</span>}
+              {isLoading && <span className="text-blue-600">Loading...</span>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-gray-500">Search</label>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Author name"
+                  className="h-7 w-48 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  disabled={isLoading}
+                />
+              </div>
+              {showSearchHint && <span className="text-gray-400">Type at least 2 letters</span>}
+              <label className="text-gray-500">Rows</label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700"
+                disabled={isLoading}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1 || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages || isLoading}
+                className="h-7 rounded-md border border-gray-200 bg-white px-2 text-xs text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full min-w-[1100px]">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[80px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[80px]">
                     Code
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[200px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[200px]">
                     Author Name
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[150px]">
                     Contact
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[200px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[200px]">
                     Email
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[150px]">
                     Address 1
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[150px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[150px]">
                     Address 2
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[120px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[120px]">
                     Phone
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold tracking-wide w-[100px]">
+                  <th className="px-3 py-2 text-left text-sm font-semibold tracking-wide w-[100px]">
                     City
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold w-16">
+                  <th className="px-3 py-2 text-center text-sm font-semibold w-16">
                     Action
                   </th>
                 </tr>
@@ -365,7 +401,7 @@ export default function AuthorMaster() {
                 {items.length === 0 ? (
                   <tr>
                     <td colSpan="9" className="px-4 py-8 text-center text-gray-400">
-                      No authors found. Add one below.
+                      {isLoading ? 'Loading authors...' : 'No authors found. Add one below.'}
                     </td>
                   </tr>
                 ) : (
@@ -375,103 +411,103 @@ export default function AuthorMaster() {
                       className="hover:bg-blue-50/50 transition-colors animate-fade-in"
                       style={{ animationDelay: `${index * 30}ms` }}
                     >
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.code || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'code', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, code: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Code"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.name || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'name', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, name: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Author name"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.contact || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'contact', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, contact: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Contact"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.email || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'email', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, email: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Email"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.address1 || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'address1', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address1: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Address 1"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.address2 || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'address2', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, address2: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Address 2"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.phone || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'phone', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, phone: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="Phone"
                         />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <input
                           type="text"
                           value={item.city || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'city', e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, city: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                           placeholder="City"
                         />
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-3 py-2 text-center">
                         <button
                           onClick={() => handleDeleteAuthor(item.id)}
                           className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500
@@ -490,8 +526,8 @@ export default function AuthorMaster() {
         </div>
 
         {/* Add Author Form */}
-        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-3 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             <div>
               <input
                 type="text"
@@ -499,7 +535,7 @@ export default function AuthorMaster() {
                 value={formData.code}
                 onChange={handleInputChange}
                 placeholder="Author code"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -512,7 +548,7 @@ export default function AuthorMaster() {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Author name"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -526,7 +562,7 @@ export default function AuthorMaster() {
                 value={formData.contact}
                 onChange={handleInputChange}
                 placeholder="Contact number"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -539,7 +575,7 @@ export default function AuthorMaster() {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Email address"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -552,7 +588,7 @@ export default function AuthorMaster() {
                 value={formData.address1}
                 onChange={handleInputChange}
                 placeholder="Address line 1"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -565,7 +601,7 @@ export default function AuthorMaster() {
                 value={formData.address2}
                 onChange={handleInputChange}
                 placeholder="Address line 2"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -578,7 +614,7 @@ export default function AuthorMaster() {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="Phone"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -591,7 +627,7 @@ export default function AuthorMaster() {
                 value={formData.city}
                 onChange={handleInputChange}
                 placeholder="City"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
                 autoComplete="off"
@@ -600,7 +636,7 @@ export default function AuthorMaster() {
             <div className="flex justify-end">
               <button
                 onClick={handleAddAuthor}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
                            text-white text-sm font-medium shadow-lg shadow-blue-500/25
                            hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
               >
@@ -610,47 +646,6 @@ export default function AuthorMaster() {
                 Add Author
               </button>
             </div>
-          </div>
-
-          {/* Load Author Section */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={loadAuthor}
-                onChange={handleLoadAuthorChange}
-                placeholder="Search authors..."
-                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
-                           transition-all duration-200 input-premium"
-                autoComplete="off"
-                onKeyDown={(e) => e.key === 'Enter' && handleLoadAuthor()}
-              />
-              <button
-                onClick={handleLoadAuthor}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600
-                           text-white text-sm font-medium shadow-lg shadow-green-500/25
-                           hover:from-green-600 hover:to-emerald-700 active:scale-[0.98] transition-all duration-200"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Load Authors
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Info card */}
-      <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl px-4 py-3">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-800 font-medium">Quick Tip</p>
-            <p className="text-xs text-blue-600 mt-0.5">Press Enter after editing author details to save changes instantly. Use the search to load specific authors.</p>
           </div>
         </div>
       </div>

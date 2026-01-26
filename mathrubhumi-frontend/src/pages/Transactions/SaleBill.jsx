@@ -164,7 +164,7 @@ export default function SaleBillPage() {
       }
       const rect = productInputRef.current.getBoundingClientRect();
       setSuggestionPosition({
-        top: rect.bottom + window.scrollY + 6,
+        top: rect.top + window.scrollY - 6,
         left: rect.left + window.scrollX,
         width: rect.width,
       });
@@ -948,9 +948,9 @@ export default function SaleBillPage() {
   );
 
   const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
-  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
-  const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
+  const inputClasses = "px-2 py-1.5 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const tableInputClasses = "w-full px-2 py-1 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -959,7 +959,7 @@ export default function SaleBillPage() {
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-2 md:p-3 space-y-2 lg:h-[100svh] lg:overflow-hidden lg:flex lg:flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -972,10 +972,12 @@ export default function SaleBillPage() {
         title="Sale Bill"
         subtitle="Create and manage sale bills"
         compact
+        className="mb-0"
       />
 
-      <div className={`${cardClasses} p-3`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
+      <div className="flex flex-col gap-2 lg:flex-1 lg:min-h-0">
+        <div className={`${cardClasses} p-2`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5">
             <input
               type="text"
               name="bill_no"
@@ -1203,352 +1205,351 @@ export default function SaleBillPage() {
               className={`${inputClasses} text-right`}
               step="0.01"
             />
-        </div>
-      </div>
-
-      <div className={`${cardClasses} p-3`}>
-        <div className="flex items-center justify-end px-1 pb-2 text-xs text-gray-600">
-          <span className="font-semibold text-gray-800">Total: {totalValue.toFixed(2)}</span>
-        </div>
-
-        <div className="relative rounded-md border border-gray-100 overflow-hidden">
-          <div className="overflow-auto max-h-[45vh] min-h-[260px]">
-            <table className="w-full min-w-[980px] text-xs">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
-                  <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Item Name</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Qty</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Rate</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Ex Rt</th>
-                  <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Currency</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Tax %</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Disc %</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[110px]">Value</th>
-                  <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-[13px]">
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-xs">
-                      No items added yet. Use the form below to add lines.
-                    </td>
-                  </tr>
-                ) : (
-                  items.map((item, index) => (
-                    <tr key={index} className="hover:bg-blue-50/40 transition-colors">
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="text"
-                          value={item.itemName}
-                          onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                          className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
-                          style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.rate}
-                          onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.exchangeRate}
-                          onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <select
-                          value={item.currency}
-                          onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
-                          className={tableInputClasses}
-                        >
-                          <option value="" disabled>Currency</option>
-                          {currencies.map((cur) => (
-                            <option key={cur.id} value={cur.name}>{cur.name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.tax}
-                          onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          disabled={isEditMode}
-                          step="0.01"
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.discount || 0}
-                          onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
-                          step="0.01"
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right text-xs font-semibold text-gray-700">
-                        {Number(item.value).toFixed(2)}
-                      </td>
-                      <td className="px-2.5 py-1.5 text-center">
-                        <button
-                          onClick={() => handleDeleteItem(index)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="Delete item"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
-      </div>
 
-      <div className={`${cardClasses} p-3 overflow-visible`}>
-        <div className="text-[11px] text-gray-500 mb-2">
-          Tip: prefix with "." for Malayalam titles
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_80px_100px_90px_100px_80px_80px_1fr] gap-2 w-full">
-          <div className="relative">
-            <input
-              type="text"
-              name="itemName"
-              value={formData.itemName}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-              placeholder="Item Name"
-              className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
-              style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-              autoComplete="off"
-              ref={productInputRef}
-            />
+        <div className={`${cardClasses} p-2 flex flex-col gap-1 lg:flex-1 lg:min-h-0`}>
+          <div className="flex items-center justify-end px-0.5 text-[11px] text-gray-600">
+            <span className="font-semibold text-gray-800">Total: {totalValue.toFixed(2)}</span>
           </div>
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            placeholder="Qty"
-            className={tableInputClasses}
-          />
-          <input
-            type="number"
-            name="rate"
-            value={formData.rate}
-            onChange={handleInputChange}
-            placeholder="Rate"
-            className={tableInputClasses}
-          />
-          <input
-            type="number"
-            name="exchangeRate"
-            value={formData.exchangeRate}
-            onChange={handleInputChange}
-            placeholder="Exchange Rate"
-            className={tableInputClasses}
-          />
-          <select
-            name="currency"
-            value={formData.currency}
-            onChange={handleInputChange}
-            className={tableInputClasses}
-          >
-            <option value="" disabled>Currency</option>
-            {currencies.map((cur) => (
-              <option key={cur.id} value={cur.name}>{cur.name}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="tax"
-            value={formData.tax}
-            onChange={handleInputChange}
-            placeholder="Tax %"
-            className={tableInputClasses}
-            disabled={isEditMode || isItemSelected}
-            step="0.01"
-          />
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleInputChange}
-            placeholder="Disc %"
-            className={tableInputClasses}
-            disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
-            step="0.01"
-          />
-          <button
-            onClick={handleAddItem}
-            className={`${actionButtonClasses} w-full justify-center`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Item
-          </button>
-        </div>
-      </div>
 
-      {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
-        <ul
-          className="fixed z-[1200] bg-white border border-gray-200 shadow-xl rounded-lg text-xs max-h-60 overflow-y-auto font-malayalam"
-          style={{
-            top: suggestionPosition.top,
-            left: suggestionPosition.left,
-            width: suggestionPosition.width,
-            fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
-          }}
-        >
-          {suggestions.map((product, index) => (
-            <li
-              key={product.id}
-              id={`suggestion-${index}`}
-              className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
-              onClick={() => handleItemSuggestionClick(product)}
-            >
-              {isDotPrefixed ? product.title_m : product.title}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Batch modal */}
-      {showBatchModal && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Batch Details for:{' '}
-                <span className="text-blue-600">{selectedProduct.title}</span>
-              </h2>
-              <button
-                onClick={() => setShowBatchModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="overflow-auto px-6 py-4">
-              <table className="min-w-full text-sm text-left border">
-                <thead className="bg-gray-100 text-gray-700 uppercase text-xs sticky top-0">
-                  <tr>
-                    <th className="px-4 py-2 border w-40">Supplier</th>
-                    <th className="px-4 py-2 border w-32">Inward Date</th>
-                    <th className="px-4 py-2 border w-24">Rate</th>
-                    <th className="px-4 py-2 border w-32">Exchange Rate</th>
-                    <th className="px-4 py-2 border w-24">Currency</th>
-                    <th className="px-4 py-2 border w-24">Tax %</th>
-                    <th className="px-4 py-2 border w-24">Discount</th>
-                    <th className="px-4 py-2 border w-24">Stock</th>
-                    <th className="px-4 py-2 border w-24">Action</th>
+          <div className="relative rounded-md border border-gray-100 overflow-hidden flex-1 min-h-0">
+            <div className="overflow-auto max-h-[48vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
+              <table className="w-full min-w-[820px] text-[11px]">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
+                    <th className="px-2 py-1.5 text-left font-semibold w-[240px]">Item Name</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Qty</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[80px]">Rate</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[70px]">Ex Rt</th>
+                    <th className="px-2 py-1.5 text-left font-semibold w-[80px]">Currency</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Tax %</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Disc %</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[90px]">Value</th>
+                    <th className="px-2 py-1.5 text-center font-semibold w-[40px]">Action</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {batchData.length > 0 ? (
-                    batchData.map((batch, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 transition duration-100"
-                      >
-                        <td className="px-4 py-2 border">{batch.supplier}</td>
-                        <td className="px-4 py-2 border">{batch.inwardDate}</td>
-                        <td className="px-4 py-2 border">{batch.rate}</td>
-                        <td className="px-4 py-2 border">
-                          {batch.exchangeRate}
+                <tbody className="divide-y divide-gray-100">
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="px-4 py-8 text-center text-gray-400 text-xs">
+                        No items added yet. Use the form below to add lines.
+                      </td>
+                    </tr>
+                  ) : (
+                    items.map((item, index) => (
+                      <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                        <td className="px-2 py-1">
+                          <input
+                            type="text"
+                            value={item.itemName}
+                            onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                            className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                            style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                          />
                         </td>
-                        <td className="px-4 py-2 border">{batch.currency}</td>
-                        <td className="px-4 py-2 border">
-                          {batch.tax !== null && batch.tax !== undefined
-                            ? batch.tax.toFixed(2)
-                            : '0.00'}
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
                         </td>
-                        <td className="px-4 py-2 border">
-                          {batch.inwardDiscount}
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.rate}
+                            onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
                         </td>
-                        <td className="px-4 py-2 border">{batch.stock}</td>
-                        <td className="px-4 py-2 border">
-                          <button
-                            onClick={() => handleBatchSelect(batch)}
-                            className="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700 transition"
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.exchangeRate}
+                            onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <select
+                            value={item.currency}
+                            onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                            className={tableInputClasses}
                           >
-                            Select
+                            <option value="" disabled>Currency</option>
+                            {currencies.map((cur) => (
+                              <option key={cur.id} value={cur.name}>{cur.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.tax}
+                            onChange={(e) => handleItemChange(index, 'tax', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            disabled={isEditMode}
+                            step="0.01"
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.discount || 0}
+                            onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
+                            step="0.01"
+                          />
+                        </td>
+                        <td className="px-2 py-1 text-right text-xs font-semibold text-gray-700">
+                          {Number(item.value).toFixed(2)}
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          <button
+                            onClick={() => handleDeleteItem(index)}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Delete item"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </tr>
                     ))
-                  ) : (
-                    <tr>
-                      <td colSpan="8" className="text-center text-gray-500 py-6">
-                        No batch data found for this item.
-                      </td>
-                    </tr>
                   )}
                 </tbody>
               </table>
             </div>
-            <div className="px-6 py-3 border-t text-right">
-              <button
-                onClick={() => setShowBatchModal(false)}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
-      )}
 
-      <div className={`${cardClasses} p-3`}>
-        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
-          <div className="flex flex-1 flex-col sm:flex-row gap-2">
+        <div className={`${cardClasses} p-2 overflow-visible`}>
+          <div className="grid grid-cols-[240px_60px_80px_70px_80px_60px_60px_1fr] gap-1.5 w-full overflow-x-auto relative z-0">
+            <div className="relative">
+              <input
+                type="text"
+                name="itemName"
+                value={formData.itemName}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'itemName')}
+                placeholder="Item Name"
+                className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
+                style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                autoComplete="off"
+                ref={productInputRef}
+              />
+            </div>
             <input
-              type="text"
-              value={saleIdToLoad}
-              onChange={(e) => setSaleIdToLoad(e.target.value)}
-              placeholder="Sale ID"
-              className={`${inputClasses} w-full sm:w-60`}
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              placeholder="Qty"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="rate"
+              value={formData.rate}
+              onChange={handleInputChange}
+              placeholder="Rate"
+              className={tableInputClasses}
+            />
+            <input
+              type="number"
+              name="exchangeRate"
+              value={formData.exchangeRate}
+              onChange={handleInputChange}
+              placeholder="Exchange Rate"
+              className={tableInputClasses}
+            />
+            <select
+              name="currency"
+              value={formData.currency}
+              onChange={handleInputChange}
+              className={tableInputClasses}
+            >
+              <option value="" disabled>Currency</option>
+              {currencies.map((cur) => (
+                <option key={cur.id} value={cur.name}>{cur.name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              name="tax"
+              value={formData.tax}
+              onChange={handleInputChange}
+              placeholder="Tax %"
+              className={tableInputClasses}
+              disabled={isEditMode || isItemSelected}
+              step="0.01"
+            />
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleInputChange}
+              placeholder="Disc %"
+              className={tableInputClasses}
+              disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
+              step="0.01"
             />
             <button
-              onClick={handleLoadSale}
-              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+              onClick={handleAddItem}
+              className={`${actionButtonClasses} w-full justify-center`}
             >
-              Load Sale
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Item
             </button>
           </div>
+        </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleSubmitSale}
-              className={`${actionButtonClasses} min-w-[160px]`}
-            >
-              {isEditMode ? 'Update Sale' : 'Submit Sale'}
-            </button>
-            <button
-              onClick={resetSaleForm}
-              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
-            >
-              Reset Form
-            </button>
+        {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
+          <ul
+            className="fixed z-[1200] bg-white border border-gray-200 shadow-xl rounded-lg text-xs max-h-60 overflow-y-auto font-malayalam"
+            style={{
+              top: suggestionPosition.top,
+              left: suggestionPosition.left,
+              width: suggestionPosition.width,
+              transform: 'translateY(-100%)',
+              fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
+            }}
+          >
+            {suggestions.map((product, index) => (
+              <li
+                key={product.id}
+                id={`suggestion-${index}`}
+                className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                onClick={() => handleItemSuggestionClick(product)}
+              >
+                {isDotPrefixed ? product.title_m : product.title}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Batch modal */}
+        {showBatchModal && selectedProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Batch Details for:{' '}
+                  <span className="text-blue-600">{selectedProduct.title}</span>
+                </h2>
+                <button
+                  onClick={() => setShowBatchModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="overflow-auto px-6 py-4">
+                <table className="min-w-full text-sm text-left border">
+                  <thead className="bg-gray-100 text-gray-700 uppercase text-xs sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2 border w-40">Supplier</th>
+                      <th className="px-4 py-2 border w-32">Inward Date</th>
+                      <th className="px-4 py-2 border w-24">Rate</th>
+                      <th className="px-4 py-2 border w-32">Exchange Rate</th>
+                      <th className="px-4 py-2 border w-24">Currency</th>
+                      <th className="px-4 py-2 border w-24">Tax %</th>
+                      <th className="px-4 py-2 border w-24">Discount</th>
+                      <th className="px-4 py-2 border w-24">Stock</th>
+                      <th className="px-4 py-2 border w-24">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batchData.length > 0 ? (
+                      batchData.map((batch, index) => (
+                        <tr
+                          key={index}
+                          className="hover:bg-gray-50 transition duration-100"
+                        >
+                          <td className="px-4 py-2 border">{batch.supplier}</td>
+                          <td className="px-4 py-2 border">{batch.inwardDate}</td>
+                          <td className="px-4 py-2 border">{batch.rate}</td>
+                          <td className="px-4 py-2 border">
+                            {batch.exchangeRate}
+                          </td>
+                          <td className="px-4 py-2 border">{batch.currency}</td>
+                          <td className="px-4 py-2 border">
+                            {batch.tax !== null && batch.tax !== undefined
+                              ? batch.tax.toFixed(2)
+                              : '0.00'}
+                          </td>
+                          <td className="px-4 py-2 border">
+                            {batch.inwardDiscount}
+                          </td>
+                          <td className="px-4 py-2 border">{batch.stock}</td>
+                          <td className="px-4 py-2 border">
+                            <button
+                              onClick={() => handleBatchSelect(batch)}
+                              className="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700 transition"
+                            >
+                              Select
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="8" className="text-center text-gray-500 py-6">
+                          No batch data found for this item.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-6 py-3 border-t text-right">
+                <button
+                  onClick={() => setShowBatchModal(false)}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`${cardClasses} p-2`}>
+          <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+            <div className="flex flex-1 flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={saleIdToLoad}
+                onChange={(e) => setSaleIdToLoad(e.target.value)}
+                placeholder="Sale ID"
+                className={`${inputClasses} w-full sm:w-60`}
+              />
+              <button
+                onClick={handleLoadSale}
+                className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+              >
+                Load Sale
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleSubmitSale}
+                className={`${actionButtonClasses} min-w-[160px]`}
+              >
+                {isEditMode ? 'Update Sale' : 'Submit Sale'}
+              </button>
+              <button
+                onClick={resetSaleForm}
+                className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+              >
+                Reset Form
+              </button>
+            </div>
           </div>
         </div>
       </div>

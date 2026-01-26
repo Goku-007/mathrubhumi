@@ -9,7 +9,7 @@ import React from 'react';
  *  - children: action buttons or additional content (optional)
  *  - compact: boolean to reduce padding/font sizes
  */
-const PageHeader = ({ icon, title, subtitle, children, compact = false }) => {
+const PageHeader = ({ icon, title, subtitle, children, compact = false, className = '' }) => {
     const containerClasses = compact
         ? "bg-white/85 backdrop-blur-sm border border-gray-200/60 rounded-lg px-4 py-3 shadow-sm"
         : "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-xl px-6 py-4 shadow-sm";
@@ -21,7 +21,7 @@ const PageHeader = ({ icon, title, subtitle, children, compact = false }) => {
     const underlineClasses = compact ? "mt-3 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 rounded-full opacity-50" : "mt-4 h-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 rounded-full opacity-60";
 
     return (
-        <div className={wrapperClasses}>
+        <div className={`${wrapperClasses} ${className}`.trim()}>
             {/* Background gradient accent */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-indigo-500/10 to-cyan-500/10 rounded-2xl blur-xl -z-10" />
 

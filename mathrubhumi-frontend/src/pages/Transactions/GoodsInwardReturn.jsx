@@ -159,7 +159,7 @@ export default function GoodsInwardReturnPage() {
       }
       const rect = productInputRef.current.getBoundingClientRect();
       setSuggestionPosition({
-        top: rect.bottom + window.scrollY + 6,
+        top: rect.top + window.scrollY - 6,
         left: rect.left + window.scrollX,
         width: rect.width,
       });
@@ -755,9 +755,9 @@ export default function GoodsInwardReturnPage() {
   const totalValue = items.reduce((sum, item) => sum + num(item.value), 0);
 
   const cardClasses = "bg-white/90 border border-gray-200 rounded-lg shadow-sm";
-  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
-  const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
+  const inputClasses = "px-2 py-1.5 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const tableInputClasses = "w-full px-2 py-1 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -899,7 +899,7 @@ export default function GoodsInwardReturnPage() {
 
   /* ---------- render ---------- */
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-2 md:p-3 space-y-2 lg:h-[100svh] lg:overflow-hidden lg:flex lg:flex-col">
       {renderToast()}
       {renderPurchaseItemsModal()}
 
@@ -914,10 +914,12 @@ export default function GoodsInwardReturnPage() {
         title="Goods Inward Return"
         subtitle="Manage purchase return entries"
         compact
+        className="mb-0"
       />
 
-      <div className={`${cardClasses} p-3`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
+      <div className="flex flex-col gap-2 lg:flex-1 lg:min-h-0">
+        <div className={`${cardClasses} p-2`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5">
           <input
             type="text"
             name="srl_no"
@@ -1046,243 +1048,242 @@ export default function GoodsInwardReturnPage() {
             <option value="Int. State">Int. State</option>
             <option value="Imported">Imported</option>
           </select>
-        </div>
-      </div>
-
-      <div className={`${cardClasses} p-3 flex flex-col gap-2`}>
-        <div className="flex items-center justify-between px-1 text-xs text-gray-600">
-          <span className="font-medium text-gray-700">Line items</span>
-          <span className="font-semibold text-gray-800">Total: {tf(totalValue)}</span>
+          </div>
         </div>
 
-        <div className="relative rounded-md border border-gray-100 overflow-hidden">
-          <div className="overflow-auto max-h-[42vh] min-h-[260px]">
-            <table className="w-full min-w-[980px] text-xs">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
-                  <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Product</th>
-                  <th className="px-2.5 py-2 text-left font-semibold w-[130px]">I S B N</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[70px]">Qty</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[95px]">F Val</th>
-                  <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Curr</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">ExRt</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Dis%</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">-/+Adj</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Value</th>
-                  <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-[13px]">
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan="10" className="px-4 py-10 text-center text-gray-400">
-                      No items added yet. Use the form below to add lines.
-                    </td>
+        <div className={`${cardClasses} p-2 flex flex-col gap-1 lg:flex-1 lg:min-h-0`}>
+          <div className="flex items-center justify-between px-0.5 text-[11px] text-gray-600">
+            <span className="font-medium text-gray-700">Line items</span>
+            <span className="font-semibold text-gray-800">Total: {tf(totalValue)}</span>
+          </div>
+
+          <div className="relative rounded-md border border-gray-100 overflow-hidden flex-1 min-h-0">
+            <div className="overflow-auto max-h-[48vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
+              <table className="w-full min-w-[980px] text-[11px]">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
+                    <th className="px-2 py-1.5 text-left font-semibold w-[240px]">Product</th>
+                    <th className="px-2 py-1.5 text-left font-semibold w-[100px]">I S B N</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Qty</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[80px]">F Val</th>
+                    <th className="px-2 py-1.5 text-left font-semibold w-[80px]">Curr</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[70px]">ExRt</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Dis%</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[70px]">-/+Adj</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[90px]">Value</th>
+                    <th className="px-2 py-1.5 text-center font-semibold w-[40px]">Action</th>
                   </tr>
-                ) : (
-                  items.map((item, index) => (
-                    <tr key={index} className="hover:bg-blue-50/40 transition-colors">
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="text"
-                          value={item.itemName}
-                          onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
-                          className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
-                          style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="text"
-                          value={item.isbn}
-                          onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
-                          className={tableInputClasses}
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.purchaseRate}
-                          onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          step="0.01"
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <select
-                          value={item.currency}
-                          onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
-                          className={tableInputClasses}
-                          disabled={loading}
-                        >
-                          <option value="" disabled>Currency</option>
-                          {currencies.map(cur => (
-                            <option key={cur.id} value={cur.name}>{cur.name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.exchangeRate}
-                          onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.discount}
-                          onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          step="0.01"
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={item.discountAmount}
-                          onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                          step="0.01"
-                          disabled={loading}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right text-sm font-semibold text-gray-700">
-                        {tf(item.value)}
-                      </td>
-                      <td className="px-2.5 py-1.5 text-center">
-                        <button
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="Delete item"
-                          onClick={() => setItems(items.filter((_, i) => i !== index))}
-                          disabled={loading}
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan="10" className="px-4 py-8 text-center text-gray-400">
+                        No items added yet. Use the form below to add lines.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    items.map((item, index) => (
+                      <tr key={index} className="hover:bg-blue-50/40 transition-colors">
+                        <td className="px-2 py-1">
+                          <input
+                            type="text"
+                            value={item.itemName}
+                            onChange={(e) => handleItemChange(index, 'itemName', e.target.value)}
+                            className={`${tableInputClasses} ${item.isMalayalam ? 'font-malayalam' : ''}`}
+                            style={item.isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="text"
+                            value={item.isbn}
+                            onChange={(e) => handleItemChange(index, 'isbn', e.target.value)}
+                            className={tableInputClasses}
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.purchaseRate}
+                            onChange={(e) => handleItemChange(index, 'purchaseRate', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            step="0.01"
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <select
+                            value={item.currency}
+                            onChange={(e) => handleItemChange(index, 'currency', e.target.value)}
+                            className={tableInputClasses}
+                            disabled={loading}
+                          >
+                            <option value="" disabled>Currency</option>
+                            {currencies.map(cur => (
+                              <option key={cur.id} value={cur.name}>{cur.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.exchangeRate}
+                            onChange={(e) => handleItemChange(index, 'exchangeRate', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.discount}
+                            onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            step="0.01"
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={item.discountAmount}
+                            onChange={(e) => handleItemChange(index, 'discountAmount', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                            step="0.01"
+                            disabled={loading}
+                          />
+                        </td>
+                        <td className="px-2 py-1 text-right text-xs font-semibold text-gray-700">
+                          {tf(item.value)}
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          <button
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Delete item"
+                            onClick={() => setItems(items.filter((_, i) => i !== index))}
+                            disabled={loading}
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className={`${cardClasses} p-3 overflow-visible`}>
-        <div className="text-[11px] text-gray-500 mb-2">Tip: prefix with "." for Malayalam titles</div>
-        <div className="grid grid-cols-[280px_110px_70px_90px_90px_90px_70px_80px_1fr] gap-2 w-full overflow-x-auto relative z-0">
-          <div className="relative">
+        <div className={`${cardClasses} p-2 overflow-visible`}>
+          <div className="grid grid-cols-[240px_100px_60px_80px_80px_70px_60px_70px_1fr] gap-1.5 w-full overflow-x-auto relative z-0">
+            <div className="relative">
+              <input
+                type="text"
+                name="itemName"
+                value={formData.itemName}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'itemName')}
+                placeholder="Product"
+                className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
+                style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
+                autoComplete="off"
+                disabled={loading}
+                ref={productInputRef}
+              />
+            </div>
             <input
               type="text"
-              name="itemName"
-              value={formData.itemName}
+              name="isbn"
+              value={formData.isbn}
               onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'itemName')}
-              placeholder="Product"
-              className={`${tableInputClasses} ${isMalayalam ? 'font-malayalam' : ''}`}
-              style={isMalayalam ? { fontFamily: 'Noto Sans Malayalam, sans-serif' } : {}}
-              autoComplete="off"
+              placeholder="I S B N"
+              className={tableInputClasses}
               disabled={loading}
-              ref={productInputRef}
             />
+            <input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              placeholder="Qty"
+              className={tableInputClasses}
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="purchaseRate"
+              value={formData.purchaseRate}
+              onChange={handleInputChange}
+              placeholder="F Val"
+              className={tableInputClasses}
+              step="0.01"
+              disabled={loading}
+            />
+            <select
+              name="currency"
+              value={formData.currency}
+              onChange={handleInputChange}
+              className={tableInputClasses}
+              disabled={loading}
+            >
+              <option value="" disabled>Currency</option>
+              {currencies.map(cur => (
+                <option key={cur.id} value={cur.name}>{cur.name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              name="exchangeRate"
+              value={formData.exchangeRate}
+              onChange={handleInputChange}
+              placeholder="ExRt"
+              className={tableInputClasses}
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleInputChange}
+              placeholder="Dis%"
+              className={tableInputClasses}
+              step="0.01"
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="discountAmount"
+              value={formData.discountAmount}
+              onChange={handleInputChange}
+              placeholder="-/+Adj"
+              className={tableInputClasses}
+              step="0.01"
+              disabled={loading}
+            />
+            <button
+              onClick={handleAddItem}
+              className={`${actionButtonClasses} w-full justify-center`}
+              disabled={loading}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Item
+            </button>
           </div>
-          <input
-            type="text"
-            name="isbn"
-            value={formData.isbn}
-            onChange={handleInputChange}
-            placeholder="I S B N"
-            className={tableInputClasses}
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            placeholder="Qty"
-            className={tableInputClasses}
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="purchaseRate"
-            value={formData.purchaseRate}
-            onChange={handleInputChange}
-            placeholder="F Val"
-            className={tableInputClasses}
-            step="0.01"
-            disabled={loading}
-          />
-          <select
-            name="currency"
-            value={formData.currency}
-            onChange={handleInputChange}
-            className={tableInputClasses}
-            disabled={loading}
-          >
-            <option value="" disabled>Currency</option>
-            {currencies.map(cur => (
-              <option key={cur.id} value={cur.name}>{cur.name}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="exchangeRate"
-            value={formData.exchangeRate}
-            onChange={handleInputChange}
-            placeholder="ExRt"
-            className={tableInputClasses}
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleInputChange}
-            placeholder="Dis%"
-            className={tableInputClasses}
-            step="0.01"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="discountAmount"
-            value={formData.discountAmount}
-            onChange={handleInputChange}
-            placeholder="-/+Adj"
-            className={tableInputClasses}
-            step="0.01"
-            disabled={loading}
-          />
-          <button
-            onClick={handleAddItem}
-            className={`${actionButtonClasses} w-full justify-center`}
-            disabled={loading}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Item
-          </button>
         </div>
-      </div>
 
       {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
         <ul
@@ -1291,6 +1292,7 @@ export default function GoodsInwardReturnPage() {
             top: suggestionPosition.top,
             left: suggestionPosition.left,
             width: suggestionPosition.width,
+            transform: 'translateY(-100%)',
             fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
           }}
         >
@@ -1307,41 +1309,42 @@ export default function GoodsInwardReturnPage() {
         </ul>
       )}
 
-      <div className={`${cardClasses} p-3`}>
-        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
-          <div className="flex flex-1 flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={goodsInwardIdToLoad}
-              onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
-              placeholder="Enter Goods Inward ID"
-              className={`${inputClasses} w-full sm:w-60`}
-              disabled={loading}
-            />
-            <button
-              onClick={handleLoadGoodsInward}
-              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
-              disabled={loading}
-            >
-              Load Inward Return
-            </button>
-          </div>
+        <div className={`${cardClasses} p-2`}>
+          <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+            <div className="flex flex-1 flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={goodsInwardIdToLoad}
+                onChange={(e) => setGoodsInwardIdToLoad(e.target.value)}
+                placeholder="Enter Goods Inward ID"
+                className={`${inputClasses} w-full sm:w-60`}
+                disabled={loading}
+              />
+              <button
+                onClick={handleLoadGoodsInward}
+                className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
+                disabled={loading}
+              >
+                Load Inward Return
+              </button>
+            </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleSubmitGoodsInward}
-              className={`${actionButtonClasses} min-w-[150px]`}
-              disabled={loading}
-            >
-              {isEditMode ? 'Update Inward Return' : 'Submit Inward Return'}
-            </button>
-            <button
-              onClick={resetForm}
-              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
-              disabled={loading}
-            >
-              Reset Form
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleSubmitGoodsInward}
+                className={`${actionButtonClasses} min-w-[150px]`}
+                disabled={loading}
+              >
+                {isEditMode ? 'Update Inward Return' : 'Submit Inward Return'}
+              </button>
+              <button
+                onClick={resetForm}
+                className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+                disabled={loading}
+              >
+                Reset Form
+              </button>
+            </div>
           </div>
         </div>
       </div>

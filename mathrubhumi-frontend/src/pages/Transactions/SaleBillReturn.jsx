@@ -105,9 +105,9 @@ export default function SaleBillReturn() {
   }, [total]);
 
   const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
-  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
-  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
-  const tableInputClasses = "w-full px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
+  const inputClasses = "px-2 py-1.5 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
+  const tableInputClasses = "w-full px-2 py-1 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -457,7 +457,7 @@ export default function SaleBillReturn() {
 
   /* ---------- render ---------- */
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-3 md:p-4 space-y-4">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-2 md:p-3 space-y-2 lg:h-[100svh] lg:overflow-hidden lg:flex lg:flex-col">
       <Modal
         isOpen={modal.isOpen}
         message={modal.message}
@@ -476,17 +476,19 @@ export default function SaleBillReturn() {
         title="Sale Bill Return"
         subtitle="Process and manage sales returns"
         compact
+        className="mb-0"
       />
 
-      <div className={`${cardClasses} p-3`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
-          <input
-            name="no"
-            value={header.no}
-            onChange={handleHeaderChange}
-            placeholder="No."
-            className={`${inputClasses} bg-gray-50 font-semibold`}
-          />
+      <div className="flex flex-col gap-2 lg:flex-1 lg:min-h-0">
+        <div className={`${cardClasses} p-2`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5">
+            <input
+              name="no"
+              value={header.no}
+              onChange={handleHeaderChange}
+              placeholder="No."
+              className={`${inputClasses} bg-gray-50 font-semibold`}
+            />
             <input
               type="date"
               name="date"
@@ -612,157 +614,158 @@ export default function SaleBillReturn() {
                 </ul>
               )}
             </div>
-        </div>
-      </div>
-
-      <div className={`${cardClasses} p-3`}>
-        <div className="flex items-center justify-end px-1 pb-2 text-xs text-gray-600">
-          <span className="font-semibold text-gray-800">Total: {money(total)}</span>
+          </div>
         </div>
 
-        <div className="relative rounded-md border border-gray-100 overflow-hidden">
-          <div className="overflow-auto max-h-[55vh] min-h-[320px]">
-            <table className="w-full min-w-[980px] text-xs">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
-                  <th className="px-2.5 py-2 text-left font-semibold w-[280px]">Product</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">Qty</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[100px]">Rate</th>
-                  <th className="px-2.5 py-2 text-left font-semibold w-[90px]">Curr</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[80px]">ExRt</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Tax</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[90px]">Dis A</th>
-                  <th className="px-2.5 py-2 text-right font-semibold w-[110px]">Value</th>
-                  <th className="px-2.5 py-2 text-center font-semibold w-[44px]">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-[13px]">
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="px-4 py-10 text-center text-gray-400 text-xs">
-                      No items added yet. Load a bill and pick items.
-                    </td>
+        <div className={`${cardClasses} p-2 flex flex-col gap-1 lg:flex-1 lg:min-h-0`}>
+          <div className="flex items-center justify-end px-0.5 text-[11px] text-gray-600">
+            <span className="font-semibold text-gray-800">Total: {money(total)}</span>
+          </div>
+
+          <div className="relative rounded-md border border-gray-100 overflow-hidden flex-1 min-h-0">
+            <div className="overflow-auto max-h-[48vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
+              <table className="w-full min-w-[820px] text-[11px]">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">
+                    <th className="px-2 py-1.5 text-left font-semibold w-[240px]">Product</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Qty</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[80px]">Rate</th>
+                    <th className="px-2 py-1.5 text-left font-semibold w-[80px]">Curr</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[70px]">ExRt</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[60px]">Tax</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[70px]">Dis A</th>
+                    <th className="px-2 py-1.5 text-right font-semibold w-[90px]">Value</th>
+                    <th className="px-2 py-1.5 text-center font-semibold w-[40px]">Action</th>
                   </tr>
-                ) : (
-                  items.map((it, idx) => (
-                    <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          value={it.product}
-                          onChange={(e) => handleItemChange(idx, 'product', e.target.value)}
-                          className={tableInputClasses}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={it.qty}
-                          onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={it.rate}
-                          onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          value={it.curr}
-                          onChange={(e) => handleItemChange(idx, 'curr', e.target.value)}
-                          className={tableInputClasses}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          value={it.exrt}
-                          onChange={(e) => handleItemChange(idx, 'exrt', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={it.tax}
-                          onChange={(e) => handleItemChange(idx, 'tax', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={it.disA}
-                          onChange={(e) => handleItemChange(idx, 'disA', e.target.value)}
-                          className={`${tableInputClasses} text-right`}
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right text-xs font-semibold text-gray-700">
-                        {money(it.value)}
-                      </td>
-                      <td className="px-2.5 py-1.5 text-center">
-                        <button
-                          onClick={() => removeItem(idx)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="Delete item"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="px-4 py-8 text-center text-gray-400 text-xs">
+                        No items added yet. Load a bill and pick items.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    items.map((it, idx) => (
+                      <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
+                        <td className="px-2 py-1">
+                          <input
+                            value={it.product}
+                            onChange={(e) => handleItemChange(idx, 'product', e.target.value)}
+                            className={tableInputClasses}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={it.qty}
+                            onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={it.rate}
+                            onChange={(e) => handleItemChange(idx, 'rate', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            value={it.curr}
+                            onChange={(e) => handleItemChange(idx, 'curr', e.target.value)}
+                            className={tableInputClasses}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={it.exrt}
+                            onChange={(e) => handleItemChange(idx, 'exrt', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={it.tax}
+                            onChange={(e) => handleItemChange(idx, 'tax', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={it.disA}
+                            onChange={(e) => handleItemChange(idx, 'disA', e.target.value)}
+                            className={`${tableInputClasses} text-right`}
+                          />
+                        </td>
+                        <td className="px-2 py-1 text-right text-xs font-semibold text-gray-700">
+                          {money(it.value)}
+                        </td>
+                        <td className="px-2 py-1 text-center">
+                          <button
+                            onClick={() => removeItem(idx)}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Delete item"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className={`${cardClasses} p-3`}>
-        <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
-          <div className="flex flex-1 flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={saleRtIdToLoad}
-              onChange={(e) => setSaleRtIdToLoad(e.target.value)}
-              placeholder="Sale Return ID"
-              className={`${inputClasses} w-full sm:w-60`}
-            />
-            <button
-              onClick={handleLoadClick}
-              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
-            >
-              Load Sale Return
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={submitSaleReturn}
-              className={`${actionButtonClasses} min-w-[160px]`}
-            >
-              {isEditMode ? 'Update Sale Return' : 'Submit Sale Return'}
-            </button>
-            {isEditMode && saleRtId ? (
+        <div className={`${cardClasses} p-2`}>
+          <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
+            <div className="flex flex-1 flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={saleRtIdToLoad}
+                onChange={(e) => setSaleRtIdToLoad(e.target.value)}
+                placeholder="Sale Return ID"
+                className={`${inputClasses} w-full sm:w-60`}
+              />
               <button
-                onClick={handleDeleteSaleReturn}
-                className={`${actionButtonClasses} from-red-500 to-red-600 hover:from-red-600 hover:to-red-700`}
+                onClick={handleLoadClick}
+                className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`}
               >
-                Delete Sale Return
+                Load Sale Return
               </button>
-            ) : null}
-            <button
-              onClick={resetForm}
-              className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
-            >
-              Reset Form
-            </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={submitSaleReturn}
+                className={`${actionButtonClasses} min-w-[160px]`}
+              >
+                {isEditMode ? 'Update Sale Return' : 'Submit Sale Return'}
+              </button>
+              {isEditMode && saleRtId ? (
+                <button
+                  onClick={handleDeleteSaleReturn}
+                  className={`${actionButtonClasses} from-red-500 to-red-600 hover:from-red-600 hover:to-red-700`}
+                >
+                  Delete Sale Return
+                </button>
+              ) : null}
+              <button
+                onClick={resetForm}
+                className={`${actionButtonClasses} from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700`}
+              >
+                Reset Form
+              </button>
+            </div>
           </div>
         </div>
       </div>

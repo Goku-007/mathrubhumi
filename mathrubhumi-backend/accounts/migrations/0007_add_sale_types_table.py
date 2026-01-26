@@ -1,16 +1,10 @@
 from django.db import migrations
 
-FORWARD_SQL = r"""
-CREATE TABLE IF NOT EXISTS public.sale_types (
-    sale_typeid int4 NOT NULL,
-    sale_type varchar(15) NULL,
-    CONSTRAINT sale_types_unique UNIQUE (sale_typeid)
-);
-"""
+# This table was already created in migration 0002_create_mathrubhumi_tables.
+# Keeping this migration as no-op to preserve migration history.
+FORWARD_SQL = "-- No-op: sale_types table already exists from 0002"
 
-REVERSE_SQL = r"""
-DROP TABLE IF EXISTS public.sale_types CASCADE;
-"""
+REVERSE_SQL = "-- No-op"
 
 
 class Migration(migrations.Migration):

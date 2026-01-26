@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.get_sales_type_wise(
     p_to_date date
 )
 RETURNS TABLE(
-    o_sale_date date
+    o_sale_date date,
     o_sale_type character varying,
     o_bill_from text,
     o_bill_to text,

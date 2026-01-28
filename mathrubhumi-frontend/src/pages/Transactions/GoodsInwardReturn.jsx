@@ -770,14 +770,14 @@ export default function GoodsInwardReturnPage() {
     if (!toast.isOpen) return null;
     const bg =
       toast.type === 'error' ? 'bg-red-50'
-      : toast.type === 'success' ? 'bg-green-50'
-      : toast.type === 'warning' ? 'bg-yellow-50'
-      : 'bg-white';
+        : toast.type === 'success' ? 'bg-green-50'
+          : toast.type === 'warning' ? 'bg-yellow-50'
+            : 'bg-white';
     const titleColor =
       toast.type === 'error' ? 'text-red-700'
-      : toast.type === 'success' ? 'text-green-700'
-      : toast.type === 'warning' ? 'text-yellow-700'
-      : 'text-gray-800';
+        : toast.type === 'success' ? 'text-green-700'
+          : toast.type === 'warning' ? 'text-yellow-700'
+            : 'text-gray-800';
 
     return (
       <div className="fixed inset-0 z-[9998] flex items-center justify-center">
@@ -920,134 +920,134 @@ export default function GoodsInwardReturnPage() {
       <div className="flex flex-col gap-2 lg:flex-1 lg:min-h-0">
         <div className={`${cardClasses} p-2`}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5">
-          <input
-            type="text"
-            name="srl_no"
-            value={inwardMaster.srl_no}
-            onChange={handleInwardMasterChange}
-            placeholder="Srl No"
-            className={`${inputClasses} bg-gray-50 font-semibold`}
-            disabled={loading}
-          />
-          <input
-            type="date"
-            name="entry_date"
-            value={inwardMaster.entry_date}
-            onChange={handleInwardMasterChange}
-            placeholder="Date"
-            className={inputClasses}
-            disabled={loading}
-          />
-
-          <div className="relative">
             <input
               type="text"
-              name="supplier_nm"
-              value={inwardMaster.supplier_nm}
+              name="srl_no"
+              value={inwardMaster.srl_no}
               onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
-              placeholder="Supplier"
-              className={inputClasses}
-              autoComplete="off"
+              placeholder="Srl No"
+              className={`${inputClasses} bg-gray-50 font-semibold`}
               disabled={loading}
             />
-            {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
-              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
-                {supplierSuggestions.map((supplier, index) => (
-                  <li
-                    key={supplier.id}
-                    id={`supplier-suggestion-${index}`}
-                    className={`px-3 py-2 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSupplierSuggestionClick(supplier)}
-                  >
-                    {supplier.supplier_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+            <input
+              type="date"
+              name="entry_date"
+              value={inwardMaster.entry_date}
+              onChange={handleInwardMasterChange}
+              placeholder="Date"
+              className={inputClasses}
+              disabled={loading}
+            />
 
-          <div className="relative">
+            <div className="relative">
+              <input
+                type="text"
+                name="supplier_nm"
+                value={inwardMaster.supplier_nm}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
+                placeholder="Supplier"
+                className={`${inputClasses} w-full`}
+                autoComplete="off"
+                disabled={loading}
+              />
+              {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
+                <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                  {supplierSuggestions.map((supplier, index) => (
+                    <li
+                      key={supplier.id}
+                      id={`supplier-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${supplierHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleSupplierSuggestionClick(supplier)}
+                    >
+                      {supplier.supplier_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="relative">
+              <input
+                type="text"
+                name="bill_no"
+                value={inwardMaster.bill_no}
+                onChange={handleInwardMasterChange}
+                onKeyDown={(e) => handleKeyDown(e, 'bill_no')}
+                placeholder="Bill No"
+                className={`${inputClasses} w-full`}
+                autoComplete="off"
+                disabled={loading}
+              />
+              {showBillSuggestions && billSuggestions.length > 0 && inwardMaster.bill_no.trim() && (
+                <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
+                  {billSuggestions.map((bill, index) => (
+                    <li
+                      key={bill.id}
+                      id={`bill-suggestion-${index}`}
+                      className={`px-3 py-2 cursor-pointer ${billHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                      onClick={() => handleBillSuggestionClick(bill)}
+                    >
+                      {bill.invoice_no} - {bill.invoice_date}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <input
+              type="number"
+              name="gross"
+              value={inwardMaster.gross}
+              onChange={handleInwardMasterChange}
+              placeholder="Gross"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+              step="0.01"
+              disabled={loading}
+            />
+            <input
+              type="number"
+              name="nett"
+              value={inwardMaster.nett}
+              onChange={handleInwardMasterChange}
+              placeholder="Nett"
+              className={`${inputClasses} bg-gray-50 text-right font-semibold`}
+              readOnly
+              step="0.01"
+              disabled={loading}
+            />
             <input
               type="text"
-              name="bill_no"
-              value={inwardMaster.bill_no}
+              name="notes"
+              value={inwardMaster.notes}
               onChange={handleInwardMasterChange}
-              onKeyDown={(e) => handleKeyDown(e, 'bill_no')}
-              placeholder="Bill No"
+              placeholder="Notes"
               className={inputClasses}
-              autoComplete="off"
               disabled={loading}
             />
-            {showBillSuggestions && billSuggestions.length > 0 && inwardMaster.bill_no.trim() && (
-              <ul className="absolute z-20 bg-white border border-gray-200 mt-1.5 w-full shadow-lg rounded-lg text-xs max-h-48 overflow-y-auto">
-                {billSuggestions.map((bill, index) => (
-                  <li
-                    key={bill.id}
-                    id={`bill-suggestion-${index}`}
-                    className={`px-3 py-2 cursor-pointer ${billHighlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleBillSuggestionClick(bill)}
-                  >
-                    {bill.invoice_no} - {bill.invoice_date}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <input
-            type="number"
-            name="gross"
-            value={inwardMaster.gross}
-            onChange={handleInwardMasterChange}
-            placeholder="Gross"
-            className={`${inputClasses} bg-gray-50 text-right font-semibold`}
-            readOnly
-            step="0.01"
-            disabled={loading}
-          />
-          <input
-            type="number"
-            name="nett"
-            value={inwardMaster.nett}
-            onChange={handleInwardMasterChange}
-            placeholder="Nett"
-            className={`${inputClasses} bg-gray-50 text-right font-semibold`}
-            readOnly
-            step="0.01"
-            disabled={loading}
-          />
-          <input
-            type="text"
-            name="notes"
-            value={inwardMaster.notes}
-            onChange={handleInwardMasterChange}
-            placeholder="Notes"
-            className={inputClasses}
-            disabled={loading}
-          />
-          <select
-            name="type"
-            value={inwardMaster.type}
-            onChange={handleInwardMasterChange}
-            className={inputClasses}
-            disabled={loading}
-          >
-            <option value="Return">Return</option>
-            <option value="Purchase">Purchase</option>
-            <option value="Owner">Owner</option>
-          </select>
-          <select
-            name="is_local"
-            value={inwardMaster.is_local}
-            onChange={handleInwardMasterChange}
-            className={inputClasses}
-            disabled={loading}
-          >
-            <option value="Local">Local</option>
-            <option value="Int. State">Int. State</option>
-            <option value="Imported">Imported</option>
-          </select>
+            <select
+              name="type"
+              value={inwardMaster.type}
+              onChange={handleInwardMasterChange}
+              className={inputClasses}
+              disabled={loading}
+            >
+              <option value="Return">Return</option>
+              <option value="Purchase">Purchase</option>
+              <option value="Owner">Owner</option>
+            </select>
+            <select
+              name="is_local"
+              value={inwardMaster.is_local}
+              onChange={handleInwardMasterChange}
+              className={inputClasses}
+              disabled={loading}
+            >
+              <option value="Local">Local</option>
+              <option value="Int. State">Int. State</option>
+              <option value="Imported">Imported</option>
+            </select>
           </div>
         </div>
 
@@ -1187,7 +1187,7 @@ export default function GoodsInwardReturnPage() {
         </div>
 
         <div className={`${cardClasses} p-2 overflow-visible`}>
-          <div className="grid grid-cols-[240px_100px_60px_80px_80px_70px_60px_70px_1fr] gap-1.5 w-full overflow-x-auto relative z-0">
+          <div className="grid grid-cols-[360px_140px_80px_100px_100px_90px_80px_100px_1fr] gap-4 w-full overflow-x-auto relative z-0">
             <div className="relative">
               <input
                 type="text"
@@ -1285,29 +1285,29 @@ export default function GoodsInwardReturnPage() {
           </div>
         </div>
 
-      {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
-        <ul
-          className="fixed z-[1200] bg-white border border-gray-200 shadow-xl rounded-lg text-xs max-h-60 overflow-y-auto font-malayalam"
-          style={{
-            top: suggestionPosition.top,
-            left: suggestionPosition.left,
-            width: suggestionPosition.width,
-            transform: 'translateY(-100%)',
-            fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
-          }}
-        >
-          {suggestions.map((product, index) => (
-            <li
-              key={product.id}
-              id={`suggestion-${index}`}
-              className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
-              onClick={() => handleItemSuggestionClick(product)}
-            >
-              {isDotPrefixed ? product.title_m : product.title}
-            </li>
-          ))}
-        </ul>
-      )}
+        {suggestionPosition && showSuggestions && suggestions.length > 0 && formData.itemName.trim() && (
+          <ul
+            className="fixed z-[1200] bg-white border border-gray-200 shadow-xl rounded-lg text-xs max-h-60 overflow-y-auto font-malayalam"
+            style={{
+              top: suggestionPosition.top,
+              left: suggestionPosition.left,
+              width: suggestionPosition.width,
+              transform: 'translateY(-100%)',
+              fontFamily: isDotPrefixed ? 'Noto Sans Malayalam, sans-serif' : 'inherit',
+            }}
+          >
+            {suggestions.map((product, index) => (
+              <li
+                key={product.id}
+                id={`suggestion-${index}`}
+                className={`px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'}`}
+                onClick={() => handleItemSuggestionClick(product)}
+              >
+                {isDotPrefixed ? product.title_m : product.title}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className={`${cardClasses} p-2`}>
           <div className="flex flex-col lg:flex-row gap-2 lg:items-center">

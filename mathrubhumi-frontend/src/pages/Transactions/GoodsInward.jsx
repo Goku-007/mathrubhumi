@@ -1493,7 +1493,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'user_nm')}
                 placeholder="User"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showUserSuggestions && userSuggestions.length > 0 && inwardMaster.user_nm.trim() && (
@@ -1559,7 +1559,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'supplier_nm')}
                 placeholder="Supplier"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showSupplierSuggestions && supplierSuggestions.length > 0 && inwardMaster.supplier_nm.trim() && (
@@ -1593,7 +1593,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'branches_nm')}
                 placeholder="Branch"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showBranchesSuggestions && branchesSuggestions.length > 0 && inwardMaster.branches_nm.trim() && (
@@ -1619,7 +1619,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'breakup_nm1')}
                 placeholder="Breakup 1"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showBreakupSuggestions && activeBreakupNo === 1 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm1.trim() && (
@@ -1654,7 +1654,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'breakup_nm2')}
                 placeholder="Breakup 2"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showBreakupSuggestions && activeBreakupNo === 2 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm2.trim() && (
@@ -1689,7 +1689,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'breakup_nm3')}
                 placeholder="Breakup 3"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showBreakupSuggestions && activeBreakupNo === 3 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm3.trim() && (
@@ -1724,7 +1724,7 @@ export default function GoodsInwardPage() {
                 onChange={handleInwardMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'breakup_nm4')}
                 placeholder="Breakup 4"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showBreakupSuggestions && activeBreakupNo === 4 && breakupSuggestions.length > 0 && inwardMaster.breakup_nm4.trim() && (
@@ -1891,7 +1891,7 @@ export default function GoodsInwardPage() {
         </div>
 
         <div className={`${cardClasses} p-2 overflow-visible`}>
-          <div className="grid grid-cols-[240px_100px_60px_80px_70px_80px_60px_60px_70px_1fr] gap-1.5 w-full overflow-x-auto relative z-0">
+          <div className="grid grid-cols-[320px_140px_70px_90px_90px_90px_70px_70px_90px_1fr] gap-4 w-full overflow-x-auto relative z-0">
             <div className="relative">
               <input
                 type="text"

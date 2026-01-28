@@ -523,7 +523,7 @@ export default function SaleBillReturn() {
                 value={header.customer}
                 onChange={handleHeaderChange}
                 placeholder="Customer"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showCustomerSuggestions && header.customer.trim() && (
@@ -592,7 +592,7 @@ export default function SaleBillReturn() {
                 value={header.billNo}
                 onChange={handleHeaderChange}
                 placeholder="Bill No"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
                 disabled={!selectedCustomer}
                 title={!selectedCustomer ? 'Select Customer first' : ''}

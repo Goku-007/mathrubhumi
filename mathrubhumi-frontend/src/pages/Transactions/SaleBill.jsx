@@ -355,8 +355,8 @@ export default function SaleBillPage() {
     const selectedTitle = isDotPrefixed
       ? suggestion.title_m
       : suggestion.language === 1
-      ? suggestion.title_m
-      : suggestion.title;
+        ? suggestion.title_m
+        : suggestion.title;
     const isMalayalamTitle = isDotPrefixed || suggestion.language === 1;
 
     setFormData((prev) => ({
@@ -676,8 +676,8 @@ export default function SaleBillPage() {
   const billAmount = hasItemDiscount
     ? gross + roundOff
     : gross -
-      (billDiscountPercent ? (billDiscountPercent * gross) / 100 : billDiscountAmount) +
-      roundOff;
+    (billDiscountPercent ? (billDiscountPercent * gross) / 100 : billDiscountAmount) +
+    roundOff;
 
   useEffect(() => {
     setSaleMaster((prev) => ({
@@ -1002,7 +1002,7 @@ export default function SaleBillPage() {
                 onChange={handleSaleMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'customer_nm')}
                 placeholder={saleMaster.type === 'Stock Transfer' ? 'Branch (Customer)' : 'Customer Name'}
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
               />
               {showCustomerSuggestions && customerSuggestions.length > 0 && saleMaster.customer_nm.trim() && (
@@ -1046,7 +1046,7 @@ export default function SaleBillPage() {
                 onChange={handleSaleMasterChange}
                 onKeyDown={(e) => handleKeyDown(e, 'agent_nm')}
                 placeholder="Agents"
-                className={inputClasses}
+                className={`${inputClasses} w-full`}
                 autoComplete="off"
                 disabled={!isAgentTypeAllowed}
               />
@@ -1073,7 +1073,7 @@ export default function SaleBillPage() {
               className={inputClasses}
             >
               <option value="" disabled>Type</option>
-              {['Credit Sale','Cash Sale','P P Sale','Stock Transfer','Approval','Gift Voucher','Gift Bill','Cash Memo'].map((opt) => (
+              {['Credit Sale', 'Cash Sale', 'P P Sale', 'Stock Transfer', 'Approval', 'Gift Voucher', 'Gift Bill', 'Cash Memo'].map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
@@ -1326,7 +1326,7 @@ export default function SaleBillPage() {
         </div>
 
         <div className={`${cardClasses} p-2 overflow-visible`}>
-          <div className="grid grid-cols-[240px_60px_80px_70px_80px_60px_60px_1fr] gap-1.5 w-full overflow-x-auto relative z-0">
+          <div className="grid grid-cols-[410px_90px_120px_110px_120px_80px_80px_1fr] gap-4 w-full overflow-x-auto relative z-0">
             <div className="relative">
               <input
                 type="text"

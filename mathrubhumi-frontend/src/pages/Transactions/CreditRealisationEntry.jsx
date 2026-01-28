@@ -39,9 +39,9 @@ export default function CreditRealisationEntry() {
   const MODES_ACTIVATE_BANK = new Set([2, 3, 5, 6]);
   const bankFieldsActive = MODES_ACTIVATE_BANK.has(modeCode);
   const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
-  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const inputClasses = "w-full px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
   const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
-  const subduedInputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200/60 focus:border-blue-300 transition-all duration-200";
+  const subduedInputClasses = "w-full px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200/60 focus:border-blue-300 transition-all duration-200";
 
   // Keep selected customer id (from suggestions)
   const [customerId, setCustomerId] = useState(null);
@@ -284,7 +284,7 @@ export default function CreditRealisationEntry() {
           </select>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="relative">
             <input
               name="name"
@@ -321,12 +321,12 @@ export default function CreditRealisationEntry() {
           <textarea
             name="address"
             value={form.address}
-            rows={2}
+            rows={1}
             readOnly
             tabIndex={-1}
             aria-readonly="true"
             placeholder="Address"
-            className={`${subduedInputClasses} min-h-[60px] select-none pointer-events-none`}
+            className={`${subduedInputClasses} h-[34px] resize-none select-none pointer-events-none`}
           />
         </div>
 

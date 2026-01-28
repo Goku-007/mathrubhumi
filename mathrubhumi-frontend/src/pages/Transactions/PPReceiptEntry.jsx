@@ -171,9 +171,9 @@ export default function PPReceiptEntry() {
   const isInstallment = form.receiptType === "Installment";
 
   const cardClasses = "bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-lg shadow-sm";
-  const inputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
+  const inputClasses = "w-full px-2.5 py-2 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
   const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
-  const subduedInputClasses = "px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
+  const subduedInputClasses = "w-full px-2.5 py-2 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-200 focus:border-blue-200 transition-all duration-200";
 
   const pageIcon = (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -651,8 +651,27 @@ export default function PPReceiptEntry() {
       </div>
 
       <div className={`${cardClasses} p-3`}>
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <input
+              type="number"
+              value={loadReceiptNo}
+              onChange={(e) => setLoadReceiptNo(e.target.value)}
+              placeholder="Receipt No"
+              className={`${inputClasses} w-full sm:w-60 text-right`}
+            />
+            <button
+              type="button"
+              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[140px]`}
+              onClick={loadReceipt}
+              title="Load an existing receipt by receipt number"
+              disabled={loadingReceipt}
+            >
+              {loadingReceipt ? "Loading..." : "Load Receipt"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2 md:justify-end">
             <button
               type="button"
               disabled={saving}
@@ -700,25 +719,6 @@ export default function PPReceiptEntry() {
               onClick={() => window.location.reload()}
             >
               Reset
-            </button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2 items-center">
-            <input
-              type="number"
-              value={loadReceiptNo}
-              onChange={(e) => setLoadReceiptNo(e.target.value)}
-              placeholder="Receipt No"
-              className={`${inputClasses} w-full sm:w-60 text-right`}
-            />
-            <button
-              type="button"
-              className={`${actionButtonClasses} from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 min-w-[140px]`}
-              onClick={loadReceipt}
-              title="Load an existing receipt by receipt number"
-              disabled={loadingReceipt}
-            >
-              {loadingReceipt ? "Loading..." : "Load Receipt"}
             </button>
           </div>
         </div>

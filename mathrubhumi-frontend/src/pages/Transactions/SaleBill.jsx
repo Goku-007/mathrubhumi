@@ -17,6 +17,8 @@ export default function SaleBillPage() {
   const [isMalayalam, setIsMalayalam] = useState(false);
   const [suggestionPosition, setSuggestionPosition] = useState(null);
   const productInputRef = useRef(null);
+  const discountInputRef = useRef(null);
+  const addItemButtonRef = useRef(null);
 
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -446,6 +448,29 @@ export default function SaleBillPage() {
     }));
     setShowBatchModal(false);
     setIsItemSelected(true);
+    setTimeout(() => {
+      if (discountInputRef.current && !discountInputRef.current.disabled) {
+        discountInputRef.current.focus();
+        discountInputRef.current.select?.();
+      } else {
+        addItemButtonRef.current?.focus();
+      }
+    }, 0);
+  };
+
+  const handleDiscountKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addItemButtonRef.current?.focus();
+    }
+  };
+
+  const handleAddItemKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleAddItem();
+    }
   };
 
   const handleCustomerSuggestionClick = (suggestion) => {
@@ -1438,19 +1463,23 @@ export default function SaleBillPage() {
               name="discount"
               value={formData.discount}
               onChange={handleInputChange}
+              onKeyDown={handleDiscountKeyDown}
               placeholder="Disc %"
               className={tableInputClasses}
               disabled={!!activeDiscountField && activeDiscountField !== 'item_discount'}
               step="0.01"
+              ref={discountInputRef}
             />
             <button
               onClick={handleAddItem}
+              onKeyDown={handleAddItemKeyDown}
               className={`${actionButtonClasses} w-full justify-center`}
+              ref={addItemButtonRef}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
               </svg>
-              Add Item
+              Add
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../../utils/axiosInstance';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
-import { TrashIcon } from '@heroicons/react/24/solid';
+import { TrashIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 export default function SaleBillPage() {
   const [items, setItems] = useState([]);
@@ -38,6 +38,7 @@ export default function SaleBillPage() {
   const [batchData, setBatchData] = useState([]);
   const [currencies, setCurrencies] = useState([]);
   const [isItemSelected, setIsItemSelected] = useState(false);
+  const [batchActionIndex, setBatchActionIndex] = useState(-1);
 
   const [activeDiscountField, setActiveDiscountField] = useState(null);
 
@@ -150,6 +151,52 @@ export default function SaleBillPage() {
     };
     fetchCurrencies();
   }, []);
+
+  useEffect(() => {
+    if (!showBatchModal) {
+      setBatchActionIndex(-1);
+      return;
+    }
+    setBatchActionIndex((prev) => {
+      if (batchData.length === 0) return -1;
+      if (prev >= 0 && prev < batchData.length) return prev;
+      return 0;
+    });
+  }, [showBatchModal, batchData.length]);
+
+  useEffect(() => {
+    if (!showBatchModal || batchData.length === 0) return;
+    const handleKeyDown = (e) => {
+      if (!showBatchModal || batchData.length === 0) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setBatchActionIndex((prev) => {
+          if (prev < 0) return 0;
+          return prev < batchData.length - 1 ? prev + 1 : 0;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setBatchActionIndex((prev) => {
+          if (prev < 0) return batchData.length - 1;
+          return prev > 0 ? prev - 1 : batchData.length - 1;
+        });
+      } else if (e.key === 'Enter') {
+        if (batchActionIndex >= 0 && batchActionIndex < batchData.length) {
+          e.preventDefault();
+          handleBatchSelect(batchData[batchActionIndex]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showBatchModal, batchData, batchActionIndex]);
+
+  useEffect(() => {
+    if (!showBatchModal || batchActionIndex < 0) return;
+    const rowEl = document.getElementById(`batch-row-${batchActionIndex}`);
+    if (rowEl) rowEl.scrollIntoView({ block: 'nearest' });
+  }, [showBatchModal, batchActionIndex]);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -990,8 +1037,8 @@ export default function SaleBillPage() {
               type="date"
               name="sale_date"
               value={saleMaster.sale_date}
-              onChange={handleSaleMasterChange}
-              className={inputClasses}
+              className={`${inputClasses} bg-gray-50 font-semibold`}
+              readOnly
             />
 
             <div className="relative">
@@ -1434,85 +1481,109 @@ export default function SaleBillPage() {
 
         {/* Batch modal */}
         {showBatchModal && selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Batch Details for:{' '}
-                  <span className="text-blue-600">{selectedProduct.title}</span>
-                </h2>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowBatchModal(false)}
+            />
+            <div
+              className="relative bg-gradient-to-br from-slate-50 via-blue-50/50 to-slate-100 rounded-xl shadow-2xl w-[min(95vw,1100px)] max-h-[85vh] overflow-hidden mx-3 border border-gray-200 ring-1 ring-black/5 flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/20">
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 leading-tight">Batch Details</h2>
+                    <p className="text-xs text-gray-500 font-medium">
+                      For: <span className="text-blue-700">{formData.itemName || selectedProduct.title}</span>
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowBatchModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-xl"
+                  className="rounded-full p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                  aria-label="Close"
                 >
-                  ×
+                  <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
-              <div className="overflow-auto px-6 py-4">
-                <table className="min-w-full text-sm text-left border">
-                  <thead className="bg-gray-100 text-gray-700 uppercase text-xs sticky top-0">
-                    <tr>
-                      <th className="px-4 py-2 border w-40">Supplier</th>
-                      <th className="px-4 py-2 border w-32">Inward Date</th>
-                      <th className="px-4 py-2 border w-24">Rate</th>
-                      <th className="px-4 py-2 border w-32">Exchange Rate</th>
-                      <th className="px-4 py-2 border w-24">Currency</th>
-                      <th className="px-4 py-2 border w-24">Tax %</th>
-                      <th className="px-4 py-2 border w-24">Discount</th>
-                      <th className="px-4 py-2 border w-24">Stock</th>
-                      <th className="px-4 py-2 border w-24">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {batchData.length > 0 ? (
-                      batchData.map((batch, index) => (
-                        <tr
-                          key={index}
-                          className="hover:bg-gray-50 transition duration-100"
-                        >
-                          <td className="px-4 py-2 border">{batch.supplier}</td>
-                          <td className="px-4 py-2 border">{batch.inwardDate}</td>
-                          <td className="px-4 py-2 border">{batch.rate}</td>
-                          <td className="px-4 py-2 border">
-                            {batch.exchangeRate}
-                          </td>
-                          <td className="px-4 py-2 border">{batch.currency}</td>
-                          <td className="px-4 py-2 border">
-                            {batch.tax !== null && batch.tax !== undefined
-                              ? batch.tax.toFixed(2)
-                              : '0.00'}
-                          </td>
-                          <td className="px-4 py-2 border">
-                            {batch.inwardDiscount}
-                          </td>
-                          <td className="px-4 py-2 border">{batch.stock}</td>
-                          <td className="px-4 py-2 border">
-                            <button
-                              onClick={() => handleBatchSelect(batch)}
-                              className="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700 transition"
-                            >
-                              Select
-                            </button>
-                          </td>
+
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/50">
+                <div className={`${cardClasses} p-3`}>
+                  <div className="overflow-auto rounded-lg border border-gray-200 bg-white">
+                    <table className="min-w-full text-xs text-left">
+                      <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase text-[10px] sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 border border-blue-400/20 w-40">Supplier</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-32">Inward Date</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-24">Rate</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-32">Exchange Rate</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-24">Currency</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-24">Tax %</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-24">Discount</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-24">Stock</th>
+                          <th className="px-3 py-2 border border-blue-400/20 w-24">Action</th>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="8" className="text-center text-gray-500 py-6">
-                          No batch data found for this item.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="px-6 py-3 border-t text-right">
-                <button
-                  onClick={() => setShowBatchModal(false)}
-                  className="text-sm text-gray-600 hover:text-gray-800"
-                >
-                  Close
-                </button>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {batchData.length > 0 ? (
+                          batchData.map((batch, index) => (
+                            <tr
+                              key={index}
+                              id={`batch-row-${index}`}
+                              className={`transition-colors ${index === batchActionIndex ? 'bg-blue-50/70' : 'hover:bg-blue-50/40'}`}
+                              onMouseEnter={() => setBatchActionIndex(index)}
+                            >
+                              <td className="px-3 py-2 border border-gray-100">{batch.supplier}</td>
+                              <td className="px-3 py-2 border border-gray-100">{batch.inwardDate}</td>
+                              <td className="px-3 py-2 border border-gray-100">{batch.rate}</td>
+                              <td className="px-3 py-2 border border-gray-100">{batch.exchangeRate}</td>
+                              <td className="px-3 py-2 border border-gray-100">{batch.currency}</td>
+                              <td className="px-3 py-2 border border-gray-100">
+                                {batch.tax !== null && batch.tax !== undefined ? batch.tax.toFixed(2) : '0.00'}
+                              </td>
+                              <td className="px-3 py-2 border border-gray-100">{batch.inwardDiscount}</td>
+                              <td className="px-3 py-2 border border-gray-100">{batch.stock}</td>
+                              <td className="px-3 py-2 border border-gray-100">
+                                <button
+                                  onClick={() => handleBatchSelect(batch)}
+                                  className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-[10px] font-semibold transition-all ${
+                                    index === batchActionIndex
+                                      ? 'bg-blue-600 text-white ring-2 ring-blue-300'
+                                      : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                  }`}
+                                  aria-selected={index === batchActionIndex}
+                                >
+                                  Select
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="9" className="text-center text-gray-500 py-6">
+                              No batch data found for this item.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[11px] text-gray-500">
+                  <span>Use Up/Down arrows to move the action highlight, Enter to select.</span>
+                  <button
+                    onClick={() => setShowBatchModal(false)}
+                    className="text-xs text-gray-600 hover:text-gray-800"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>

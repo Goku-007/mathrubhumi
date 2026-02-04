@@ -23,7 +23,12 @@ export default function TitleMaster() {
     author: '',
     publisher: '',
     translator: '',
-    mrp: ''
+    mrp: '',
+    authorId: null,
+    publisherId: null,
+    translatorId: null,
+    categoryId: null,
+    subCategoryId: null
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
@@ -76,6 +81,37 @@ export default function TitleMaster() {
     // author or translator
     return row.author_nm;
   };
+  const idFieldFor = (field) => {
+    if (field === 'publisher') return 'publisherId';
+    if (field === 'category') return 'categoryId';
+    if (field === 'subCategory') return 'subCategoryId';
+    if (field === 'translator') return 'translatorId';
+    return 'authorId';
+  };
+  const emptyIdFor = (field) => (field === 'publisher' || field === 'translator' ? null : 0);
+  const fieldLabel = (field) => {
+    if (field === 'subCategory') return 'Sub-Category';
+    return field.charAt(0).toUpperCase() + field.slice(1);
+  };
+  const resolveFieldId = async (field, value, existingId) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return { id: emptyIdFor(field) };
+    if (existingId != null && existingId !== 0) return { id: existingId };
+
+    const endpoint = endpointFor(field);
+    const response = await api.get(`${endpoint}?q=${encodeURIComponent(trimmed)}`);
+    const list = Array.isArray(response.data) ? response.data : [];
+    const normalized = trimmed.toLowerCase();
+    const match = list.find(
+      (item) => (labelFor(field, item) || '').trim().toLowerCase() === normalized
+    );
+    if (!match) {
+      return {
+        error: `Unable to find ${fieldLabel(field)} "${trimmed}". Please select from suggestions or add it in the relevant master.`
+      };
+    }
+    return { id: match.id };
+  };
 
   const [modal, setModal] = useState({
     isOpen: false,
@@ -83,6 +119,7 @@ export default function TitleMaster() {
     type: 'info',
     buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
   });
+  const [deleteTitleId, setDeleteTitleId] = useState(null);
 
   useEffect(() => {
     fetchAllTitles();
@@ -103,7 +140,13 @@ export default function TitleMaster() {
   const handleInputChange = async (e) => {
     const { name, value } = e.target;
     console.log(`Input changed: ${name} = ${value}`);
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (suggestableFields.includes(name)) {
+        next[idFieldFor(name)] = null;
+      }
+      return next;
+    });
 
     if (['author', 'publisher', 'translator', 'category', 'subCategory'].includes(name)) {
       const trimmed = value.trim();
@@ -149,7 +192,7 @@ export default function TitleMaster() {
     else value = suggestion.author_nm;
 
     console.log(`Suggestion selected for ${field}:`, value);
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value, [idFieldFor(field)]: suggestion.id }));
     setSuggestions((prev) => ({ ...prev, [field]: [] }));
     setShowSuggestions((prev) => ({ ...prev, [field]: false }));
     setHighlightedIndex((prev) => ({ ...prev, [field]: -1 }));
@@ -188,7 +231,14 @@ export default function TitleMaster() {
   const handleTableInputChange = async (id, field, value) => {
     console.log(`Table input changed: id=${id}, field=${field}, value=${value}`);
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const next = { ...item, [field]: value };
+        if (suggestableFields.includes(field)) {
+          next[idFieldFor(field)] = null;
+        }
+        return next;
+      })
     );
 
     // Autocomplete for suggestable table fields
@@ -220,10 +270,18 @@ export default function TitleMaster() {
   const handleRowSuggestionClick = (rowId, field, suggestion) => {
     const key = `${rowId}:${field}`;
     const value = labelFor(field, suggestion) || '';
-    setItems((prev) => prev.map((it) => (it.id === rowId ? { ...it, [field]: value } : it)));
+    const idField = idFieldFor(field);
+    const currentRow = items.find((it) => it.id === rowId);
+    const nextRow = currentRow ? { ...currentRow, [field]: value, [idField]: suggestion.id } : null;
+    setItems((prev) =>
+      prev.map((it) => (it.id === rowId ? { ...it, [field]: value, [idField]: suggestion.id } : it))
+    );
     setRowSuggestions((prev) => ({ ...prev, [key]: [] }));
     setRowShowSuggestions((prev) => ({ ...prev, [key]: false }));
     setRowHighlightedIndex((prev) => ({ ...prev, [key]: -1 }));
+    if (nextRow) {
+      handleTableUpdate(rowId, nextRow, field);
+    }
   };
 
   const handleRowKeyDown = (e, row, field) => {
@@ -265,40 +323,118 @@ export default function TitleMaster() {
     // If no suggestions open or none selected, Enter triggers update
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleTableUpdate(row.id, { ...row, [field]: e.currentTarget.value });
+      handleTableUpdate(row.id, { ...row, [field]: e.currentTarget.value }, field);
     }
   };
 
-  const handleTableUpdate = async (id, updatedItem) => {
+  const handleTableUpdate = async (id, updatedItem, changedField = null) => {
     console.log(`Updating item: id=${id}, data=`, updatedItem);
+    const currentRow = items.find((item) => item.id === id);
+    const saved = currentRow?.saved || updatedItem.saved || {};
+    const revertRow = () => {
+      if (!currentRow?.saved) return;
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...currentRow, ...currentRow.saved, saved: currentRow.saved } : item))
+      );
+    };
 
-    // Fetch IDs for author, publisher, translator, category, subCategory
-    let author_id = 0, publisher_id = null, translator_id = null, category_id = 0, sub_category_id = 0;
+    // Resolve IDs only for the field being edited; use saved IDs for the rest
+    let author_id = saved.authorId ?? emptyIdFor('author');
+    let publisher_id = saved.publisherId ?? emptyIdFor('publisher');
+    let translator_id = saved.translatorId ?? emptyIdFor('translator');
+    let category_id = saved.categoryId ?? emptyIdFor('category');
+    let sub_category_id = saved.subCategoryId ?? emptyIdFor('subCategory');
+    const resolveOrShowError = async (field, value, existingId) => {
+      const result = await resolveFieldId(field, value, existingId);
+      if (result.error) {
+        setModal({
+          isOpen: true,
+          message: result.error,
+          type: 'error',
+          buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+        });
+        return null;
+      }
+      return result.id;
+    };
     try {
-      if (updatedItem.author) {
-        const response = await api.get(`/auth/author-search/?q=${encodeURIComponent(updatedItem.author)}`);
-        const author = response.data.find((item) => item.author_nm === updatedItem.author);
-        author_id = author ? author.id : 0;
-      }
-      if (updatedItem.publisher) {
-        const response = await api.get(`/auth/publisher-search/?q=${encodeURIComponent(updatedItem.publisher)}`);
-        const publisher = response.data.find((item) => item.publisher_nm === updatedItem.publisher);
-        publisher_id = publisher ? publisher.id : null;
-      }
-      if (updatedItem.translator) {
-        const response = await api.get(`/auth/author-search/?q=${encodeURIComponent(updatedItem.translator)}`);
-        const translator = response.data.find((item) => item.author_nm === updatedItem.translator);
-        translator_id = translator ? translator.id : null;
-      }
-      if (updatedItem.category) {
-        const response = await api.get(`/auth/category-search/?q=${encodeURIComponent(updatedItem.category)}`);
-        const category = response.data.find((item) => item.category_nm === updatedItem.category);
-        category_id = category ? category.id : 0;
-      }
-      if (updatedItem.subCategory) {
-        const response = await api.get(`/auth/sub-category-search/?q=${encodeURIComponent(updatedItem.subCategory)}`);
-        const subCategory = response.data.find((item) => item.sub_category_nm === updatedItem.subCategory);
-        sub_category_id = subCategory ? subCategory.id : 0;
+      if (changedField && suggestableFields.includes(changedField)) {
+        if (changedField === 'author') {
+          const nextAuthorId = await resolveOrShowError('author', updatedItem.author, updatedItem.authorId);
+          if (nextAuthorId == null) {
+            revertRow();
+            return;
+          }
+          author_id = nextAuthorId;
+        }
+        if (changedField === 'publisher') {
+          const nextPublisherId = await resolveOrShowError('publisher', updatedItem.publisher, updatedItem.publisherId);
+          if (nextPublisherId == null) {
+            revertRow();
+            return;
+          }
+          publisher_id = nextPublisherId;
+        }
+        if (changedField === 'translator') {
+          const nextTranslatorId = await resolveOrShowError('translator', updatedItem.translator, updatedItem.translatorId);
+          if (nextTranslatorId == null) {
+            revertRow();
+            return;
+          }
+          translator_id = nextTranslatorId;
+        }
+        if (changedField === 'category') {
+          const nextCategoryId = await resolveOrShowError('category', updatedItem.category, updatedItem.categoryId);
+          if (nextCategoryId == null) {
+            revertRow();
+            return;
+          }
+          category_id = nextCategoryId;
+        }
+        if (changedField === 'subCategory') {
+          const nextSubCategoryId = await resolveOrShowError('subCategory', updatedItem.subCategory, updatedItem.subCategoryId);
+          if (nextSubCategoryId == null) {
+            revertRow();
+            return;
+          }
+          sub_category_id = nextSubCategoryId;
+        }
+      } else if (changedField == null) {
+        // Fallback: resolve all suggestable fields if no specific field is provided
+        const nextAuthorId = await resolveOrShowError('author', updatedItem.author, updatedItem.authorId ?? saved.authorId);
+        if (nextAuthorId == null) {
+          revertRow();
+          return;
+        }
+        author_id = nextAuthorId;
+
+        const nextPublisherId = await resolveOrShowError('publisher', updatedItem.publisher, updatedItem.publisherId ?? saved.publisherId);
+        if (nextPublisherId == null) {
+          revertRow();
+          return;
+        }
+        publisher_id = nextPublisherId;
+
+        const nextTranslatorId = await resolveOrShowError('translator', updatedItem.translator, updatedItem.translatorId ?? saved.translatorId);
+        if (nextTranslatorId == null) {
+          revertRow();
+          return;
+        }
+        translator_id = nextTranslatorId;
+
+        const nextCategoryId = await resolveOrShowError('category', updatedItem.category, updatedItem.categoryId ?? saved.categoryId);
+        if (nextCategoryId == null) {
+          revertRow();
+          return;
+        }
+        category_id = nextCategoryId;
+
+        const nextSubCategoryId = await resolveOrShowError('subCategory', updatedItem.subCategory, updatedItem.subCategoryId ?? saved.subCategoryId);
+        if (nextSubCategoryId == null) {
+          revertRow();
+          return;
+        }
+        sub_category_id = nextSubCategoryId;
       }
     } catch (error) {
       console.error('Error fetching IDs for update:', error);
@@ -324,7 +460,7 @@ export default function TitleMaster() {
       language_id,
       title_m: updatedItem.titleMal || null,
       rate: parseFloat(updatedItem.mrp) || 0.00,
-      stock: 0.000,
+      stock: parseFloat(updatedItem.stock) || 0.00,
       tax: parseFloat(updatedItem.tax) || 0.00,
       isbn: updatedItem.isbnNo || null,
       publisher_id,
@@ -332,7 +468,7 @@ export default function TitleMaster() {
       category_id,
       sub_category_id,
       ro_level: parseInt(updatedItem.roLevel) || 0,
-      ro_quantity: 0,
+      ro_quantity: parseInt(updatedItem.roQuantity) || 0,
       dn_level: parseInt(updatedItem.dnLevel) || 0,
       sap_code: updatedItem.sapCode || null,
       location_id
@@ -343,6 +479,50 @@ export default function TitleMaster() {
     try {
       const response = await api.put(`/auth/title-update/${id}/`, payload);
       console.log('Title updated:', response.data);
+      const nextRowBase = currentRow || updatedItem;
+      const nextRow = {
+        ...nextRowBase,
+        ...updatedItem,
+        author: changedField === 'author' ? updatedItem.author : (saved.author ?? nextRowBase.author),
+        publisher: changedField === 'publisher' ? updatedItem.publisher : (saved.publisher ?? nextRowBase.publisher),
+        translator: changedField === 'translator' ? updatedItem.translator : (saved.translator ?? nextRowBase.translator),
+        category: changedField === 'category' ? updatedItem.category : (saved.category ?? nextRowBase.category),
+        subCategory: changedField === 'subCategory' ? updatedItem.subCategory : (saved.subCategory ?? nextRowBase.subCategory),
+        authorId: author_id,
+        publisherId: publisher_id,
+        translatorId: translator_id,
+        categoryId: category_id,
+        subCategoryId: sub_category_id,
+        stock: payload.stock,
+        roQuantity: payload.ro_quantity
+      };
+      const nextSaved = {
+        title: nextRow.title,
+        language: nextRow.language,
+        titleMal: nextRow.titleMal,
+        mrp: nextRow.mrp,
+        tax: nextRow.tax,
+        isbnNo: nextRow.isbnNo,
+        roLevel: nextRow.roLevel,
+        dnLevel: nextRow.dnLevel,
+        sapCode: nextRow.sapCode,
+        location: nextRow.location,
+        author: nextRow.author,
+        authorId: nextRow.authorId,
+        publisher: nextRow.publisher,
+        publisherId: nextRow.publisherId,
+        translator: nextRow.translator,
+        translatorId: nextRow.translatorId,
+        category: nextRow.category,
+        categoryId: nextRow.categoryId,
+        subCategory: nextRow.subCategory,
+        subCategoryId: nextRow.subCategoryId,
+        stock: nextRow.stock,
+        roQuantity: nextRow.roQuantity
+      };
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...nextRow, saved: nextSaved } : item))
+      );
       setModal({
         isOpen: true,
         message: 'Title updated successfully!',
@@ -372,34 +552,41 @@ export default function TitleMaster() {
       return;
     }
 
-    // Fetch IDs for author, publisher, translator, category, subCategory
+    // Resolve IDs for author, publisher, translator, category, subCategory
     let author_id = 0, publisher_id = null, translator_id = null, category_id = 0, sub_category_id = 0;
+    const resolveOrShowError = async (field, value, existingId) => {
+      const result = await resolveFieldId(field, value, existingId);
+      if (result.error) {
+        setModal({
+          isOpen: true,
+          message: result.error,
+          type: 'error',
+          buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+        });
+        return null;
+      }
+      return result.id;
+    };
     try {
-      if (formData.author) {
-        const response = await api.get(`/auth/author-search/?q=${encodeURIComponent(formData.author)}`);
-        const author = response.data.find((item) => item.author_nm === formData.author);
-        author_id = author ? author.id : 0;
-      }
-      if (formData.publisher) {
-        const response = await api.get(`/auth/publisher-search/?q=${encodeURIComponent(formData.publisher)}`);
-        const publisher = response.data.find((item) => item.publisher_nm === formData.publisher);
-        publisher_id = publisher ? publisher.id : null;
-      }
-      if (formData.translator) {
-        const response = await api.get(`/auth/author-search/?q=${encodeURIComponent(formData.translator)}`);
-        const translator = response.data.find((item) => item.author_nm === formData.translator);
-        translator_id = translator ? translator.id : null;
-      }
-      if (formData.category) {
-        const response = await api.get(`/auth/category-search/?q=${encodeURIComponent(formData.category)}`);
-        const category = response.data.find((item) => item.category_nm === formData.category);
-        category_id = category ? category.id : 0;
-      }
-      if (formData.subCategory) {
-        const response = await api.get(`/auth/sub-category-search/?q=${encodeURIComponent(formData.subCategory)}`);
-        const subCategory = response.data.find((item) => item.sub_category_nm === formData.subCategory);
-        sub_category_id = subCategory ? subCategory.id : 0;
-      }
+      const nextAuthorId = await resolveOrShowError('author', formData.author, formData.authorId);
+      if (nextAuthorId == null) return;
+      author_id = nextAuthorId;
+
+      const nextPublisherId = await resolveOrShowError('publisher', formData.publisher, formData.publisherId);
+      if (nextPublisherId == null) return;
+      publisher_id = nextPublisherId;
+
+      const nextTranslatorId = await resolveOrShowError('translator', formData.translator, formData.translatorId);
+      if (nextTranslatorId == null) return;
+      translator_id = nextTranslatorId;
+
+      const nextCategoryId = await resolveOrShowError('category', formData.category, formData.categoryId);
+      if (nextCategoryId == null) return;
+      category_id = nextCategoryId;
+
+      const nextSubCategoryId = await resolveOrShowError('subCategory', formData.subCategory, formData.subCategoryId);
+      if (nextSubCategoryId == null) return;
+      sub_category_id = nextSubCategoryId;
     } catch (error) {
       console.error('Error fetching IDs:', error);
       setModal({
@@ -482,7 +669,12 @@ export default function TitleMaster() {
       author: '',
       publisher: '',
       translator: '',
-      mrp: ''
+      mrp: '',
+      authorId: null,
+      publisherId: null,
+      translatorId: null,
+      categoryId: null,
+      subCategoryId: null
     });
     setSuggestions({ author: [], publisher: [], translator: [], category: [], subCategory: [] });
     setShowSuggestions({ author: false, publisher: false, translator: false, category: false, subCategory: false });
@@ -516,7 +708,8 @@ export default function TitleMaster() {
         return;
       }
 
-      const fetchedItems = results.map((item) => ({
+      const fetchedItems = results.map((item) => {
+        const nextItem = {
         id: item.id,
         code: item.id?.toString() || '',
         title: item.title || '',
@@ -538,8 +731,17 @@ export default function TitleMaster() {
         author: item.author_nm || '',
         publisher: item.publisher_nm || '',
         translator: item.translator_nm || '',
-        mrp: item.rate != null ? item.rate.toString() : ''
-      }));
+        mrp: item.rate != null ? item.rate.toString() : '',
+        authorId: item.author_id ?? 0,
+        publisherId: item.publisher_id ?? null,
+        translatorId: item.translator_id ?? null,
+        categoryId: item.category_id ?? 0,
+        subCategoryId: item.sub_category_id ?? 0,
+        stock: item.stock ?? 0,
+        roQuantity: item.ro_quantity ?? 0
+        };
+        return { ...nextItem, saved: { ...nextItem } };
+      });
       setItems(fetchedItems);
       setTotalCount(total);
       console.log('Updated items state:', fetchedItems);
@@ -558,8 +760,46 @@ export default function TitleMaster() {
 
   const handleDeleteItem = (id) => {
     console.log(`Deleting item: id=${id}`);
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    setTotalCount((prev) => Math.max(0, prev - 1));
+    setDeleteTitleId(id);
+    setModal({
+      isOpen: true,
+      message: 'Are you sure you want to delete this title?',
+      type: 'warning',
+      buttons: [
+        {
+          label: 'Delete',
+          onClick: async () => {
+            try {
+              await api.delete(`/auth/title-delete/${id}/`);
+              await fetchAllTitles({ page, pageSize });
+              setModal({
+                isOpen: true,
+                message: 'Title deleted successfully!',
+                type: 'success',
+                buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+              });
+            } catch (error) {
+              setModal({
+                isOpen: true,
+                message: `Failed to delete title: ${error.response?.data?.error || error.message}`,
+                type: 'error',
+                buttons: [{ label: 'OK', onClick: () => setModal((prev) => ({ ...prev, isOpen: false })), className: 'bg-blue-500 hover:bg-blue-600' }]
+              });
+            }
+            setDeleteTitleId(null);
+          },
+          className: 'bg-red-500 hover:bg-red-600'
+        },
+        {
+          label: 'Cancel',
+          onClick: () => {
+            setModal((prev) => ({ ...prev, isOpen: false }));
+            setDeleteTitleId(null);
+          },
+          className: 'bg-gray-500 hover:bg-gray-600'
+        }
+      ]
+    });
   };
 
   const titleIcon = (
@@ -703,9 +943,8 @@ export default function TitleMaster() {
                       <input
                         type="text"
                         value={item.code || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'code', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, code: e.target.value })}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                        readOnly
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
                       />
                     </td>
                     <td className="px-3 py-2 w-[300px]">
@@ -713,7 +952,8 @@ export default function TitleMaster() {
                         type="text"
                         value={item.title || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'title', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, title: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, title: e.target.value }, 'title')}
+                        onBlur={(e) => handleTableUpdate(item.id, { ...item, title: e.target.value }, 'title')}
                         className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
@@ -722,7 +962,8 @@ export default function TitleMaster() {
                         type="text"
                         value={item.language || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'language', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, language: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, language: e.target.value }, 'language')}
+                        onBlur={(e) => handleTableUpdate(item.id, { ...item, language: e.target.value }, 'language')}
                         className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
@@ -735,6 +976,7 @@ export default function TitleMaster() {
                           value={item.author || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'author', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'author')}
+                          onBlur={(e) => handleTableUpdate(item.id, { ...item, author: e.target.value }, 'author')}
                           className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
@@ -749,7 +991,10 @@ export default function TitleMaster() {
                                   className={`px-3 py-1 cursor-pointer ${
                                     (rowHighlightedIndex[keyFor('author')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
                                   }`}
-                                  onClick={() => handleRowSuggestionClick(item.id, 'author', sug)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleRowSuggestionClick(item.id, 'author', sug);
+                                  }}
                                 >
                                   {sug.author_nm}
                                 </li>
@@ -767,6 +1012,7 @@ export default function TitleMaster() {
                           value={item.publisher || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'publisher', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'publisher')}
+                          onBlur={(e) => handleTableUpdate(item.id, { ...item, publisher: e.target.value }, 'publisher')}
                           className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
@@ -781,7 +1027,10 @@ export default function TitleMaster() {
                                   className={`px-3 py-1 cursor-pointer ${
                                     (rowHighlightedIndex[keyFor('publisher')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
                                   }`}
-                                  onClick={() => handleRowSuggestionClick(item.id, 'publisher', sug)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleRowSuggestionClick(item.id, 'publisher', sug);
+                                  }}
                                 >
                                   {sug.publisher_nm}
                                 </li>
@@ -799,6 +1048,7 @@ export default function TitleMaster() {
                           value={item.translator || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'translator', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'translator')}
+                          onBlur={(e) => handleTableUpdate(item.id, { ...item, translator: e.target.value }, 'translator')}
                           className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
@@ -813,7 +1063,10 @@ export default function TitleMaster() {
                                   className={`px-3 py-1 cursor-pointer ${
                                     (rowHighlightedIndex[keyFor('translator')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
                                   }`}
-                                  onClick={() => handleRowSuggestionClick(item.id, 'translator', sug)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleRowSuggestionClick(item.id, 'translator', sug);
+                                  }}
                                 >
                                   {sug.author_nm}
                                 </li>
@@ -831,6 +1084,7 @@ export default function TitleMaster() {
                           value={item.category || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'category', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'category')}
+                          onBlur={(e) => handleTableUpdate(item.id, { ...item, category: e.target.value }, 'category')}
                           className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
@@ -845,7 +1099,10 @@ export default function TitleMaster() {
                                   className={`px-3 py-1 cursor-pointer ${
                                     (rowHighlightedIndex[keyFor('category')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
                                   }`}
-                                  onClick={() => handleRowSuggestionClick(item.id, 'category', sug)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleRowSuggestionClick(item.id, 'category', sug);
+                                  }}
                                 >
                                   {sug.category_nm}
                                 </li>
@@ -863,6 +1120,7 @@ export default function TitleMaster() {
                           value={item.subCategory || ''}
                           onChange={(e) => handleTableInputChange(item.id, 'subCategory', e.target.value)}
                           onKeyDown={(e) => handleRowKeyDown(e, item, 'subCategory')}
+                          onBlur={(e) => handleTableUpdate(item.id, { ...item, subCategory: e.target.value }, 'subCategory')}
                           className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                           autoComplete="off"
                         />
@@ -877,7 +1135,10 @@ export default function TitleMaster() {
                                   className={`px-3 py-1 cursor-pointer ${
                                     (rowHighlightedIndex[keyFor('subCategory')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
                                   }`}
-                                  onClick={() => handleRowSuggestionClick(item.id, 'subCategory', sug)}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleRowSuggestionClick(item.id, 'subCategory', sug);
+                                  }}
                                 >
                                   {sug.sub_category_nm}
                                 </li>
@@ -892,7 +1153,8 @@ export default function TitleMaster() {
                         type="text"
                         value={item.isbnNo || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'isbnNo', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, isbnNo: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, isbnNo: e.target.value }, 'isbnNo')}
+                        onBlur={(e) => handleTableUpdate(item.id, { ...item, isbnNo: e.target.value }, 'isbnNo')}
                         className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
@@ -901,7 +1163,8 @@ export default function TitleMaster() {
                         type="number"
                         value={item.roLevel || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'roLevel', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, roLevel: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, roLevel: e.target.value }, 'roLevel')}
+                        onBlur={(e) => handleTableUpdate(item.id, { ...item, roLevel: e.target.value }, 'roLevel')}
                         className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
@@ -910,7 +1173,8 @@ export default function TitleMaster() {
                         type="number"
                         value={item.dnLevel || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'dnLevel', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, dnLevel: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, dnLevel: e.target.value }, 'dnLevel')}
+                        onBlur={(e) => handleTableUpdate(item.id, { ...item, dnLevel: e.target.value }, 'dnLevel')}
                         className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
@@ -919,7 +1183,8 @@ export default function TitleMaster() {
                         type="text"
                         value={item.titleMal || ''}
                         onChange={(e) => handleTableInputChange(item.id, 'titleMal', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, titleMal: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, titleMal: e.target.value }, 'titleMal')}
+                        onBlur={(e) => handleTableUpdate(item.id, { ...item, titleMal: e.target.value }, 'titleMal')}
                         className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
                       />
                     </td>
@@ -1099,7 +1364,10 @@ export default function TitleMaster() {
                     key={suggestion.id}
                     id={`category-suggestion-${index}`}
                     className={`px-3 py-1 cursor-pointer ${highlightedIndex.category === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSuggestionClick('category', suggestion)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSuggestionClick('category', suggestion);
+                    }}
                   >
                     {suggestion.category_nm}
                   </li>
@@ -1128,7 +1396,10 @@ export default function TitleMaster() {
                     key={suggestion.id}
                     id={`subCategory-suggestion-${index}`}
                     className={`px-3 py-1 cursor-pointer ${highlightedIndex.subCategory === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSuggestionClick('subCategory', suggestion)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSuggestionClick('subCategory', suggestion);
+                    }}
                   >
                     {suggestion.sub_category_nm}
                   </li>
@@ -1157,7 +1428,10 @@ export default function TitleMaster() {
                     key={suggestion.id}
                     id={`author-suggestion-${index}`}
                     className={`px-3 py-1 cursor-pointer ${highlightedIndex.author === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSuggestionClick('author', suggestion)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSuggestionClick('author', suggestion);
+                    }}
                   >
                     {suggestion.author_nm}
                   </li>
@@ -1186,7 +1460,10 @@ export default function TitleMaster() {
                     key={suggestion.id}
                     id={`publisher-suggestion-${index}`}
                     className={`px-3 py-1 cursor-pointer ${highlightedIndex.publisher === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSuggestionClick('publisher', suggestion)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSuggestionClick('publisher', suggestion);
+                    }}
                   >
                     {suggestion.publisher_nm}
                   </li>
@@ -1215,7 +1492,10 @@ export default function TitleMaster() {
                     key={suggestion.id}
                     id={`translator-suggestion-${index}`}
                     className={`px-3 py-1 cursor-pointer ${highlightedIndex.translator === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onClick={() => handleSuggestionClick('translator', suggestion)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSuggestionClick('translator', suggestion);
+                    }}
                   >
                     {suggestion.author_nm}
                   </li>

@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/axiosInstance';
 import Modal from '../../components/Modal';
-import PageHeader from '../../components/PageHeader';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
 /* ---------- helpers ---------- */
@@ -108,12 +107,6 @@ export default function SaleBillReturn() {
   const inputClasses = "px-2 py-1.5 rounded-md border border-gray-200 bg-white text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 transition-all duration-200";
   const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
   const tableInputClasses = "w-full px-2 py-1 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
-
-  const pageIcon = (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  );
 
   /* ---------- suggestions: customer + bill ---------- */
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
@@ -471,14 +464,6 @@ export default function SaleBillReturn() {
         </div>
       )}
 
-      <PageHeader
-        icon={pageIcon}
-        title="Sale Bill Return"
-        subtitle="Process and manage sales returns"
-        compact
-        className="mb-0"
-      />
-
       <div className="flex flex-col gap-2 lg:flex-1 lg:min-h-0">
         <div className={`${cardClasses} p-2`}>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5">
@@ -623,7 +608,7 @@ export default function SaleBillReturn() {
           </div>
 
           <div className="relative rounded-md border border-gray-100 overflow-hidden flex-1 min-h-0">
-            <div className="overflow-auto max-h-[48vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
+            <div className="overflow-auto max-h-[60vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
               <table className="w-full min-w-[820px] text-[11px]">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">

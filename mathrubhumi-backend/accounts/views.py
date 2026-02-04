@@ -1545,9 +1545,10 @@ def author_search(request):
                 SELECT id, author_nm
                   FROM authors
                  WHERE author_nm ILIKE %s
+              ORDER BY author_nm
                  LIMIT 10
                 """,
-                [f'{query}%']
+                [f'%{query}%']
             )
             results = cursor.fetchall()
 
@@ -1579,9 +1580,10 @@ def publisher_search(request):
                 SELECT id, publisher_nm
                   FROM publishers
                  WHERE publisher_nm ILIKE %s
+              ORDER BY publisher_nm
                  LIMIT 10
                 """,
-                [f'{query}%']
+                [f'%{query}%']
             )
             results = cursor.fetchall()
 
@@ -1614,9 +1616,10 @@ def category_search(request):
                 SELECT id, category_nm
                   FROM categories
                  WHERE category_nm ILIKE %s
+              ORDER BY category_nm
                  LIMIT 10
                 """,
-                [f'{query}%']
+                [f'%{query}%']
             )
             results = cursor.fetchall()
 
@@ -1648,9 +1651,10 @@ def sub_category_search(request):
                 SELECT id, sub_category_nm
                   FROM sub_categories
                  WHERE sub_category_nm ILIKE %s
+              ORDER BY sub_category_nm
                  LIMIT 10
                 """,
-                [f'{query}%']
+                [f'%{query}%']
             )
             results = cursor.fetchall()
 
@@ -1911,6 +1915,27 @@ def title_update(request, id):
         return JsonResponse({'message': 'Title updated successfully'}, status=200)
     except Exception as e:
         logger.error(f"Error in title_update: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
+    
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def title_delete(request, id):
+    try:
+        logger.info(f"Deleting title id={id}")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM titles
+                WHERE id = %s
+                RETURNING id
+                """,
+                [id]
+            )
+            if cursor.rowcount == 0:
+                return JsonResponse({'error': f'Title with id {id} not found'}, status=404)
+        return JsonResponse({'message': 'Title deleted successfully'}, status=200)
+    except Exception as e:
+        logger.error(f"Error in title_delete: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
     
 

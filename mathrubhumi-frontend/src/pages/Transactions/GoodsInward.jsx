@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../../utils/axiosInstance';
 import { TrashIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import Modal from '../../components/Modal';
-import PageHeader from '../../components/PageHeader';
 
 export default function GoodsInwardPage() {
   const [items, setItems] = useState([]);
@@ -1132,12 +1131,6 @@ export default function GoodsInwardPage() {
   const actionButtonClasses = "inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-medium shadow-lg shadow-blue-500/20 hover:from-blue-600 hover:to-indigo-700 active:scale-[0.985] transition-all duration-200";
   const tableInputClasses = "w-full px-2 py-1 rounded-md border border-gray-200 bg-gray-50 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400/60 focus:border-blue-400 focus:bg-white transition-all duration-200";
 
-  const pageIcon = (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18M7 7l1-3h8l1 3M8 17l1 3h6l1-3" />
-    </svg>
-  );
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 p-2 md:p-3 space-y-2 lg:h-[100svh] lg:overflow-hidden lg:flex lg:flex-col">
       <Modal isOpen={modal.isOpen} message={modal.message} type={modal.type} buttons={modal.buttons} />
@@ -1439,14 +1432,6 @@ export default function GoodsInwardPage() {
           </div>
         </div>
       )}
-
-      <PageHeader
-        icon={pageIcon}
-        title="Goods Inward"
-        subtitle="Manage purchase entries"
-        compact
-        className="mb-0"
-      />
 
       <div className="flex flex-col gap-2 lg:flex-1 lg:min-h-0">
         <div className={`${cardClasses} p-2`}>
@@ -1760,7 +1745,7 @@ export default function GoodsInwardPage() {
             <span className="font-semibold text-gray-800">Total: {totalValue.toFixed(2)}</span>
           </div>
           <div className="relative rounded-md border border-gray-100 overflow-hidden flex-1 min-h-0">
-            <div className="overflow-auto max-h-[48vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
+            <div className="overflow-auto max-h-[60vh] min-h-[220px] lg:max-h-none lg:h-full lg:min-h-0">
               <table className="w-full min-w-[980px] text-[11px]">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white uppercase tracking-wide">

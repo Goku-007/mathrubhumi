@@ -41,6 +41,7 @@ urlpatterns = [
     path('title-create/', views.title_create, name='title_create'),
     path('title-search/', views.title_search, name='title_search'),
     path('title-update/<int:id>/', views.title_update, name='title_update'),
+    path('title-delete/<int:id>/', views.title_delete, name='title_delete'),
     path('author-create/', views.author_create, name='author_create'),
     path('author-master-search/', views.author_master_search, name='author_master_search'),
     path('author-update/<int:id>/', views.author_update, name='author_update'),

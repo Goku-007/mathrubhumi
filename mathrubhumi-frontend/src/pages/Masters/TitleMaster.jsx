@@ -450,8 +450,8 @@ export default function TitleMaster() {
     const language_id = updatedItem.language === 'English' ? 0 : updatedItem.language === 'Malayalam' ? 1 : 0;
     const location_id =
       updatedItem.location === 'Location1' ? 0 :
-      updatedItem.location === 'Location2' ? 1 :
-      updatedItem.location === 'Location3' ? 2 : 0;
+        updatedItem.location === 'Location2' ? 1 :
+          updatedItem.location === 'Location3' ? 2 : 0;
 
     const payload = {
       id: id,
@@ -601,8 +601,8 @@ export default function TitleMaster() {
     const language_id = formData.language === 'English' ? 0 : formData.language === 'Malayalam' ? 1 : 0;
     const location_id =
       formData.location === 'Location1' ? 0 :
-      formData.location === 'Location2' ? 1 :
-      formData.location === 'Location3' ? 2 : 0;
+        formData.location === 'Location2' ? 1 :
+          formData.location === 'Location3' ? 2 : 0;
 
     const payload = {
       id: parseInt(formData.code),
@@ -710,35 +710,35 @@ export default function TitleMaster() {
 
       const fetchedItems = results.map((item) => {
         const nextItem = {
-        id: item.id,
-        code: item.id?.toString() || '',
-        title: item.title || '',
-        sapCode: item.sap_code || '',
-        tax: item.tax != null ? item.tax.toString() : '',
-        titleMal: item.title_m || '',
-        location:
-          item.location_id === 0 ? 'Location1' :
-          item.location_id === 1 ? 'Location2' :
-          item.location_id === 2 ? 'Location3' : '',
-        language:
-          item.language_id === 0 ? 'English' :
-          item.language_id === 1 ? 'Malayalam' : '',
-        isbnNo: item.isbn || '',
-        roLevel: item.ro_level != null ? item.ro_level.toString() : '',
-        dnLevel: item.dn_level != null ? item.dn_level.toString() : '',
-        category: item.category_nm || '',
-        subCategory: item.sub_category_nm || '',
-        author: item.author_nm || '',
-        publisher: item.publisher_nm || '',
-        translator: item.translator_nm || '',
-        mrp: item.rate != null ? item.rate.toString() : '',
-        authorId: item.author_id ?? 0,
-        publisherId: item.publisher_id ?? null,
-        translatorId: item.translator_id ?? null,
-        categoryId: item.category_id ?? 0,
-        subCategoryId: item.sub_category_id ?? 0,
-        stock: item.stock ?? 0,
-        roQuantity: item.ro_quantity ?? 0
+          id: item.id,
+          code: item.id?.toString() || '',
+          title: item.title || '',
+          sapCode: item.sap_code || '',
+          tax: item.tax != null ? item.tax.toString() : '',
+          titleMal: item.title_m || '',
+          location:
+            item.location_id === 0 ? 'Location1' :
+              item.location_id === 1 ? 'Location2' :
+                item.location_id === 2 ? 'Location3' : '',
+          language:
+            item.language_id === 0 ? 'English' :
+              item.language_id === 1 ? 'Malayalam' : '',
+          isbnNo: item.isbn || '',
+          roLevel: item.ro_level != null ? item.ro_level.toString() : '',
+          dnLevel: item.dn_level != null ? item.dn_level.toString() : '',
+          category: item.category_nm || '',
+          subCategory: item.sub_category_nm || '',
+          author: item.author_nm || '',
+          publisher: item.publisher_nm || '',
+          translator: item.translator_nm || '',
+          mrp: item.rate != null ? item.rate.toString() : '',
+          authorId: item.author_id ?? 0,
+          publisherId: item.publisher_id ?? null,
+          translatorId: item.translator_id ?? null,
+          categoryId: item.category_id ?? 0,
+          subCategoryId: item.sub_category_id ?? 0,
+          stock: item.stock ?? 0,
+          roQuantity: item.ro_quantity ?? 0
         };
         return { ...nextItem, saved: { ...nextItem } };
       });
@@ -935,606 +935,601 @@ export default function TitleMaster() {
                       </td>
                     </tr>
                   ) : (
-                  items.map((item, index) => {
-                const keyFor = (field) => `${item.id}:${field}`;
-                return (
-                  <tr key={item.id} className="hover:bg-blue-50/50 transition-colors animate-fade-in" style={{ animationDelay: `${index * 30}ms` }}>
-                    <td className="px-3 py-2 w-[100px]">
-                      <input
-                        type="text"
-                        value={item.code || ''}
-                        readOnly
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
-                      />
-                    </td>
-                    <td className="px-3 py-2 w-[300px]">
-                      <input
-                        type="text"
-                        value={item.title || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'title', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, title: e.target.value }, 'title')}
-                        onBlur={(e) => handleTableUpdate(item.id, { ...item, title: e.target.value }, 'title')}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </td>
-                    <td className="px-3 py-2 w-[120px]">
-                      <input
-                        type="text"
-                        value={item.language || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'language', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, language: e.target.value }, 'language')}
-                        onBlur={(e) => handleTableUpdate(item.id, { ...item, language: e.target.value }, 'language')}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </td>
+                    items.map((item, index) => {
+                      const keyFor = (field) => `${item.id}:${field}`;
+                      return (
+                        <tr key={item.id} className="hover:bg-blue-50/50 transition-colors animate-fade-in" style={{ animationDelay: `${index * 30}ms` }}>
+                          <td className="px-3 py-2 w-[100px]">
+                            <input
+                              type="text"
+                              value={item.code || ''}
+                              readOnly
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
+                            />
+                          </td>
+                          <td className="px-3 py-2 w-[300px]">
+                            <input
+                              type="text"
+                              value={item.title || ''}
+                              onChange={(e) => handleTableInputChange(item.id, 'title', e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, title: e.target.value }, 'title')}
+                              onBlur={(e) => handleTableUpdate(item.id, { ...item, title: e.target.value }, 'title')}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                            />
+                          </td>
+                          <td className="px-3 py-2 w-[120px]">
+                            <input
+                              type="text"
+                              value={item.language || ''}
+                              onChange={(e) => handleTableInputChange(item.id, 'language', e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, language: e.target.value }, 'language')}
+                              onBlur={(e) => handleTableUpdate(item.id, { ...item, language: e.target.value }, 'language')}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                            />
+                          </td>
 
-                    {/* Author (suggestion) */}
-                    <td className="px-3 py-2 w-[150px]">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={item.author || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'author', e.target.value)}
-                          onKeyDown={(e) => handleRowKeyDown(e, item, 'author')}
-                          onBlur={(e) => handleTableUpdate(item.id, { ...item, author: e.target.value }, 'author')}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                          autoComplete="off"
-                        />
-                        {rowShowSuggestions[keyFor('author')] &&
-                          (rowSuggestions[keyFor('author')] || []).length > 0 &&
-                          (item.author || '').trim() && (
-                            <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                              {(rowSuggestions[keyFor('author')] || []).map((sug, i) => (
-                                <li
-                                  key={`${sug.id}-author-${i}`}
-                                  id={`row-sug-${keyFor('author')}-${i}`}
-                                  className={`px-3 py-1 cursor-pointer ${
-                                    (rowHighlightedIndex[keyFor('author')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
-                                  }`}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleRowSuggestionClick(item.id, 'author', sug);
-                                  }}
-                                >
-                                  {sug.author_nm}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                      </div>
-                    </td>
+                          {/* Author (suggestion) */}
+                          <td className="px-3 py-2 w-[150px]">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.author || ''}
+                                onChange={(e) => handleTableInputChange(item.id, 'author', e.target.value)}
+                                onKeyDown={(e) => handleRowKeyDown(e, item, 'author')}
+                                onBlur={(e) => handleTableUpdate(item.id, { ...item, author: e.target.value }, 'author')}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                                autoComplete="off"
+                              />
+                              {rowShowSuggestions[keyFor('author')] &&
+                                (rowSuggestions[keyFor('author')] || []).length > 0 &&
+                                (item.author || '').trim() && (
+                                  <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                                    {(rowSuggestions[keyFor('author')] || []).map((sug, i) => (
+                                      <li
+                                        key={`${sug.id}-author-${i}`}
+                                        id={`row-sug-${keyFor('author')}-${i}`}
+                                        className={`px-3 py-1 cursor-pointer ${(rowHighlightedIndex[keyFor('author')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
+                                          }`}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          handleRowSuggestionClick(item.id, 'author', sug);
+                                        }}
+                                      >
+                                        {sug.author_nm}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                            </div>
+                          </td>
 
-                    {/* Publisher (suggestion) */}
-                    <td className="px-3 py-2 w-[150px]">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={item.publisher || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'publisher', e.target.value)}
-                          onKeyDown={(e) => handleRowKeyDown(e, item, 'publisher')}
-                          onBlur={(e) => handleTableUpdate(item.id, { ...item, publisher: e.target.value }, 'publisher')}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                          autoComplete="off"
-                        />
-                        {rowShowSuggestions[keyFor('publisher')] &&
-                          (rowSuggestions[keyFor('publisher')] || []).length > 0 &&
-                          (item.publisher || '').trim() && (
-                            <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                              {(rowSuggestions[keyFor('publisher')] || []).map((sug, i) => (
-                                <li
-                                  key={`${sug.id}-publisher-${i}`}
-                                  id={`row-sug-${keyFor('publisher')}-${i}`}
-                                  className={`px-3 py-1 cursor-pointer ${
-                                    (rowHighlightedIndex[keyFor('publisher')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
-                                  }`}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleRowSuggestionClick(item.id, 'publisher', sug);
-                                  }}
-                                >
-                                  {sug.publisher_nm}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                      </div>
-                    </td>
+                          {/* Publisher (suggestion) */}
+                          <td className="px-3 py-2 w-[150px]">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.publisher || ''}
+                                onChange={(e) => handleTableInputChange(item.id, 'publisher', e.target.value)}
+                                onKeyDown={(e) => handleRowKeyDown(e, item, 'publisher')}
+                                onBlur={(e) => handleTableUpdate(item.id, { ...item, publisher: e.target.value }, 'publisher')}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                                autoComplete="off"
+                              />
+                              {rowShowSuggestions[keyFor('publisher')] &&
+                                (rowSuggestions[keyFor('publisher')] || []).length > 0 &&
+                                (item.publisher || '').trim() && (
+                                  <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                                    {(rowSuggestions[keyFor('publisher')] || []).map((sug, i) => (
+                                      <li
+                                        key={`${sug.id}-publisher-${i}`}
+                                        id={`row-sug-${keyFor('publisher')}-${i}`}
+                                        className={`px-3 py-1 cursor-pointer ${(rowHighlightedIndex[keyFor('publisher')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
+                                          }`}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          handleRowSuggestionClick(item.id, 'publisher', sug);
+                                        }}
+                                      >
+                                        {sug.publisher_nm}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                            </div>
+                          </td>
 
-                    {/* Translator (suggestion) */}
-                    <td className="px-3 py-2 w-[150px]">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={item.translator || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'translator', e.target.value)}
-                          onKeyDown={(e) => handleRowKeyDown(e, item, 'translator')}
-                          onBlur={(e) => handleTableUpdate(item.id, { ...item, translator: e.target.value }, 'translator')}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                          autoComplete="off"
-                        />
-                        {rowShowSuggestions[keyFor('translator')] &&
-                          (rowSuggestions[keyFor('translator')] || []).length > 0 &&
-                          (item.translator || '').trim() && (
-                            <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                              {(rowSuggestions[keyFor('translator')] || []).map((sug, i) => (
-                                <li
-                                  key={`${sug.id}-translator-${i}`}
-                                  id={`row-sug-${keyFor('translator')}-${i}`}
-                                  className={`px-3 py-1 cursor-pointer ${
-                                    (rowHighlightedIndex[keyFor('translator')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
-                                  }`}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleRowSuggestionClick(item.id, 'translator', sug);
-                                  }}
-                                >
-                                  {sug.author_nm}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                      </div>
-                    </td>
+                          {/* Translator (suggestion) */}
+                          <td className="px-3 py-2 w-[150px]">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.translator || ''}
+                                onChange={(e) => handleTableInputChange(item.id, 'translator', e.target.value)}
+                                onKeyDown={(e) => handleRowKeyDown(e, item, 'translator')}
+                                onBlur={(e) => handleTableUpdate(item.id, { ...item, translator: e.target.value }, 'translator')}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                                autoComplete="off"
+                              />
+                              {rowShowSuggestions[keyFor('translator')] &&
+                                (rowSuggestions[keyFor('translator')] || []).length > 0 &&
+                                (item.translator || '').trim() && (
+                                  <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                                    {(rowSuggestions[keyFor('translator')] || []).map((sug, i) => (
+                                      <li
+                                        key={`${sug.id}-translator-${i}`}
+                                        id={`row-sug-${keyFor('translator')}-${i}`}
+                                        className={`px-3 py-1 cursor-pointer ${(rowHighlightedIndex[keyFor('translator')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
+                                          }`}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          handleRowSuggestionClick(item.id, 'translator', sug);
+                                        }}
+                                      >
+                                        {sug.author_nm}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                            </div>
+                          </td>
 
-                    {/* Category (suggestion) */}
-                    <td className="px-3 py-2 w-[120px]">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={item.category || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'category', e.target.value)}
-                          onKeyDown={(e) => handleRowKeyDown(e, item, 'category')}
-                          onBlur={(e) => handleTableUpdate(item.id, { ...item, category: e.target.value }, 'category')}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                          autoComplete="off"
-                        />
-                        {rowShowSuggestions[keyFor('category')] &&
-                          (rowSuggestions[keyFor('category')] || []).length > 0 &&
-                          (item.category || '').trim() && (
-                            <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                              {(rowSuggestions[keyFor('category')] || []).map((sug, i) => (
-                                <li
-                                  key={`${sug.id}-category-${i}`}
-                                  id={`row-sug-${keyFor('category')}-${i}`}
-                                  className={`px-3 py-1 cursor-pointer ${
-                                    (rowHighlightedIndex[keyFor('category')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
-                                  }`}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleRowSuggestionClick(item.id, 'category', sug);
-                                  }}
-                                >
-                                  {sug.category_nm}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                      </div>
-                    </td>
+                          {/* Category (suggestion) */}
+                          <td className="px-3 py-2 w-[120px]">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.category || ''}
+                                onChange={(e) => handleTableInputChange(item.id, 'category', e.target.value)}
+                                onKeyDown={(e) => handleRowKeyDown(e, item, 'category')}
+                                onBlur={(e) => handleTableUpdate(item.id, { ...item, category: e.target.value }, 'category')}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                                autoComplete="off"
+                              />
+                              {rowShowSuggestions[keyFor('category')] &&
+                                (rowSuggestions[keyFor('category')] || []).length > 0 &&
+                                (item.category || '').trim() && (
+                                  <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                                    {(rowSuggestions[keyFor('category')] || []).map((sug, i) => (
+                                      <li
+                                        key={`${sug.id}-category-${i}`}
+                                        id={`row-sug-${keyFor('category')}-${i}`}
+                                        className={`px-3 py-1 cursor-pointer ${(rowHighlightedIndex[keyFor('category')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
+                                          }`}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          handleRowSuggestionClick(item.id, 'category', sug);
+                                        }}
+                                      >
+                                        {sug.category_nm}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                            </div>
+                          </td>
 
-                    {/* Sub-Category (suggestion) */}
-                    <td className="px-3 py-2 w-[120px]">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={item.subCategory || ''}
-                          onChange={(e) => handleTableInputChange(item.id, 'subCategory', e.target.value)}
-                          onKeyDown={(e) => handleRowKeyDown(e, item, 'subCategory')}
-                          onBlur={(e) => handleTableUpdate(item.id, { ...item, subCategory: e.target.value }, 'subCategory')}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                          autoComplete="off"
-                        />
-                        {rowShowSuggestions[keyFor('subCategory')] &&
-                          (rowSuggestions[keyFor('subCategory')] || []).length > 0 &&
-                          (item.subCategory || '').trim() && (
-                            <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                              {(rowSuggestions[keyFor('subCategory')] || []).map((sug, i) => (
-                                <li
-                                  key={`${sug.id}-subcategory-${i}`}
-                                  id={`row-sug-${keyFor('subCategory')}-${i}`}
-                                  className={`px-3 py-1 cursor-pointer ${
-                                    (rowHighlightedIndex[keyFor('subCategory')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
-                                  }`}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleRowSuggestionClick(item.id, 'subCategory', sug);
-                                  }}
-                                >
-                                  {sug.sub_category_nm}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                      </div>
-                    </td>
+                          {/* Sub-Category (suggestion) */}
+                          <td className="px-3 py-2 w-[120px]">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.subCategory || ''}
+                                onChange={(e) => handleTableInputChange(item.id, 'subCategory', e.target.value)}
+                                onKeyDown={(e) => handleRowKeyDown(e, item, 'subCategory')}
+                                onBlur={(e) => handleTableUpdate(item.id, { ...item, subCategory: e.target.value }, 'subCategory')}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                                autoComplete="off"
+                              />
+                              {rowShowSuggestions[keyFor('subCategory')] &&
+                                (rowSuggestions[keyFor('subCategory')] || []).length > 0 &&
+                                (item.subCategory || '').trim() && (
+                                  <ul className="absolute z-20 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                                    {(rowSuggestions[keyFor('subCategory')] || []).map((sug, i) => (
+                                      <li
+                                        key={`${sug.id}-subcategory-${i}`}
+                                        id={`row-sug-${keyFor('subCategory')}-${i}`}
+                                        className={`px-3 py-1 cursor-pointer ${(rowHighlightedIndex[keyFor('subCategory')] ?? -1) === i ? 'bg-gray-200' : 'hover:bg-gray-100'
+                                          }`}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          handleRowSuggestionClick(item.id, 'subCategory', sug);
+                                        }}
+                                      >
+                                        {sug.sub_category_nm}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                            </div>
+                          </td>
 
-                    <td className="px-3 py-2 w-[120px]">
-                      <input
-                        type="text"
-                        value={item.isbnNo || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'isbnNo', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, isbnNo: e.target.value }, 'isbnNo')}
-                        onBlur={(e) => handleTableUpdate(item.id, { ...item, isbnNo: e.target.value }, 'isbnNo')}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </td>
-                    <td className="px-3 py-2 w-[80px]">
-                      <input
-                        type="number"
-                        value={item.roLevel || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'roLevel', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, roLevel: e.target.value }, 'roLevel')}
-                        onBlur={(e) => handleTableUpdate(item.id, { ...item, roLevel: e.target.value }, 'roLevel')}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </td>
-                    <td className="px-3 py-2 w-[80px]">
-                      <input
-                        type="number"
-                        value={item.dnLevel || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'dnLevel', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, dnLevel: e.target.value }, 'dnLevel')}
-                        onBlur={(e) => handleTableUpdate(item.id, { ...item, dnLevel: e.target.value }, 'dnLevel')}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </td>
-                    <td className="px-3 py-2 w-[200px]">
-                      <input
-                        type="text"
-                        value={item.titleMal || ''}
-                        onChange={(e) => handleTableInputChange(item.id, 'titleMal', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, titleMal: e.target.value }, 'titleMal')}
-                        onBlur={(e) => handleTableUpdate(item.id, { ...item, titleMal: e.target.value }, 'titleMal')}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-center w-[40px]">
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Delete item"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                          <td className="px-3 py-2 w-[120px]">
+                            <input
+                              type="text"
+                              value={item.isbnNo || ''}
+                              onChange={(e) => handleTableInputChange(item.id, 'isbnNo', e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, isbnNo: e.target.value }, 'isbnNo')}
+                              onBlur={(e) => handleTableUpdate(item.id, { ...item, isbnNo: e.target.value }, 'isbnNo')}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                            />
+                          </td>
+                          <td className="px-3 py-2 w-[80px]">
+                            <input
+                              type="number"
+                              value={item.roLevel || ''}
+                              onChange={(e) => handleTableInputChange(item.id, 'roLevel', e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, roLevel: e.target.value }, 'roLevel')}
+                              onBlur={(e) => handleTableUpdate(item.id, { ...item, roLevel: e.target.value }, 'roLevel')}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                            />
+                          </td>
+                          <td className="px-3 py-2 w-[80px]">
+                            <input
+                              type="number"
+                              value={item.dnLevel || ''}
+                              onChange={(e) => handleTableInputChange(item.id, 'dnLevel', e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, dnLevel: e.target.value }, 'dnLevel')}
+                              onBlur={(e) => handleTableUpdate(item.id, { ...item, dnLevel: e.target.value }, 'dnLevel')}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                            />
+                          </td>
+                          <td className="px-3 py-2 w-[200px]">
+                            <input
+                              type="text"
+                              value={item.titleMal || ''}
+                              onChange={(e) => handleTableInputChange(item.id, 'titleMal', e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleTableUpdate(item.id, { ...item, titleMal: e.target.value }, 'titleMal')}
+                              onBlur={(e) => handleTableUpdate(item.id, { ...item, titleMal: e.target.value }, 'titleMal')}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white transition-all duration-200"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center w-[40px]">
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              title="Delete item"
+                            >
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
-      <div className="border-t border-gray-200 bg-gray-50/50 px-3 py-2 flex-shrink-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
-          <div>
-            <input
-              type="text"
-              name="code"
-              value={formData.code}
-              onChange={handleInputChange}
-              placeholder="Code"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+        <div className="border-t border-gray-200 bg-gray-50/50 px-3 py-2 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
+            <div>
+              <input
+                type="text"
+                name="code"
+                value={formData.code}
+                onChange={handleInputChange}
+                placeholder="Code"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
-          <div className="md:col-span-2 lg:col-span-2">
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              placeholder="Title"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                autoComplete="off"
+              />
+            </div>
+            <div className="md:col-span-2 lg:col-span-2">
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="Title"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              name="sapCode"
-              value={formData.sapCode}
-              onChange={handleInputChange}
-              placeholder="SAP Code"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                name="sapCode"
+                value={formData.sapCode}
+                onChange={handleInputChange}
+                placeholder="SAP Code"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              name="tax"
-              value={formData.tax}
-              onChange={handleInputChange}
-              placeholder="Tax %"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                name="tax"
+                value={formData.tax}
+                onChange={handleInputChange}
+                placeholder="Tax %"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              step="0.01"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <select
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                step="0.01"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <select
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-            >
-              <option value="" disabled>Location</option>
-              <option value="Location1">Location1</option>
-              <option value="Location2">Location2</option>
-              <option value="Location3">Location3</option>
-            </select>
-          </div>
-          <div>
-            <select
-              name="language"
-              value={formData.language}
-              onChange={handleInputChange}
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+              >
+                <option value="" disabled>Location</option>
+                <option value="Location1">Location1</option>
+                <option value="Location2">Location2</option>
+                <option value="Location3">Location3</option>
+              </select>
+            </div>
+            <div>
+              <select
+                name="language"
+                value={formData.language}
+                onChange={handleInputChange}
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-            >
-              <option value="" disabled>Language</option>
-              <option value="English">English</option>
-              <option value="Malayalam">Malayalam</option>
-            </select>
-          </div>
-          <div className="md:col-span-2 lg:col-span-2">
-            <input
-              type="text"
-              name="titleMal"
-              value={formData.titleMal}
-              onChange={handleInputChange}
-              placeholder="Title (Mal)"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+              >
+                <option value="" disabled>Language</option>
+                <option value="English">English</option>
+                <option value="Malayalam">Malayalam</option>
+              </select>
+            </div>
+            <div className="md:col-span-2 lg:col-span-2">
+              <input
+                type="text"
+                name="titleMal"
+                value={formData.titleMal}
+                onChange={handleInputChange}
+                placeholder="Title (Mal)"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              name="isbnNo"
-              value={formData.isbnNo}
-              onChange={handleInputChange}
-              placeholder="ISBN No."
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                name="isbnNo"
+                value={formData.isbnNo}
+                onChange={handleInputChange}
+                placeholder="ISBN No."
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              name="roLevel"
-              value={formData.roLevel}
-              onChange={handleInputChange}
-              placeholder="R O Level"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                name="roLevel"
+                value={formData.roLevel}
+                onChange={handleInputChange}
+                placeholder="R O Level"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              name="dnLevel"
-              value={formData.dnLevel}
-              onChange={handleInputChange}
-              placeholder="Dn Level"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                name="dnLevel"
+                value={formData.dnLevel}
+                onChange={handleInputChange}
+                placeholder="Dn Level"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-          </div>
+                autoComplete="off"
+              />
+            </div>
 
-          <div className="relative">
-            <input
-              type="text"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'category')}
-              placeholder="Category"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+            <div className="relative">
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'category')}
+                placeholder="Category"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-            {showSuggestions.category && suggestions.category.length > 0 && formData.category.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {suggestions.category.map((suggestion, index) => (
-                  <li
-                    key={suggestion.id}
-                    id={`category-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex.category === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSuggestionClick('category', suggestion);
-                    }}
-                  >
-                    {suggestion.category_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                autoComplete="off"
+              />
+              {showSuggestions.category && suggestions.category.length > 0 && formData.category.trim() && (
+                <ul className="absolute z-10 bg-white border bottom-full mb-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {suggestions.category.map((suggestion, index) => (
+                    <li
+                      key={suggestion.id}
+                      id={`category-suggestion-${index}`}
+                      className={`px-3 py-1 cursor-pointer ${highlightedIndex.category === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSuggestionClick('category', suggestion);
+                      }}
+                    >
+                      {suggestion.category_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-          <div className="relative md:col-span-2 lg:col-span-2">
-            <input
-              type="text"
-              name="subCategory"
-              value={formData.subCategory}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'subCategory')}
-              placeholder="Sub-Category"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+            <div className="relative md:col-span-2 lg:col-span-2">
+              <input
+                type="text"
+                name="subCategory"
+                value={formData.subCategory}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'subCategory')}
+                placeholder="Sub-Category"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-            {showSuggestions.subCategory && suggestions.subCategory.length > 0 && formData.subCategory.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {suggestions.subCategory.map((suggestion, index) => (
-                  <li
-                    key={suggestion.id}
-                    id={`subCategory-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex.subCategory === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSuggestionClick('subCategory', suggestion);
-                    }}
-                  >
-                    {suggestion.sub_category_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                autoComplete="off"
+              />
+              {showSuggestions.subCategory && suggestions.subCategory.length > 0 && formData.subCategory.trim() && (
+                <ul className="absolute z-10 bg-white border bottom-full mb-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {suggestions.subCategory.map((suggestion, index) => (
+                    <li
+                      key={suggestion.id}
+                      id={`subCategory-suggestion-${index}`}
+                      className={`px-3 py-1 cursor-pointer ${highlightedIndex.subCategory === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSuggestionClick('subCategory', suggestion);
+                      }}
+                    >
+                      {suggestion.sub_category_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-          <div className="relative md:col-span-2 lg:col-span-2">
-            <input
-              type="text"
-              name="author"
-              value={formData.author}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'author')}
-              placeholder="Author"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+            <div className="relative md:col-span-2 lg:col-span-2">
+              <input
+                type="text"
+                name="author"
+                value={formData.author}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'author')}
+                placeholder="Author"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-            {showSuggestions.author && suggestions.author.length > 0 && formData.author.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {suggestions.author.map((suggestion, index) => (
-                  <li
-                    key={suggestion.id}
-                    id={`author-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex.author === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSuggestionClick('author', suggestion);
-                    }}
-                  >
-                    {suggestion.author_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                autoComplete="off"
+              />
+              {showSuggestions.author && suggestions.author.length > 0 && formData.author.trim() && (
+                <ul className="absolute z-10 bg-white border bottom-full mb-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {suggestions.author.map((suggestion, index) => (
+                    <li
+                      key={suggestion.id}
+                      id={`author-suggestion-${index}`}
+                      className={`px-3 py-1 cursor-pointer ${highlightedIndex.author === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSuggestionClick('author', suggestion);
+                      }}
+                    >
+                      {suggestion.author_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-          <div className="relative md:col-span-2 lg:col-span-2">
-            <input
-              type="text"
-              name="publisher"
-              value={formData.publisher}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'publisher')}
-              placeholder="Publisher"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+            <div className="relative md:col-span-2 lg:col-span-2">
+              <input
+                type="text"
+                name="publisher"
+                value={formData.publisher}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'publisher')}
+                placeholder="Publisher"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-            {showSuggestions.publisher && suggestions.publisher.length > 0 && formData.publisher.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {suggestions.publisher.map((suggestion, index) => (
-                  <li
-                    key={suggestion.id}
-                    id={`publisher-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex.publisher === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSuggestionClick('publisher', suggestion);
-                    }}
-                  >
-                    {suggestion.publisher_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                autoComplete="off"
+              />
+              {showSuggestions.publisher && suggestions.publisher.length > 0 && formData.publisher.trim() && (
+                <ul className="absolute z-10 bg-white border bottom-full mb-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {suggestions.publisher.map((suggestion, index) => (
+                    <li
+                      key={suggestion.id}
+                      id={`publisher-suggestion-${index}`}
+                      className={`px-3 py-1 cursor-pointer ${highlightedIndex.publisher === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSuggestionClick('publisher', suggestion);
+                      }}
+                    >
+                      {suggestion.publisher_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-          <div className="relative md:col-span-2 lg:col-span-2">
-            <input
-              type="text"
-              name="translator"
-              value={formData.translator}
-              onChange={handleInputChange}
-              onKeyDown={(e) => handleKeyDown(e, 'translator')}
-              placeholder="Translator"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+            <div className="relative md:col-span-2 lg:col-span-2">
+              <input
+                type="text"
+                name="translator"
+                value={formData.translator}
+                onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, 'translator')}
+                placeholder="Translator"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              autoComplete="off"
-            />
-            {showSuggestions.translator && suggestions.translator.length > 0 && formData.translator.trim() && (
-              <ul className="absolute z-10 bg-white border mt-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
-                {suggestions.translator.map((suggestion, index) => (
-                  <li
-                    key={suggestion.id}
-                    id={`translator-suggestion-${index}`}
-                    className={`px-3 py-1 cursor-pointer ${highlightedIndex.translator === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSuggestionClick('translator', suggestion);
-                    }}
-                  >
-                    {suggestion.author_nm}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                autoComplete="off"
+              />
+              {showSuggestions.translator && suggestions.translator.length > 0 && formData.translator.trim() && (
+                <ul className="absolute z-10 bg-white border bottom-full mb-1 w-full shadow-md rounded-lg text-sm max-h-48 overflow-y-auto">
+                  {suggestions.translator.map((suggestion, index) => (
+                    <li
+                      key={suggestion.id}
+                      id={`translator-suggestion-${index}`}
+                      className={`px-3 py-1 cursor-pointer ${highlightedIndex.translator === index ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSuggestionClick('translator', suggestion);
+                      }}
+                    >
+                      {suggestion.author_nm}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-          <div>
-            <input
-              type="number"
-              name="mrp"
-              value={formData.mrp}
-              onChange={handleInputChange}
-              placeholder="MRP"
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
+            <div>
+              <input
+                type="number"
+                name="mrp"
+                value={formData.mrp}
+                onChange={handleInputChange}
+                placeholder="MRP"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                          transition-all duration-200 input-premium"
-              step="0.01"
-              autoComplete="off"
-            />
-          </div>
+                step="0.01"
+                autoComplete="off"
+              />
+            </div>
 
-          <div className="flex justify-end md:col-span-2 lg:col-span-1">
-            <button
-              onClick={handleAddItem}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
+            <div className="flex justify-end md:col-span-2 lg:col-span-1">
+              <button
+                onClick={handleAddItem}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto
                          text-white text-sm font-medium shadow-lg shadow-blue-500/25
                          hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-200"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Title
-            </button>
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Title
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   );
 }

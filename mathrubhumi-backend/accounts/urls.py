@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from .views import protected_view
 from .views import register_user
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -32,7 +32,7 @@ urlpatterns = [
     path('user-search/', views.user_search, name='user_search'),
     path('branches-search/', views.branches_search, name='branches_search'),
     path('goods_inward/', views.create_goods_inward, name='create_goods_inward'),
-    path('goods_inward/<int:goods_inward_purchase_no>/', views.get_goods_inward_by_id, name='get_goods_inward'),
+    re_path(r'^goods_inward/(?P<goods_inward_purchase_no>-?\d+)/$', views.get_goods_inward_by_id, name='get_goods_inward'),
     path('breakup-search/', views.breakup_search, name='breakup_search'),
     path('author-search/', views.author_search, name='author_search'),
     path('publisher-search/', views.publisher_search, name='publisher_search'),
@@ -45,10 +45,12 @@ urlpatterns = [
     path('author-create/', views.author_create, name='author_create'),
     path('author-master-search/', views.author_master_search, name='author_master_search'),
     path('author-update/<int:id>/', views.author_update, name='author_update'),
+    path('author-delete/<int:id>/', views.author_delete, name='author_delete'),
     path('authors-list/', views.authors_list, name='authors_list'),
     path('publisher-create/', views.publisher_create, name='publisher_create'),
     path('publisher-master-search/', views.publisher_master_search, name='publisher_master_search'),
     path('publisher-update/<int:id>/', views.publisher_update, name='publisher_update'),
+    path('publisher-delete/<int:id>/', views.publisher_delete, name='publisher_delete'),
     path('supplier-create/', views.supplier_create, name='supplier_create'),
     path('supplier-master-search/', views.supplier_master_search, name='supplier_master_search'),
     path('supplier-update/<int:id>/', views.supplier_update, name='supplier_update'),

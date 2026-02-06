@@ -210,19 +210,22 @@ export default function PublisherMaster() {
         return;
       }
 
-      const fetchedItems = results.map((item) => ({
+      const fetchedItems = results.map((item) => {
+        const normalizedOwn = item.own === 1 || item.own === '1' ? '1' : '0';
+        return ({
         id: item.id,
         code: item.id?.toString() || '',
         name: item.publisher_nm || '',
         contact: item.contact || '',
-        own: item.own?.toString() || '0',
+        own: normalizedOwn,
         email: item.email || '',
         address1: item.address1 || '',
         address2: item.address2 || '',
         phone: item.telephone || '',
         city: item.city || '',
         discount: (item.max_discount_p ?? '').toString()
-      }));
+        });
+      });
       setItems(fetchedItems);
       setTotalCount(total);
       console.log('Updated items state:', fetchedItems);
@@ -489,8 +492,8 @@ export default function PublisherMaster() {
                                      focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 focus:bg-white
                                      transition-all duration-200"
                         >
-                          <option value="0">No</option>
-                          <option value="1">Yes</option>
+                          <option value="0">Owned</option>
+                          <option value="1">Not Owned</option>
                         </select>
                       </td>
                       <td className="px-4 py-2">
@@ -636,8 +639,8 @@ export default function PublisherMaster() {
                            focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400
                            transition-all duration-200 input-premium"
               >
-                <option value="0">Not Owned</option>
-                <option value="1">Owned</option>
+                <option value="0">Owned</option>
+                <option value="1">Not Owned</option>
               </select>
             </div>
             <div className="md:col-span-2">

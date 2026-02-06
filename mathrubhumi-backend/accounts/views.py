@@ -2134,6 +2134,27 @@ def author_update(request, id):
     except Exception as e:
         logger.error(f"Error in author_update: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def author_delete(request, id):
+    try:
+        logger.info(f"Deleting author id={id}")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM authors
+                WHERE id = %s
+                RETURNING id
+                """,
+                [id]
+            )
+            if cursor.rowcount == 0:
+                return JsonResponse({'error': f'Author with id {id} not found'}, status=404)
+        return JsonResponse({'message': 'Author deleted successfully'}, status=200)
+    except Exception as e:
+        logger.error(f"Error in author_delete: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
     
 ################### PUBLISHER MASTER ###################
 
@@ -2308,6 +2329,27 @@ def publisher_update(request, id):
         return JsonResponse({'message': 'Publisher updated successfully'}, status=200)
     except Exception as e:
         logger.error(f"Error in publisher_update: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def publisher_delete(request, id):
+    try:
+        logger.info(f"Deleting publisher id={id}")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM publishers
+                WHERE id = %s
+                RETURNING id
+                """,
+                [id]
+            )
+            if cursor.rowcount == 0:
+                return JsonResponse({'error': f'Publisher with id {id} not found'}, status=404)
+        return JsonResponse({'message': 'Publisher deleted successfully'}, status=200)
+    except Exception as e:
+        logger.error(f"Error in publisher_delete: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
     
 ################### SUUPLIER MASTER ###################
